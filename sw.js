@@ -1,4 +1,4 @@
-const CACHE = 'songbook-v1';
+const CACHE = 'songbook-v9';
 const ASSETS = ['/', '/index.html', '/manifest.json'];
 
 self.addEventListener('install', e => {
@@ -14,7 +14,12 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
+  // Always fetch from network first, fall back to cache
   e.respondWith(
-    caches.match(e.request).then(cached => cached || fetch(e.request).catch(() => cached))
+    fetch(e.request).then(r => {
+      const clone = r.clone();
+      caches.open(CACHE).then(c => c.put(e.request, clone));
+      return r;
+    }).catch(() => caches.match(e.request))
   );
 });
