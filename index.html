@@ -79,8 +79,7 @@
   /* DETAIL */
   .dh{padding:calc(var(--safe-top) + 10px) 16px 10px;display:flex;align-items:center;gap:8px;background:var(--bg);flex-shrink:0;border-bottom:.5px solid var(--sep);}
   /* META EDIT BUTTON + PANEL */
-  .edit-meta-btn{background:none;border:none;border-bottom:.5px solid var(--sep);width:100%;padding:12px 18px;font-size:14px;font-weight:500;color:var(--text3);cursor:pointer;text-align:left;font-family:inherit;display:flex;align-items:center;gap:8px;flex-shrink:0;}
-  .edit-meta-btn:active{background:var(--bg3);}
+
   .meta-edit-panel{display:none;background:var(--bg2);border-bottom:.5px solid var(--sep);padding:14px 16px;flex-shrink:0;flex-direction:column;gap:12px;}
   .meta-edit-panel.open{display:flex;}
   .mep-row{display:flex;flex-direction:column;gap:6px;}
@@ -131,6 +130,7 @@
   .vl{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:#ff9f0a;margin:20px 0 4px;}
   .cl{display:block;font-family:'SF Mono',Menlo,monospace;font-size:14px;font-weight:700;color:#64d2ff;line-height:1.5;margin-top:8px;}
   .ll{display:block;line-height:1.75;color:var(--text2);}
+  .inline-pencil{background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;padding:0 0 0 6px;line-height:1;vertical-align:middle;}
 
   /* SCTRL — same style as tabbar */
   .sctrl{background:rgba(12,12,12,.97);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:none;padding-bottom:var(--safe-bot);flex-shrink:0;}
@@ -302,7 +302,6 @@
 <div class="screen" id="scr-detail">
   <!-- Аккорды (кликабельно для редактирования) -->
   <div class="chords-bar" id="chordsBar" onclick="openChordsEdit()">
-    <span class="cb-lbl">Аккорды</span>
     <span class="cb-val" id="chordsVal">—</span>
     <span class="cb-edit" style="margin-left:6px;">✎</span>
     <span style="flex:1;"></span>
@@ -312,7 +311,6 @@
     <input class="chords-input" id="chordsInput" placeholder="Am - G - Em - C"/>
     <button class="chords-save" onclick="saveChords()">OK</button>
   </div>
-  <button class="edit-meta-btn" id="editLyricsBtn" onclick="toggleMetaEdit()">✎ Редактировать</button>
   <div class="meta-edit-panel" id="metaEditPanel">
     <div class="mep-row">
       <label class="mep-lbl">Название</label>
