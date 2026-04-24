@@ -78,6 +78,19 @@
 
   /* DETAIL */
   .dh{padding:calc(var(--safe-top) + 10px) 16px 10px;display:flex;align-items:center;gap:8px;background:var(--bg);flex-shrink:0;border-bottom:.5px solid var(--sep);}
+  /* META EDIT BUTTON + PANEL */
+  .edit-meta-btn{background:none;border:none;border-bottom:.5px solid var(--sep);width:100%;padding:12px 18px;font-size:14px;font-weight:500;color:var(--text3);cursor:pointer;text-align:left;font-family:inherit;display:flex;align-items:center;gap:8px;flex-shrink:0;}
+  .edit-meta-btn:active{background:var(--bg3);}
+  .meta-edit-panel{display:none;background:var(--bg2);border-bottom:.5px solid var(--sep);padding:14px 16px;flex-shrink:0;flex-direction:column;gap:12px;}
+  .meta-edit-panel.open{display:flex;}
+  .mep-row{display:flex;flex-direction:column;gap:6px;}
+  .mep-lbl{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);font-weight:600;}
+  .mep-input{background:var(--bg3);border:none;border-radius:12px;padding:13px 14px;font-size:16px;color:var(--text);outline:none;font-family:inherit;width:100%;}
+  .mep-input:focus{background:var(--bg4);}
+  .mep-actions{display:flex;gap:10px;}
+  .mep-cancel{flex:1;padding:13px;border-radius:12px;background:var(--bg3);border:none;font-size:15px;font-weight:600;color:var(--text2);cursor:pointer;font-family:inherit;}
+  .mep-save{flex:2;padding:13px;border-radius:12px;background:var(--accent);border:none;font-size:15px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit;}
+  .mep-save:active{opacity:.8;}
   /* META BARS (title / artist edit) */
   .meta-bar{background:var(--bg2);border-bottom:.5px solid var(--sep);flex-shrink:0;padding:12px 18px;display:flex;align-items:center;gap:10px;cursor:pointer;}
   .meta-bar:active{background:var(--bg3);}
@@ -290,28 +303,6 @@
     <div class="dh-title" id="dhTitle"></div>
     <button class="fav-btn" id="favBtn" onclick="toggleFav()">♡</button>
   </div>
-  <!-- Название — кликабельная строка -->
-  <div class="meta-bar" onclick="openTitleEdit()">
-    <span class="meta-lbl">Название</span>
-    <span class="meta-val" id="dhTitleBar"></span>
-    <span class="meta-pencil">✎</span>
-  </div>
-  <div class="meta-edit-wrap" id="titleEditWrap">
-    <input class="meta-input" id="titleInput" placeholder="Название песни"/>
-    <button class="meta-ok" onclick="saveTitle()">Сохранить</button>
-    <button class="meta-cancel" onclick="closeTitleEdit()">✕</button>
-  </div>
-  <!-- Исполнитель — кликабельная строка -->
-  <div class="meta-bar" onclick="openArtistEdit()">
-    <span class="meta-lbl">Исполнитель</span>
-    <span class="meta-val" id="dhArtist"></span>
-    <span class="meta-pencil">✎</span>
-  </div>
-  <div class="meta-edit-wrap" id="artistEditWrap">
-    <input class="meta-input" id="artistInput" placeholder="Исполнитель"/>
-    <button class="meta-ok" onclick="saveArtist()">Сохранить</button>
-    <button class="meta-cancel" onclick="closeArtistEdit()">✕</button>
-  </div>
   <!-- Аккорды (кликабельно для редактирования) -->
   <div class="chords-bar" id="chordsBar" onclick="openChordsEdit()">
     <span class="cb-lbl">Аккорды</span>
@@ -323,6 +314,21 @@
     <button class="chords-save" onclick="saveChords()">OK</button>
   </div>
   <button class="edit-text-btn" id="editLyricsBtn" onclick="toggleLyricsEdit()">✎ Редактировать текст</button>
+  <button class="edit-meta-btn" onclick="toggleMetaEdit()">✎ Редактировать</button>
+  <div class="meta-edit-panel" id="metaEditPanel">
+    <div class="mep-row">
+      <label class="mep-lbl">Название</label>
+      <input class="mep-input" id="titleInput" placeholder="Название песни"/>
+    </div>
+    <div class="mep-row">
+      <label class="mep-lbl">Исполнитель</label>
+      <input class="mep-input" id="artistInput" placeholder="Исполнитель"/>
+    </div>
+    <div class="mep-actions">
+      <button class="mep-cancel" onclick="closeMetaEdit()">Отмена</button>
+      <button class="mep-save" onclick="saveMetaEdit()">Сохранить</button>
+    </div>
+  </div>
   <div class="lscroll" id="lscroll"><div class="lb" id="lb"></div></div>
   <div class="lyrics-edit-wrap" id="lyricsEditWrap" style="display:none;flex:1;flex-direction:column;">
     <textarea class="lyrics-textarea" id="lyricsTextarea" placeholder="Введите текст песни..."></textarea>
@@ -483,6 +489,7 @@ function goBack(){
   stopScroll();
   closeChordsEdit();
   cancelLyricsEdit();
+  closeMetaEdit();
   let dest;
   if(curScr==="detail"){
     dest="songs";
@@ -644,9 +651,7 @@ function openSong(id){
   curSong=songs.find(s=>s.id===id);if(!curSong)return;
   prevPrevScr=prevScr; prevScr=curScr; curScr="detail";
   document.getElementById('dhTitle').textContent=curSong.title;
-  document.getElementById('dhTitleBar').textContent=curSong.title;
-  document.getElementById('dhArtist').textContent=curSong.artist||'';
-  closeTitleEdit(); closeArtistEdit();
+  closeMetaEdit();
   document.getElementById('chordsVal').textContent=curSong.key||'—';
   document.getElementById('favBtn').textContent=favs.has(curSong.id)?'♥':'♡';
   closeChordsEdit();
@@ -664,7 +669,7 @@ function renderLyrics(){
     return`<span class="ll">${line?x(line):'\u00a0'}</span>`;
   }).join('\n');
 }
-function toggleLyricsEdit(){ closeTitleEdit(); closeArtistEdit();
+function toggleLyricsEdit(){ closeMetaEdit();
   const wrap=document.getElementById("lyricsEditWrap");
   const scroll=document.getElementById("lscroll");
   const btn=document.getElementById("editLyricsBtn");
@@ -789,7 +794,7 @@ function toggleFav(){
 }
 
 // ── CHORDS EDIT ──
-function openChordsEdit(){ closeTitleEdit(); closeArtistEdit();
+function openChordsEdit(){ closeMetaEdit();
   const wrap=document.getElementById('chordsEditWrap');
   const inp=document.getElementById('chordsInput');
   inp.value=curSong?curSong.key||'':'';
@@ -1020,49 +1025,36 @@ function fallbackCopy(text){
 }
 
 
-function openTitleEdit(){
-  document.getElementById('titleEditWrap').classList.add('open');
-  document.getElementById('artistEditWrap').classList.remove('open');
+function toggleMetaEdit(){
+  const panel=document.getElementById('metaEditPanel');
+  const isOpen=panel.classList.contains('open');
+  if(isOpen){closeMetaEdit();return;}
+  panel.classList.add('open');
   document.getElementById('titleInput').value=curSong?curSong.title:'';
+  document.getElementById('artistInput').value=curSong?curSong.artist:'';
   setTimeout(()=>document.getElementById('titleInput').focus(),80);
 }
-function closeTitleEdit(){
-  document.getElementById('titleEditWrap').classList.remove('open');
-}
-function saveTitle(){
+function closeMetaEdit(){document.getElementById('metaEditPanel').classList.remove('open');}
+function saveMetaEdit(){
   if(!curSong)return;
-  const val=document.getElementById('titleInput').value.trim();
-  if(!val){toast('Введите название');return;}
-  curSong.title=val;
+  const title=document.getElementById('titleInput').value.trim();
+  const artist=document.getElementById('artistInput').value.trim();
+  if(!title){toast('Введите название');return;}
+  curSong.title=title; curSong.artist=artist;
   const idx=songs.findIndex(s=>s.id===curSong.id);
-  if(idx>=0){songs[idx].title=val;sv(SK,songs);}
-  document.getElementById('dhTitle').textContent=val;
-  document.getElementById('dhTitleBar').textContent=val;
-  closeTitleEdit();
+  if(idx>=0){songs[idx].title=title;songs[idx].artist=artist;sv(SK,songs);}
+  document.getElementById('dhTitle').textContent=title;
+  closeMetaEdit();
   renderRep();renderPL();
   renderSongs(filterPl?songs.filter(s=>(s.playlist||'')===filterPl):songs);
-  toast('Название сохранено');
+  toast('Сохранено');
 }
-function openArtistEdit(){
-  document.getElementById('artistEditWrap').classList.add('open');
-  document.getElementById('titleEditWrap').classList.remove('open');
-  document.getElementById('artistInput').value=curSong?curSong.artist:'';
-  setTimeout(()=>document.getElementById('artistInput').focus(),80);
-}
-function closeArtistEdit(){
-  document.getElementById('artistEditWrap').classList.remove('open');
-}
-function saveArtist(){
-  if(!curSong)return;
-  const val=document.getElementById('artistInput').value.trim();
-  curSong.artist=val;
-  const idx=songs.findIndex(s=>s.id===curSong.id);
-  if(idx>=0){songs[idx].artist=val;sv(SK,songs);}
-  document.getElementById('dhArtist').textContent=val;
-  closeArtistEdit();
-  renderRep();
-  toast('Исполнитель сохранён');
-}
+function openTitleEdit(){}
+function closeTitleEdit(){}
+function saveTitle(){}
+function openArtistEdit(){}
+function closeArtistEdit(){}
+function saveArtist(){}
 
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 
