@@ -997,7 +997,7 @@ function fetchCoverArt(){
 function copyRepertoire(){
   const list=songs.filter(s=>!s.id.startsWith('__fav__'));
   if(!list.length){toast('Нет песен');return;}
-  const text=plName+'\n'+list.map((s,i)=>`${i+1}. ${s.title}`).join('\n');
+  const text='Весь репертуар\n'+list.map((s,i)=>`${i+1}. ${s.title}`).join('\n');
   doCopy(text);
 }
 function copyPlaylist(plName){
