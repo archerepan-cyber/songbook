@@ -91,6 +91,7 @@
   .mep-cancel{flex:1;padding:13px;border-radius:12px;background:var(--bg3);border:none;font-size:15px;font-weight:600;color:var(--text2);cursor:pointer;font-family:inherit;}
   .mep-save{flex:2;padding:13px;border-radius:12px;background:var(--accent);border:none;font-size:15px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit;}
   .mep-save:active{opacity:.8;}
+  .mep-textarea{background:var(--bg3);border:none;border-radius:12px;padding:13px 14px;font-size:15px;color:var(--text);outline:none;font-family:inherit;width:100%;min-height:200px;resize:vertical;line-height:1.7;}
   /* META BARS (title / artist edit) */
   .meta-bar{background:var(--bg2);border-bottom:.5px solid var(--sep);flex-shrink:0;padding:12px 18px;display:flex;align-items:center;gap:10px;cursor:pointer;}
   .meta-bar:active{background:var(--bg3);}
@@ -116,7 +117,7 @@
   .chords-bar:active{background:var(--bg3);}
   .cb-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);white-space:nowrap;}
   .cb-val{font-size:15px;font-weight:700;color:var(--accent);flex:1;}
-  .cb-edit{font-size:12px;color:var(--text3);}
+  .cb-edit{font-size:20px;color:var(--text3);}
 
   /* CHORDS EDIT INPUT */
   .chords-edit-wrap{background:var(--bg2);border-bottom:.5px solid var(--sep);flex-shrink:0;padding:10px 18px;display:none;align-items:center;gap:8px;}
@@ -299,22 +300,18 @@
 
 <!-- ── ДЕТАЛЬНЫЙ ── -->
 <div class="screen" id="scr-detail">
-  <div class="dh">
-    <div class="dh-title" id="dhTitle"></div>
-    <button class="fav-btn" id="favBtn" onclick="toggleFav()">♡</button>
-  </div>
   <!-- Аккорды (кликабельно для редактирования) -->
   <div class="chords-bar" id="chordsBar" onclick="openChordsEdit()">
     <span class="cb-lbl">Аккорды</span>
     <span class="cb-val" id="chordsVal">—</span>
     <span class="cb-edit">✎</span>
+    <button class="fav-btn" id="favBtn" onclick="event.stopPropagation();toggleFav()" style="margin-left:4px;font-size:20px;">♡</button>
   </div>
   <div class="chords-edit-wrap" id="chordsEditWrap">
     <input class="chords-input" id="chordsInput" placeholder="Am - G - Em - C"/>
     <button class="chords-save" onclick="saveChords()">OK</button>
   </div>
-  <button class="edit-text-btn" id="editLyricsBtn" onclick="toggleLyricsEdit()">✎ Редактировать текст</button>
-  <button class="edit-meta-btn" onclick="toggleMetaEdit()">✎ Редактировать</button>
+  <button class="edit-meta-btn" id="editLyricsBtn" onclick="toggleMetaEdit()">✎ Редактировать</button>
   <div class="meta-edit-panel" id="metaEditPanel">
     <div class="mep-row">
       <label class="mep-lbl">Название</label>
@@ -324,19 +321,17 @@
       <label class="mep-lbl">Исполнитель</label>
       <input class="mep-input" id="artistInput" placeholder="Исполнитель"/>
     </div>
+    <div class="mep-row">
+      <label class="mep-lbl">Текст песни</label>
+      <textarea class="mep-textarea" id="lyricsTextarea" placeholder="Вставьте текст..."></textarea>
+    </div>
     <div class="mep-actions">
       <button class="mep-cancel" onclick="closeMetaEdit()">Отмена</button>
       <button class="mep-save" onclick="saveMetaEdit()">Сохранить</button>
     </div>
   </div>
   <div class="lscroll" id="lscroll"><div class="lb" id="lb"></div></div>
-  <div class="lyrics-edit-wrap" id="lyricsEditWrap" style="display:none;flex:1;flex-direction:column;">
-    <textarea class="lyrics-textarea" id="lyricsTextarea" placeholder="Введите текст песни..."></textarea>
-    <div class="lyrics-edit-actions">
-      <button class="le-cancel" onclick="cancelLyricsEdit()">Отмена</button>
-      <button class="le-save" onclick="saveLyricsEdit()">Сохранить</button>
-    </div>
-  </div>
+  <div id="lyricsEditWrap" style="display:none;"></div>
   <div class="sctrl" id="sctrlWrap">
     <div class="sctrl-inner">
       <button class="sctrl-tab sctrl-back-tab" onclick="goBack()">
@@ -650,7 +645,6 @@ function assignToPlaylist(plId){
 function openSong(id){
   curSong=songs.find(s=>s.id===id);if(!curSong)return;
   prevPrevScr=prevScr; prevScr=curScr; curScr="detail";
-  document.getElementById('dhTitle').textContent=curSong.title;
   closeMetaEdit();
   document.getElementById('chordsVal').textContent=curSong.key||'—';
   document.getElementById('favBtn').textContent=favs.has(curSong.id)?'♥':'♡';
@@ -1032,6 +1026,7 @@ function toggleMetaEdit(){
   panel.classList.add('open');
   document.getElementById('titleInput').value=curSong?curSong.title:'';
   document.getElementById('artistInput').value=curSong?curSong.artist:'';
+  document.getElementById('lyricsTextarea').value=curSong?curSong.lyrics||'':'';
   setTimeout(()=>document.getElementById('titleInput').focus(),80);
 }
 function closeMetaEdit(){document.getElementById('metaEditPanel').classList.remove('open');}
@@ -1039,12 +1034,13 @@ function saveMetaEdit(){
   if(!curSong)return;
   const title=document.getElementById('titleInput').value.trim();
   const artist=document.getElementById('artistInput').value.trim();
+  const lyrics=document.getElementById('lyricsTextarea').value;
   if(!title){toast('Введите название');return;}
-  curSong.title=title; curSong.artist=artist;
+  curSong.title=title; curSong.artist=artist; curSong.lyrics=lyrics;
   const idx=songs.findIndex(s=>s.id===curSong.id);
-  if(idx>=0){songs[idx].title=title;songs[idx].artist=artist;sv(SK,songs);}
-  document.getElementById('dhTitle').textContent=title;
+  if(idx>=0){songs[idx].title=title;songs[idx].artist=artist;songs[idx].lyrics=lyrics;sv(SK,songs);}
   closeMetaEdit();
+  renderLyrics();
   renderRep();renderPL();
   renderSongs(filterPl?songs.filter(s=>(s.playlist||'')===filterPl):songs);
   toast('Сохранено');
