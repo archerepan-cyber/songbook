@@ -189,8 +189,10 @@
   .edit-text-btn{background:none;border:none;border-bottom:.5px solid var(--sep);width:100%;padding:10px 18px;font-size:14px;font-weight:500;color:var(--text3);cursor:pointer;text-align:left;font-family:inherit;display:flex;align-items:center;gap:8px;flex-shrink:0;}
   .edit-text-btn:active{background:var(--bg3);}
   .edit-text-btn.active{color:var(--accent);}
-  .copy-list-btn{background:var(--bg3);border:none;border-radius:20px;padding:8px 12px;font-size:18px;cursor:pointer;}
-  .copy-list-btn:active{opacity:.7;}
+  .copy-list-btn{background:none;border:none;padding:8px 10px;cursor:pointer;color:var(--text3);display:flex;align-items:center;}
+  .copy-list-btn:active{opacity:.5;}
+  .pl-copy-btn{background:none;border:none;padding:6px 4px;cursor:pointer;color:var(--text3);display:flex;align-items:center;flex-shrink:0;}
+  .pl-copy-btn:active{opacity:.5;}
   .empty{text-align:center;padding:60px 24px;color:var(--text3);font-size:15px;}
   .edit-lyrics-btn{background:none;border:none;font-size:18px;color:var(--text3);cursor:pointer;padding:4px 2px;flex-shrink:0;}
   .edit-lyrics-btn:active{color:var(--accent);}
@@ -232,10 +234,9 @@
   <div class="ph">
     <div class="ph-row">
       <div class="ph-title">Весь репертуар</div>
-      <div style="display:flex;gap:8px;">
-        <button class="copy-list-btn" onclick="copyRepertoire()" title="Скопировать список">📋</button>
-        <button class="add-btn" onclick="openModal('song','')">＋ Add</button>
-      </div>
+      <button class="copy-list-btn" onclick="copyRepertoire()" title="Скопировать список">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      </button>
     </div>
     <div class="sbar"><span style="color:var(--text3)">🔍</span><input id="repSrch" type="search" placeholder="Поиск" oninput="filterRep()" autocomplete="off"/></div>
   </div>
@@ -497,6 +498,9 @@ function renderPL(list){
           <div class="pl-name">${x(pl.name)}</div>
           <div class="pl-desc">${x(pl.desc||'')}${cnt?' · '+cnt+(cnt===1?' песня':cnt<5?' песни':' песен'):''}</div>
         </div>
+        <button class="pl-copy-btn" onclick="event.stopPropagation();copyPlaylist('${x(pl.name)}')" title="Скопировать список">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </button>
         <button class="pl-del-btn" onclick="delPL('${pl.id}')">🗑</button>
         <div class="arr" onclick="openPL('${pl.id}')">›</div>
       </div>`;
@@ -560,8 +564,8 @@ function sCard(s, showDel=false){
   </div>`;
 }
 function renderSongs(list){const el=document.getElementById('songList');el.innerHTML=list.length?list.map(s=>sCard(s)).join(''):'<div class="empty"><span class="empty-icon">🎵</span>Нет песен. Нажмите Add!</div>';}
-function renderRep(list){list=list||songs;const el=document.getElementById('repList');el.innerHTML=list.length?list.map(s=>sCard(s)).join(''):'<div class="empty"><span class="empty-icon">🎵</span>Нет песен</div>';}
-function filterRep(){const q=document.getElementById('repSrch').value.toLowerCase().trim();renderRep(q?songs.filter(s=>s.title.toLowerCase().includes(q)||s.artist.toLowerCase().includes(q)):songs);}
+function renderRep(list){list=list||(songs.filter(s=>!s.id.startsWith('__fav__')));const el=document.getElementById('repList');el.innerHTML=list.length?list.map(s=>sCard(s)).join(''):'<div class="empty"><span class="empty-icon">🎵</span>Нет песен</div>';}
+function filterRep(){const q=document.getElementById('repSrch').value.toLowerCase().trim();const base=songs.filter(s=>!s.id.startsWith('__fav__'));renderRep(q?base.filter(s=>s.title.toLowerCase().includes(q)||s.artist.toLowerCase().includes(q)):base);}
 function filterSong(){const q=document.getElementById('songSrch').value.toLowerCase().trim();const base=filterPl?songs.filter(s=>(s.playlist||'')===filterPl):songs;renderSongs(q?base.filter(s=>s.title.toLowerCase().includes(q)||s.artist.toLowerCase().includes(q)):base);}
 function delSong(id){if(!confirm('Удалить эту песню?'))return;songs=songs.filter(s=>s.id!==id);sv(SK,songs);renderRep();renderPL();renderSongs(filterPl?songs.filter(s=>(s.playlist||'')===filterPl):songs);if(curSong&&curSong.id===id)goBack();toast('Песня удалена');}
 
@@ -954,22 +958,18 @@ function fetchCoverArt(){
 function copyRepertoire(){
   const list=songs.filter(s=>!s.id.startsWith('__fav__'));
   if(!list.length){toast('Нет песен');return;}
-  // group by playlist
-  const groups={};
-  list.forEach(s=>{
-    const k=s.playlist||'Без плейлиста';
-    if(!groups[k])groups[k]=[];
-    groups[k].push(s);
-  });
-  let text='🎸 МОЙ РЕПЕРТУАР\n'+'─'.repeat(30)+'\n\n';
-  Object.entries(groups).forEach(([grp,items])=>{
-    text+=`📁 ${grp}\n`;
-    items.forEach((s,i)=>{text+=`  ${i+1}. ${s.title}`;if(s.artist&&s.artist!=='Неизвестен')text+=` — ${s.artist}`;if(s.key)text+=` (${s.key})`;text+='\n';});
-    text+='\n';
-  });
-  text+=`Всего: ${list.length} песен`;
+  const text=list.map((s,i)=>`${i+1}. ${s.title}`).join('\n');
+  doCopy(text);
+}
+function copyPlaylist(plName){
+  const list=songs.filter(s=>(s.playlist||'')===plName&&!s.id.startsWith('__fav__'));
+  if(!list.length){toast('Нет песен');return;}
+  const text=list.map((s,i)=>`${i+1}. ${s.title}`).join('\n');
+  doCopy(text);
+}
+function doCopy(text){
   if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(text).then(()=>toast('Список скопирован! ✓')).catch(()=>fallbackCopy(text));
+    navigator.clipboard.writeText(text).then(()=>toast('Скопировано ✓')).catch(()=>fallbackCopy(text));
   } else { fallbackCopy(text); }
 }
 function fallbackCopy(text){
