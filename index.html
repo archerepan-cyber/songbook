@@ -69,10 +69,16 @@
   .s-del-btn{background:none;border:none;color:var(--red);font-size:20px;cursor:pointer;padding:6px 2px 6px 8px;flex-shrink:0;opacity:.75;line-height:1;}
   .s-del-btn:active{opacity:1;}
 
+  /* NAV/DETAIL TAB TOGGLE */
+  .nav-tab{display:flex;}
+  .detail-tab{display:none;}
+  .tabbar.in-detail .nav-tab{display:none;}
+  .tabbar.in-detail .detail-tab{display:flex;}
   /* TAB BAR — Spotify/Apple Music style */
   .tabbar{display:flex;background:rgba(12,12,12,.97);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:none;padding-bottom:var(--safe-bot);flex-shrink:0;z-index:50;min-height:calc(var(--tab-h) + var(--safe-bot));}
-  .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 4px 5px;cursor:pointer;gap:3px;color:rgba(255,255,255,.4);font-size:10px;font-weight:500;letter-spacing:.2px;transition:color .2s;-webkit-user-select:none;position:relative;}
+  .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 4px 5px;cursor:pointer;gap:3px;color:rgba(255,255,255,.4);font-size:10px;font-weight:500;letter-spacing:.2px;transition:color .2s;-webkit-user-select:none;position:relative;background:none;border:none;font-family:inherit;}
   .tab.active{color:#fff;}
+  .tab.playing{color:#1db954;}
   .tab.active .t-icon{transform:scale(1.08);transition:transform .2s;}
   .t-icon{width:24px;height:24px;transition:transform .2s;display:block;}
 
@@ -132,24 +138,11 @@
   .ll{display:block;line-height:1.75;color:var(--text2);}
   .inline-pencil{background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;padding:0 0 0 14px;line-height:1;vertical-align:middle;}
 
-  /* SCTRL — same style as tabbar */
-  .sctrl{background:rgba(12,12,12,.97);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:none;padding-bottom:var(--safe-bot);flex-shrink:0;min-height:calc(var(--tab-h) + var(--safe-bot));}
-  .sctrl-inner{display:flex;align-items:stretch;height:var(--tab-h);}
-  .sctrl-tab{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:3px;background:none;border:none;cursor:pointer;padding:10px 4px 6px;font-family:inherit;-webkit-user-select:none;color:rgba(255,255,255,.4);}
-  .sctrl-back-tab{color:rgba(255,255,255,.4);}
-  .sctrl-back-tab:active{color:#fff;opacity:.8;}
-  .sctrl-play-tab{color:rgba(255,255,255,.4);}
-  .sctrl-play-tab.playing{color:#1db954;}
-  .sctrl-play-tab:active{color:#fff;}
-  .sctrl-spd-tab{flex:1.5;color:rgba(255,255,255,.4);}
-  .sctrl-icon{font-size:23px;line-height:1;}
-  .sctrl-lbl{font-size:10px;font-weight:500;letter-spacing:.2px;}
-  .tabbar.detail-mode{visibility:hidden;pointer-events:none;}
   .sc2{display:flex;align-items:center;gap:10px;}
-  .spd-ctrl{display:flex;align-items:center;gap:2px;}
-  .spd-btn{background:none;border:none;color:rgba(255,255,255,.55);font-size:20px;cursor:pointer;padding:4px 10px;line-height:1;border-radius:12px;}
+  .spd-ctrl{display:flex;align-items:center;gap:0;}
+  .spd-btn{background:none;border:none;color:rgba(255,255,255,.7);font-size:26px;cursor:pointer;padding:0 8px;line-height:1;border-radius:12px;font-weight:300;}
   .spd-btn:active{color:#fff;}
-  .spd-num{font-size:18px;font-weight:600;color:#fff;min-width:26px;text-align:center;}
+  .spd-num{font-size:16px;font-weight:600;color:#fff;min-width:24px;text-align:center;}
 
 
   /* MODAL */
@@ -331,41 +324,40 @@
   </div>
   <div class="lscroll" id="lscroll"><div class="lb" id="lb"></div></div>
   <div id="lyricsEditWrap" style="display:none;"></div>
-  <div class="sctrl" id="sctrlWrap">
-    <div class="sctrl-inner">
-      <button class="sctrl-tab sctrl-back-tab" onclick="goBack()">
-        <svg class="sctrl-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-        <span class="sctrl-lbl">Назад</span>
-      </button>
-      <button class="sctrl-tab sctrl-play-tab" id="scbtn" onclick="toggleScroll()">
-        <svg class="sctrl-icon" id="scPlayIcon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
-        <span class="sctrl-lbl" id="scPlayLbl">Прокрутка</span>
-      </button>
-      <div class="sctrl-tab sctrl-spd-tab">
-        <div class="spd-ctrl">
-          <button class="spd-btn" onclick="changeSpd(-1)">−</button>
-          <span class="spd-num" id="scn">3</span>
-          <button class="spd-btn" onclick="changeSpd(1)">＋</button>
-        </div>
-        <span class="sctrl-lbl">Скорость</span>
-      </div>
-    </div>
-  </div>
+
 </div>
 
 <!-- ── TAB BAR ── -->
 <div class="tabbar" id="tabbar">
-  <div class="tab active" id="tab-pl" onclick="swTab('pl')">
+  <!-- Normal tabs (shown outside detail) -->
+  <div class="tab active nav-tab" id="tab-pl" onclick="swTab('pl')">
     <svg class="t-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
     <span>Плейлисты</span>
   </div>
-  <div class="tab" id="tab-rep" onclick="swTab('rep')">
+  <div class="tab nav-tab" id="tab-rep" onclick="swTab('rep')">
     <svg class="t-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
     <span>Репертуар</span>
   </div>
-  <div class="tab" id="tab-inet" onclick="swTab('inet')">
+  <div class="tab nav-tab" id="tab-inet" onclick="swTab('inet')">
     <svg class="t-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
     <span>Поиск</span>
+  </div>
+  <!-- Detail tabs (shown inside song) -->
+  <div class="tab detail-tab" onclick="goBack()">
+    <svg class="t-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    <span>Плейлист</span>
+  </div>
+  <button class="tab detail-tab" id="scbtn" onclick="toggleScroll()">
+    <svg class="t-icon" id="scPlayIcon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
+    <span class="t-lbl" id="scPlayLbl">Прокрутка</span>
+  </button>
+  <div class="tab detail-tab sctrl-spd-tab">
+    <div class="spd-ctrl">
+      <button class="spd-btn" onclick="changeSpd(-1)">−</button>
+      <span class="spd-num" id="scn">3</span>
+      <button class="spd-btn" onclick="changeSpd(1)">＋</button>
+    </div>
+    <span class="t-lbl">Скорость</span>
   </div>
 </div>
 </div><!-- #app -->
@@ -465,8 +457,8 @@ let lpTimer=null; // long-press timer
 function show(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('scr-'+id).classList.add('active');
-  // hide tabbar completely in detail (sctrl replaces it), show otherwise
-  document.getElementById('tabbar').style.display=id==='detail'?'none':'flex';
+  document.getElementById('tabbar').style.display='flex';
+  document.getElementById('tabbar').classList.toggle('in-detail', id==='detail');
 }
 function swTab(id){
   prevPrevScr=prevScr; prevScr=curScr; curScr="detail"; curScr=id;
@@ -668,8 +660,7 @@ function toggleLyricsEdit(){ closeMetaEdit(); }
 function cancelLyricsEdit(){
   const w=document.getElementById("lyricsEditWrap");if(w)w.style.display="none";
   document.getElementById("lscroll").style.display="";
-  const sctrl=document.getElementById("sctrlWrap");
-  if(sctrl)sctrl.style.display="";
+
 
 }
 function saveLyricsEdit(){
@@ -800,7 +791,7 @@ function saveChords(){
 function toggleScroll(){isScroll?stopScroll():startScroll();}
 function startScroll(){
   isScroll=true;
-  const btn=document.getElementById('scbtn');document.getElementById('scPlayIcon').innerHTML='<rect x="3" y="3" width="18" height="18" rx="2"/>';document.getElementById('scPlayLbl').textContent='Стоп';btn.classList.add('playing');
+  const btn=document.getElementById('scbtn');document.getElementById('scPlayIcon').innerHTML='<rect x="3" y="3" width="18" height="18" rx="2"/>';document.getElementById('scbtn').classList.add('playing');document.getElementById('scPlayLbl').textContent='Стоп';btn.classList.add('playing');
   const area=document.getElementById('lscroll');
   const spd=curSpd;
   clearInterval(scTimer);
@@ -815,7 +806,7 @@ function startScroll(){
     if(area.scrollTop>=area.scrollHeight-area.clientHeight-1)stopScroll();
   },30);
 }
-function stopScroll(){isScroll=false;clearInterval(scTimer);const btn=document.getElementById('scbtn');if(btn){document.getElementById('scPlayIcon').innerHTML='<polygon points="5,3 19,12 5,21"/>';document.getElementById('scPlayLbl').textContent='Прокрутка';btn.classList.remove('playing');}}
+function stopScroll(){isScroll=false;clearInterval(scTimer);const btn=document.getElementById('scbtn');if(btn){document.getElementById('scPlayIcon').innerHTML='<polygon points="5,3 19,12 5,21"/>';document.getElementById('scbtn').classList.remove('playing');document.getElementById('scPlayLbl').textContent='Прокрутка';btn.classList.remove('playing');}}
 let curSpd=3;
 function updSpd(){document.getElementById('scn').textContent=curSpd;if(isScroll){stopScroll();startScroll();}}
 function changeSpd(delta){
