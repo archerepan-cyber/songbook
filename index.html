@@ -662,26 +662,13 @@ function renderLyrics(){
     return`<span class="ll">${line?x(line):'\u00a0'}</span>`;
   }).join('\n');
 }
-function toggleLyricsEdit(){ closeMetaEdit();
-  const wrap=document.getElementById("lyricsEditWrap");
-  const scroll=document.getElementById("lscroll");
-  const btn=document.getElementById("editLyricsBtn");
-  const sctrl=document.getElementById("sctrlWrap");
-  const isOpen=wrap.style.display!=="none";
-  if(isOpen){cancelLyricsEdit();return;}
-  document.getElementById("lyricsTextarea").value=curSong?curSong.lyrics||"":"";
-  wrap.style.display="flex";
-  scroll.style.display="none";
-  if(sctrl)sctrl.style.display="none";
-  btn.classList.add("active");
-  setTimeout(()=>document.getElementById("lyricsTextarea").focus(),100);
-}
+function toggleLyricsEdit(){ closeMetaEdit(); }
 function cancelLyricsEdit(){
-  document.getElementById("lyricsEditWrap").style.display="none";
+  const w=document.getElementById("lyricsEditWrap");if(w)w.style.display="none";
   document.getElementById("lscroll").style.display="";
   const sctrl=document.getElementById("sctrlWrap");
   if(sctrl)sctrl.style.display="";
-  document.getElementById("editLyricsBtn").classList.remove("active");
+
 }
 function saveLyricsEdit(){
   if(!curSong)return;
