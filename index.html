@@ -457,8 +457,10 @@ let lpTimer=null; // long-press timer
 function show(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('scr-'+id).classList.add('active');
-  document.getElementById('tabbar').style.display='flex';
-  document.getElementById('tabbar').classList.toggle('in-detail', id==='detail');
+  const tb=document.getElementById('tabbar');
+  tb.style.display='flex';
+  if(id==='detail'){tb.classList.add('in-detail');}
+  else{tb.classList.remove('in-detail');}
 }
 function swTab(id){
   prevPrevScr=prevScr; prevScr=curScr; curScr="detail"; curScr=id;
@@ -1035,6 +1037,7 @@ function saveArtist(){}
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 
 // ── INIT ──
+document.getElementById("tabbar").classList.remove("in-detail");
 renderPL();renderRep();renderSongs(songs);
 </script>
 </body>
