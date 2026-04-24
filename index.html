@@ -116,7 +116,7 @@
   .chords-bar{background:var(--bg2);border-bottom:.5px solid var(--sep);flex-shrink:0;padding:10px 18px;display:flex;align-items:center;gap:10px;cursor:pointer;}
   .chords-bar:active{background:var(--bg3);}
   .cb-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);white-space:nowrap;}
-  .cb-val{font-size:15px;font-weight:700;color:var(--accent);flex:1;}
+  .cb-val{font-size:15px;font-weight:700;color:var(--accent);}  
   .cb-edit{font-size:20px;color:var(--text3);}
 
   /* CHORDS EDIT INPUT */
@@ -304,8 +304,9 @@
   <div class="chords-bar" id="chordsBar" onclick="openChordsEdit()">
     <span class="cb-lbl">Аккорды</span>
     <span class="cb-val" id="chordsVal">—</span>
-    <span class="cb-edit">✎</span>
-    <button class="fav-btn" id="favBtn" onclick="event.stopPropagation();toggleFav()" style="margin-left:4px;font-size:20px;">♡</button>
+    <span class="cb-edit" style="margin-left:6px;">✎</span>
+    <span style="flex:1;"></span>
+    <button class="fav-btn" id="favBtn" onclick="event.stopPropagation();toggleFav()" style="font-size:20px;">♡</button>
   </div>
   <div class="chords-edit-wrap" id="chordsEditWrap">
     <input class="chords-input" id="chordsInput" placeholder="Am - G - Em - C"/>
