@@ -78,6 +78,19 @@
 
   /* DETAIL */
   .dh{padding:calc(var(--safe-top) + 10px) 16px 10px;display:flex;align-items:center;gap:8px;background:var(--bg);flex-shrink:0;border-bottom:.5px solid var(--sep);}
+  .dh-meta{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+  .dh-row{display:flex;align-items:center;gap:6px;}
+  .dh-artist-row{margin-top:1px;}
+  .dh-title{font-size:16px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;}
+  .dh-artist{font-size:13px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;}
+  .dh-edit-btn{background:none;border:none;color:var(--text3);font-size:15px;cursor:pointer;padding:2px 4px;flex-shrink:0;line-height:1;}
+  .dh-edit-small{font-size:13px;}
+  .dh-edit-btn:active{color:var(--accent);}
+  .dh-edit-wrap{display:flex;align-items:center;gap:6px;margin-top:4px;}
+  .dh-edit-input{flex:1;background:var(--bg3);border:none;border-radius:8px;padding:7px 10px;font-size:14px;color:var(--text);outline:none;font-family:inherit;}
+  .dh-edit-input:focus{background:var(--bg4);}
+  .dh-edit-ok{background:var(--accent);border:none;border-radius:8px;padding:7px 12px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;}
+  .dh-edit-ok:active{opacity:.8;}
   .back-btn{background:none;border:none;color:var(--accent);font-size:17px;cursor:pointer;padding:4px 0;white-space:nowrap;flex-shrink:0;}
   .back-btn:active{opacity:.6;}
   .dh-title{flex:1;text-align:center;font-size:16px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -273,7 +286,26 @@
 <!-- ── ДЕТАЛЬНЫЙ ── -->
 <div class="screen" id="scr-detail">
   <div class="dh">
-    <div class="dh-title" id="dhTitle"></div>
+    <div class="dh-meta">
+      <div class="dh-row">
+        <div class="dh-title" id="dhTitle"></div>
+        <button class="dh-edit-btn" onclick="openTitleEdit()" title="Редактировать">✎</button>
+      </div>
+      <div class="dh-row dh-artist-row" id="dhArtistRow">
+        <div class="dh-artist" id="dhArtist"></div>
+        <button class="dh-edit-btn dh-edit-small" onclick="openArtistEdit()" title="Редактировать">✎</button>
+      </div>
+      <!-- inline edit for title -->
+      <div class="dh-edit-wrap" id="titleEditWrap" style="display:none;">
+        <input class="dh-edit-input" id="titleInput" placeholder="Название песни"/>
+        <button class="dh-edit-ok" onclick="saveTitle()">OK</button>
+      </div>
+      <!-- inline edit for artist -->
+      <div class="dh-edit-wrap" id="artistEditWrap" style="display:none;">
+        <input class="dh-edit-input" id="artistInput" placeholder="Исполнитель"/>
+        <button class="dh-edit-ok" onclick="saveArtist()">OK</button>
+      </div>
+    </div>
     <button class="fav-btn" id="favBtn" onclick="toggleFav()">♡</button>
   </div>
   <!-- Аккорды (кликабельно для редактирования) -->
@@ -608,6 +640,8 @@ function openSong(id){
   curSong=songs.find(s=>s.id===id);if(!curSong)return;
   prevPrevScr=prevScr; prevScr=curScr; curScr="detail";
   document.getElementById('dhTitle').textContent=curSong.title;
+  document.getElementById('dhArtist').textContent=curSong.artist||'';
+  closeTitleEdit(); closeArtistEdit();
   document.getElementById('chordsVal').textContent=curSong.key||'—';
   document.getElementById('favBtn').textContent=favs.has(curSong.id)?'♥':'♡';
   closeChordsEdit();
@@ -625,7 +659,7 @@ function renderLyrics(){
     return`<span class="ll">${line?x(line):'\u00a0'}</span>`;
   }).join('\n');
 }
-function toggleLyricsEdit(){
+function toggleLyricsEdit(){ closeTitleEdit(); closeArtistEdit();
   const wrap=document.getElementById("lyricsEditWrap");
   const scroll=document.getElementById("lscroll");
   const btn=document.getElementById("editLyricsBtn");
@@ -750,7 +784,7 @@ function toggleFav(){
 }
 
 // ── CHORDS EDIT ──
-function openChordsEdit(){
+function openChordsEdit(){ closeTitleEdit(); closeArtistEdit();
   const wrap=document.getElementById('chordsEditWrap');
   const inp=document.getElementById('chordsInput');
   inp.value=curSong?curSong.key||'':'';
@@ -978,6 +1012,50 @@ function fallbackCopy(text){
   document.body.appendChild(ta);ta.select();
   document.execCommand('copy');document.body.removeChild(ta);
   toast('Список скопирован! ✓');
+}
+
+
+function openTitleEdit(){
+  document.getElementById('titleEditWrap').style.display='flex';
+  document.getElementById('artistEditWrap').style.display='none';
+  document.getElementById('titleInput').value=curSong?curSong.title:'';
+  setTimeout(()=>document.getElementById('titleInput').focus(),80);
+}
+function closeTitleEdit(){
+  document.getElementById('titleEditWrap').style.display='none';
+}
+function saveTitle(){
+  if(!curSong)return;
+  const val=document.getElementById('titleInput').value.trim();
+  if(!val){toast('Введите название');return;}
+  curSong.title=val;
+  const idx=songs.findIndex(s=>s.id===curSong.id);
+  if(idx>=0){songs[idx].title=val;sv(SK,songs);}
+  document.getElementById('dhTitle').textContent=val;
+  closeTitleEdit();
+  renderRep();renderPL();
+  renderSongs(filterPl?songs.filter(s=>(s.playlist||'')===filterPl):songs);
+  toast('Название сохранено');
+}
+function openArtistEdit(){
+  document.getElementById('artistEditWrap').style.display='flex';
+  document.getElementById('titleEditWrap').style.display='none';
+  document.getElementById('artistInput').value=curSong?curSong.artist:'';
+  setTimeout(()=>document.getElementById('artistInput').focus(),80);
+}
+function closeArtistEdit(){
+  document.getElementById('artistEditWrap').style.display='none';
+}
+function saveArtist(){
+  if(!curSong)return;
+  const val=document.getElementById('artistInput').value.trim();
+  curSong.artist=val;
+  const idx=songs.findIndex(s=>s.id===curSong.id);
+  if(idx>=0){songs[idx].artist=val;sv(SK,songs);}
+  document.getElementById('dhArtist').textContent=val;
+  closeArtistEdit();
+  renderRep();
+  toast('Исполнитель сохранён');
 }
 
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
