@@ -997,13 +997,13 @@ function fetchCoverArt(){
 function copyRepertoire(){
   const list=songs.filter(s=>!s.id.startsWith('__fav__'));
   if(!list.length){toast('Нет песен');return;}
-  const text=list.map((s,i)=>`${i+1}. ${s.title}`).join('\n');
+  const text=plName+'\n'+list.map((s,i)=>`${i+1}. ${s.title}`).join('\n');
   doCopy(text);
 }
 function copyPlaylist(plName){
   const list=songs.filter(s=>(s.playlist||'')===plName&&!s.id.startsWith('__fav__'));
   if(!list.length){toast('Нет песен');return;}
-  const text=list.map((s,i)=>`${i+1}. ${s.title}`).join('\n');
+  const text=plName+'\n'+list.map((s,i)=>`${i+1}. ${s.title}`).join('\n');
   doCopy(text);
 }
 function doCopy(text){
