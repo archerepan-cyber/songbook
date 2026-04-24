@@ -655,10 +655,14 @@ function openSong(id){
 }
 function renderLyrics(){
   const el=document.getElementById('lb');if(!curSong)return;
-  // render line by line preserving exact formatting, only highlight [section] labels
+  let firstDone=false;
   el.innerHTML=(curSong.lyrics||'').split('\n').map(line=>{
     if(/^\[.+\]$/.test(line.trim()))
       return`<span class="vl">${x(line.trim().replace(/^\[|\]$/g,''))}</span>`;
+    if(!firstDone&&line.trim()){
+      firstDone=true;
+      return`<span class="ll">${x(line)}<button class="inline-pencil" onclick="toggleMetaEdit()">✎</button></span>`;
+    }
     return`<span class="ll">${line?x(line):'\u00a0'}</span>`;
   }).join('\n');
 }
