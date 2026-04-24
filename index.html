@@ -465,10 +465,8 @@ let lpTimer=null; // long-press timer
 function show(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('scr-'+id).classList.add('active');
-  // always show tabbar
-  document.getElementById('tabbar').style.display='flex';
-  // toggle detail mode on tabbar (hides tabs, shows nothing — sctrl is in detail screen)
-  document.getElementById('tabbar').classList.toggle('detail-mode', id==='detail');
+  // hide tabbar completely in detail (sctrl replaces it), show otherwise
+  document.getElementById('tabbar').style.display=id==='detail'?'none':'flex';
 }
 function swTab(id){
   prevPrevScr=prevScr; prevScr=curScr; curScr="detail"; curScr=id;
