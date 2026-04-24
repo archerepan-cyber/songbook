@@ -78,22 +78,23 @@
 
   /* DETAIL */
   .dh{padding:calc(var(--safe-top) + 10px) 16px 10px;display:flex;align-items:center;gap:8px;background:var(--bg);flex-shrink:0;border-bottom:.5px solid var(--sep);}
-  .dh-meta{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
-  .dh-row{display:flex;align-items:center;gap:6px;}
-  .dh-artist-row{margin-top:1px;}
-  .dh-title{font-size:16px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;}
-  .dh-artist{font-size:13px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;}
-  .dh-edit-btn{background:none;border:none;color:var(--text3);font-size:15px;cursor:pointer;padding:2px 4px;flex-shrink:0;line-height:1;}
-  .dh-edit-small{font-size:13px;}
-  .dh-edit-btn:active{color:var(--accent);}
-  .dh-edit-wrap{display:flex;align-items:center;gap:6px;margin-top:4px;}
-  .dh-edit-input{flex:1;background:var(--bg3);border:none;border-radius:8px;padding:7px 10px;font-size:14px;color:var(--text);outline:none;font-family:inherit;}
-  .dh-edit-input:focus{background:var(--bg4);}
-  .dh-edit-ok{background:var(--accent);border:none;border-radius:8px;padding:7px 12px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;}
-  .dh-edit-ok:active{opacity:.8;}
+  /* META BARS (title / artist edit) */
+  .meta-bar{background:var(--bg2);border-bottom:.5px solid var(--sep);flex-shrink:0;padding:12px 18px;display:flex;align-items:center;gap:10px;cursor:pointer;}
+  .meta-bar:active{background:var(--bg3);}
+  .meta-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);white-space:nowrap;min-width:80px;}
+  .meta-val{flex:1;font-size:16px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .meta-pencil{font-size:14px;color:var(--text3);flex-shrink:0;}
+  .meta-edit-wrap{background:var(--bg2);border-bottom:.5px solid var(--sep);flex-shrink:0;padding:10px 14px;display:none;align-items:center;gap:8px;}
+  .meta-edit-wrap.open{display:flex;}
+  .meta-input{flex:1;background:var(--bg3);border:none;border-radius:10px;padding:11px 14px;font-size:16px;color:var(--text);outline:none;font-family:inherit;}
+  .meta-input:focus{background:var(--bg4);}
+  .meta-ok{background:var(--accent);border:none;border-radius:10px;padding:11px 16px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;white-space:nowrap;}
+  .meta-ok:active{opacity:.8;}
+  .meta-cancel{background:var(--bg3);border:none;border-radius:10px;padding:11px 12px;color:var(--text3);font-size:15px;cursor:pointer;}
+  .meta-cancel:active{opacity:.7;}
   .back-btn{background:none;border:none;color:var(--accent);font-size:17px;cursor:pointer;padding:4px 0;white-space:nowrap;flex-shrink:0;}
   .back-btn:active{opacity:.6;}
-  .dh-title{flex:1;text-align:center;font-size:16px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .dh-title{flex:1;text-align:center;font-size:17px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .fav-btn{background:none;border:none;font-size:22px;cursor:pointer;flex-shrink:0;}
   .fav-btn:active{transform:scale(1.3);}
 
@@ -286,27 +287,30 @@
 <!-- ── ДЕТАЛЬНЫЙ ── -->
 <div class="screen" id="scr-detail">
   <div class="dh">
-    <div class="dh-meta">
-      <div class="dh-row">
-        <div class="dh-title" id="dhTitle"></div>
-        <button class="dh-edit-btn" onclick="openTitleEdit()" title="Редактировать">✎</button>
-      </div>
-      <div class="dh-row dh-artist-row" id="dhArtistRow">
-        <div class="dh-artist" id="dhArtist"></div>
-        <button class="dh-edit-btn dh-edit-small" onclick="openArtistEdit()" title="Редактировать">✎</button>
-      </div>
-      <!-- inline edit for title -->
-      <div class="dh-edit-wrap" id="titleEditWrap" style="display:none;">
-        <input class="dh-edit-input" id="titleInput" placeholder="Название песни"/>
-        <button class="dh-edit-ok" onclick="saveTitle()">OK</button>
-      </div>
-      <!-- inline edit for artist -->
-      <div class="dh-edit-wrap" id="artistEditWrap" style="display:none;">
-        <input class="dh-edit-input" id="artistInput" placeholder="Исполнитель"/>
-        <button class="dh-edit-ok" onclick="saveArtist()">OK</button>
-      </div>
-    </div>
+    <div class="dh-title" id="dhTitle"></div>
     <button class="fav-btn" id="favBtn" onclick="toggleFav()">♡</button>
+  </div>
+  <!-- Название — кликабельная строка -->
+  <div class="meta-bar" onclick="openTitleEdit()">
+    <span class="meta-lbl">Название</span>
+    <span class="meta-val" id="dhTitleBar"></span>
+    <span class="meta-pencil">✎</span>
+  </div>
+  <div class="meta-edit-wrap" id="titleEditWrap">
+    <input class="meta-input" id="titleInput" placeholder="Название песни"/>
+    <button class="meta-ok" onclick="saveTitle()">Сохранить</button>
+    <button class="meta-cancel" onclick="closeTitleEdit()">✕</button>
+  </div>
+  <!-- Исполнитель — кликабельная строка -->
+  <div class="meta-bar" onclick="openArtistEdit()">
+    <span class="meta-lbl">Исполнитель</span>
+    <span class="meta-val" id="dhArtist"></span>
+    <span class="meta-pencil">✎</span>
+  </div>
+  <div class="meta-edit-wrap" id="artistEditWrap">
+    <input class="meta-input" id="artistInput" placeholder="Исполнитель"/>
+    <button class="meta-ok" onclick="saveArtist()">Сохранить</button>
+    <button class="meta-cancel" onclick="closeArtistEdit()">✕</button>
   </div>
   <!-- Аккорды (кликабельно для редактирования) -->
   <div class="chords-bar" id="chordsBar" onclick="openChordsEdit()">
@@ -640,6 +644,7 @@ function openSong(id){
   curSong=songs.find(s=>s.id===id);if(!curSong)return;
   prevPrevScr=prevScr; prevScr=curScr; curScr="detail";
   document.getElementById('dhTitle').textContent=curSong.title;
+  document.getElementById('dhTitleBar').textContent=curSong.title;
   document.getElementById('dhArtist').textContent=curSong.artist||'';
   closeTitleEdit(); closeArtistEdit();
   document.getElementById('chordsVal').textContent=curSong.key||'—';
@@ -1016,13 +1021,13 @@ function fallbackCopy(text){
 
 
 function openTitleEdit(){
-  document.getElementById('titleEditWrap').style.display='flex';
-  document.getElementById('artistEditWrap').style.display='none';
+  document.getElementById('titleEditWrap').classList.add('open');
+  document.getElementById('artistEditWrap').classList.remove('open');
   document.getElementById('titleInput').value=curSong?curSong.title:'';
   setTimeout(()=>document.getElementById('titleInput').focus(),80);
 }
 function closeTitleEdit(){
-  document.getElementById('titleEditWrap').style.display='none';
+  document.getElementById('titleEditWrap').classList.remove('open');
 }
 function saveTitle(){
   if(!curSong)return;
@@ -1032,19 +1037,20 @@ function saveTitle(){
   const idx=songs.findIndex(s=>s.id===curSong.id);
   if(idx>=0){songs[idx].title=val;sv(SK,songs);}
   document.getElementById('dhTitle').textContent=val;
+  document.getElementById('dhTitleBar').textContent=val;
   closeTitleEdit();
   renderRep();renderPL();
   renderSongs(filterPl?songs.filter(s=>(s.playlist||'')===filterPl):songs);
   toast('Название сохранено');
 }
 function openArtistEdit(){
-  document.getElementById('artistEditWrap').style.display='flex';
-  document.getElementById('titleEditWrap').style.display='none';
+  document.getElementById('artistEditWrap').classList.add('open');
+  document.getElementById('titleEditWrap').classList.remove('open');
   document.getElementById('artistInput').value=curSong?curSong.artist:'';
   setTimeout(()=>document.getElementById('artistInput').focus(),80);
 }
 function closeArtistEdit(){
-  document.getElementById('artistEditWrap').style.display='none';
+  document.getElementById('artistEditWrap').classList.remove('open');
 }
 function saveArtist(){
   if(!curSong)return;
