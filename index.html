@@ -70,8 +70,8 @@
   .s-del-btn:active{opacity:1;}
 
   /* TAB BAR — Spotify/Apple Music style */
-  .tabbar{display:flex;background:rgba(12,12,12,.97);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:none;padding-bottom:var(--safe-bot);flex-shrink:0;z-index:50;}
-  .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 4px 6px;cursor:pointer;gap:3px;color:rgba(255,255,255,.4);font-size:10px;font-weight:500;letter-spacing:.2px;transition:color .2s;-webkit-user-select:none;position:relative;}
+  .tabbar{display:flex;background:rgba(12,12,12,.97);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:none;padding-bottom:var(--safe-bot);flex-shrink:0;z-index:50;min-height:calc(var(--tab-h) + var(--safe-bot));}
+  .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 4px 5px;cursor:pointer;gap:3px;color:rgba(255,255,255,.4);font-size:10px;font-weight:500;letter-spacing:.2px;transition:color .2s;-webkit-user-select:none;position:relative;}
   .tab.active{color:#fff;}
   .tab.active .t-icon{transform:scale(1.08);transition:transform .2s;}
   .t-icon{width:24px;height:24px;transition:transform .2s;display:block;}
@@ -133,7 +133,7 @@
   .inline-pencil{background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;padding:0 0 0 14px;line-height:1;vertical-align:middle;}
 
   /* SCTRL — same style as tabbar */
-  .sctrl{background:rgba(12,12,12,.97);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:none;padding-bottom:var(--safe-bot);flex-shrink:0;}
+  .sctrl{background:rgba(12,12,12,.97);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:none;padding-bottom:var(--safe-bot);flex-shrink:0;min-height:calc(var(--tab-h) + var(--safe-bot));}
   .sctrl-inner{display:flex;align-items:stretch;height:var(--tab-h);}
   .sctrl-tab{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:3px;background:none;border:none;cursor:pointer;padding:10px 4px 6px;font-family:inherit;-webkit-user-select:none;color:rgba(255,255,255,.4);}
   .sctrl-back-tab{color:rgba(255,255,255,.4);}
