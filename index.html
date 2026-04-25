@@ -120,7 +120,7 @@
   /* CHORDS BAR (replaces istrip, single item, tappable) */
   /* chords bar wrapper — clips the slide animation */
   .chords-bar-wrap{flex-shrink:0;overflow:hidden;transition:height .32s cubic-bezier(.4,0,.2,1);}
-  .chords-bar{background:var(--bg2);border-bottom:.5px solid var(--sep);padding:10px 18px;display:flex;align-items:center;gap:10px;will-change:transform;transition:transform .32s cubic-bezier(.4,0,.2,1);}
+  .chords-bar{background:var(--bg2);border-bottom:.5px solid var(--sep);padding:10px 18px;display:flex;align-items:center;gap:10px;will-change:transform;transition:transform .32s cubic-bezier(.4,0,.2,1);-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;}
   .chords-bar-wrap.hidden-up{height:0 !important;}
   .chords-bar-wrap.hidden-up .chords-bar{transform:translateY(-100%);}
   /* peek tab */
@@ -1122,10 +1122,10 @@ function showChordsBar(){
 function initChordsBarGestures(){
   const bar=document.getElementById('chordsBar');
   if(!bar)return;
+  bar.style.touchAction='none';
   let p0y=0, p0x=0, p0t=0, pdx=0, pdy=0, active=false;
 
   bar.addEventListener('pointerdown',function(e){
-    // игнорируем карандашик и сердечко
     if(e.target.closest('.cb-edit')||e.target.closest('.fav-btn'))return;
     bar.setPointerCapture(e.pointerId);
     p0y=e.clientY; p0x=e.clientX; p0t=Date.now();
@@ -1140,12 +1140,13 @@ function initChordsBarGestures(){
     if(!active)return;
     active=false;
     const dt=Date.now()-p0t;
-    const isTap=(Math.abs(pdy)<10&&pdx<10&&dt<300);
-    const isSwipeUp=(pdy>20&&pdx<80);
+    const isTap=(Math.abs(pdy)<12&&pdx<12&&dt<400);
+    const isSwipeUp=(pdy>8&&pdx<120);
     if(isTap||isSwipeUp) hideChordsBar();
   });
   bar.addEventListener('pointercancel',function(){active=false;});
 }
+
 // ── PINCH-TO-ZOOM ──
 const ZOOM_MIN=1.0, ZOOM_MAX=3.0, CHORDS_FREEZE=2.0;
 let lzScale=1.0;
