@@ -124,10 +124,10 @@
   .chords-bar-wrap.hidden-up{height:0 !important;}
   .chords-bar-wrap.hidden-up .chords-bar{transform:translateY(-100%);}
   /* peek tab */
-  .chords-peek{position:absolute;top:0;left:0;right:0;height:44px;background:var(--accent);opacity:0;cursor:pointer;z-index:5;transition:opacity .2s;}
-  .chords-peek.visible{opacity:.15;}
-  .chords-peek.visible::after{content:'▾';position:absolute;left:50%;transform:translateX(-50%);top:50%;margin-top:-10px;font-size:18px;color:var(--accent);opacity:1;}
-  .chords-peek:active{opacity:.3;}
+  .chords-peek{position:absolute;top:0;left:0;right:0;height:44px;background:transparent;opacity:0;cursor:pointer;z-index:5;transition:opacity .2s;}
+  .chords-peek.visible{opacity:1;}
+  .chords-peek.visible::after{content:'▾';position:absolute;left:50%;transform:translateX(-50%);top:50%;margin-top:-10px;font-size:18px;color:var(--accent);opacity:.7;}
+  .chords-peek:active::after{opacity:1;}
   .chords-bar:active{background:var(--bg3);}
   .cb-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);white-space:nowrap;}
   .cb-val{font-size:15px;font-weight:700;color:var(--accent);}  
