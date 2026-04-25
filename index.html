@@ -29,8 +29,8 @@
   /* HEADER */
   .ph{padding:calc(var(--safe-top) + 14px) 20px 10px;background:var(--bg);flex-shrink:0;}
   .ph-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
-  .ph-title{font-size:34px;font-weight:700;letter-spacing:-.5px;}
-  .add-btn{background:var(--accent);border:none;border-radius:20px;padding:8px 16px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;}
+  .ph-title{font-size:34px;font-weight:700;letter-spacing:-.5px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:10px;}
+  .add-btn{background:var(--accent);border:none;border-radius:20px;padding:8px 16px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;flex-shrink:0;white-space:nowrap;}
   .add-btn:active{opacity:.75;}
   .sbar{display:flex;align-items:center;gap:8px;background:var(--bg3);border-radius:12px;padding:9px 13px;}
   .sbar input{background:none;border:none;color:var(--text);font-size:15px;width:100%;outline:none;}
@@ -951,10 +951,17 @@ saveItem=function(){
     const name=document.getElementById('fPlName').value.trim();
     if(!name){toast('Введите название!');return;}
     const pl=pls.find(p=>p.id===plLpId);if(!pl)return;
+    const oldName=pl.name;
     pl.name=name;
     pl.desc=document.getElementById('fPlDesc').value.trim();
     if(pendingImg) pl.img=pendingImg;
-    sv(PK,pls);closeModal();renderPL();toast('Плейлист обновлён');
+    // update all songs that belonged to old playlist
+    songs.forEach(s=>{if((s.playlist||'')===oldName)s.playlist=name;});
+    sv(SK,songs); sv(PK,pls);
+    closeModal();renderPL();renderRep();
+    if(filterPl===oldName){filterPl=name;document.getElementById('songsTitle').textContent=name;}
+    renderSongs(filterPl?songs.filter(s=>(s.playlist||'')===filterPl):songs);
+    toast('Плейлист обновлён');
   } else {
     _origSaveItem();
   }
