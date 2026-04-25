@@ -210,13 +210,27 @@
   .irow input:focus{background:var(--bg4);}
   .igo{background:var(--accent);border:none;border-radius:12px;padding:12px 18px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;white-space:nowrap;}
   .igo:active{opacity:.8;}
-  .icard{background:var(--bg2);border-radius:14px;border:.5px solid var(--sep);padding:14px;}
+  .icard{background:var(--bg2);border-radius:14px;border:.5px solid var(--sep);padding:14px;margin-bottom:12px;}
   .ict{font-size:15px;font-weight:600;}
   .icm{font-size:13px;color:var(--text3);margin-top:3px;}
   .ilinks{display:flex;flex-direction:column;gap:8px;margin-top:12px;}
   .ilink{display:block;padding:11px 14px;background:var(--bg3);border-radius:10px;font-size:13px;font-weight:600;color:var(--accent);text-decoration:none;}
   .iimp{padding:11px 14px;background:rgba(48,209,88,.14);border:none;border-radius:10px;font-size:13px;font-weight:700;color:var(--accent2);cursor:pointer;width:100%;text-align:left;}
   .ildr{text-align:center;color:var(--text3);font-size:15px;padding:36px;}
+  /* found song card */
+  .ifound{background:var(--bg2);border-radius:16px;border:.5px solid var(--sep);overflow:hidden;margin-bottom:12px;}
+  .ifound-header{padding:16px 16px 12px;}
+  .ifound-title{font-size:18px;font-weight:700;}
+  .ifound-artist{font-size:14px;color:var(--text3);margin-top:2px;}
+  .ifound-lyrics{padding:0 16px 12px;font-size:14px;color:var(--text2);line-height:1.7;max-height:200px;overflow:hidden;mask-image:linear-gradient(to bottom,#000 60%,transparent 100%);-webkit-mask-image:linear-gradient(to bottom,#000 60%,transparent 100%);}
+  .ifound-actions{padding:12px 16px 16px;display:flex;flex-direction:column;gap:8px;border-top:.5px solid var(--sep);}
+  .ifound-add{background:var(--accent);border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;color:#fff;cursor:pointer;width:100%;font-family:inherit;}
+  .ifound-add:active{opacity:.8;}
+  .ifound-pl-list{display:flex;flex-direction:column;gap:6px;margin-top:4px;}
+  .ifound-pl-btn{background:var(--bg3);border:none;border-radius:10px;padding:12px 14px;font-size:14px;font-weight:500;color:var(--text);cursor:pointer;text-align:left;font-family:inherit;display:flex;align-items:center;gap:10px;}
+  .ifound-pl-btn:active{background:var(--bg4);}
+  .ifound-nopl{background:none;border:none;color:var(--text3);font-size:13px;cursor:pointer;padding:8px 0;font-family:inherit;text-decoration:underline;}
+  .ifound-nopl:active{opacity:.6;}
 
   /* TOAST */
   .toast{position:fixed;bottom:calc(var(--safe-bot) + var(--tab-h) + 16px);left:50%;transform:translateX(-50%) translateY(10px);background:var(--bg4);color:var(--text);padding:11px 22px;border-radius:24px;font-size:14px;font-weight:500;opacity:0;pointer-events:none;z-index:999;transition:opacity .2s,transform .2s;white-space:nowrap;}
@@ -298,7 +312,7 @@
     <div class="iwrap">
       <div class="ihead">Найдите аккорды и текст любой песни и добавьте в репертуар.</div>
       <div class="irow">
-        <input id="inetQ" type="search" placeholder="Название или исполнитель..." autocomplete="off"/>
+        <input id="inetQ" type="search" placeholder="Название или исполнитель..." autocomplete="off" onkeydown="if(event.key==='Enter')inetSearch()"/>
         <button class="igo" onclick="inetSearch()">Найти</button>
       </div>
       <div id="inetRes"></div>
@@ -930,23 +944,103 @@ function saveItem(){
 }
 
 // ── INTERNET ──
-function inetSearch(){
-  const q=document.getElementById('inetQ').value.trim();if(!q)return;
+let inetFoundSong=null; // найденная песня
+
+async function inetSearch(){
+  const q=document.getElementById('inetQ').value.trim();
+  if(!q)return;
   const el=document.getElementById('inetRes');
   el.innerHTML=`<div class="ildr">🔍 Ищем «${x(q)}»...</div>`;
-  setTimeout(()=>{
-    el.innerHTML=`<div class="icard">
-      <div class="ict">${x(q)}</div>
-      <div class="icm">Выберите источник, скопируйте текст и добавьте в репертуар</div>
-      <div class="ilinks">
-        <a class="ilink" href="https://www.ultimate-guitar.com/search.php?search_type=title&value=${encodeURIComponent(q)}" target="_blank">🎸 Ultimate Guitar — аккорды</a>
-        <a class="ilink" href="https://genius.com/search?q=${encodeURIComponent(q)}" target="_blank">📝 Genius — тексты</a>
-        <a class="ilink" href="https://google.com/search?q=${encodeURIComponent(q+' аккорды текст')}" target="_blank">🔍 Google поиск</a>
-        <button class="iimp" onclick="quickImp('${x(q)}')">＋ Добавить «${x(q)}» в репертуар</button>
-      </div>
-    </div>`;
-  },800);
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        system:`Ты помогаешь найти текст песни. Пользователь вводит название или исполнителя.
+Верни ТОЛЬКО JSON объект (без markdown, без пояснений):
+{
+  "found": true/false,
+  "title": "точное название песни",
+  "artist": "исполнитель",
+  "key": "тональность или основные аккорды если знаешь, иначе пустая строка",
+  "lyrics": "полный текст песни с разметкой секций в квадратных скобках: [Куплет 1], [Припев] и т.д."
 }
+Если песня не найдена или ты не знаешь текст — верни {"found": false}.
+Текст должен быть полным, не обрезанным.`,
+        messages:[{role:'user',content:`Найди текст песни: ${q}`}]
+      })
+    });
+    const data=await resp.json();
+    const raw=data.content&&data.content[0]&&data.content[0].text;
+    if(!raw) throw new Error('no response');
+    const json=JSON.parse(raw.replace(/```json|```/g,'').trim());
+    if(!json.found){
+      el.innerHTML=`<div class="ildr">😔 Текст не найден.<br><span style="font-size:13px">Попробуйте другой запрос</span></div>`;
+      return;
+    }
+    inetFoundSong={title:json.title,artist:json.artist,key:json.key||'',lyrics:json.lyrics||''};
+    renderFoundSong(el);
+  } catch(e){
+    el.innerHTML=`<div class="ildr">⚠️ Ошибка поиска.<br><span style="font-size:13px">Проверьте подключение</span></div>`;
+  }
+}
+
+function renderFoundSong(el){
+  const s=inetFoundSong;
+  const plBtns=pls.map(pl=>{
+    const cover=pl.img
+      ?`<img src="${pl.img}" style="width:28px;height:28px;border-radius:6px;object-fit:cover;"/>`
+      :`<span style="font-size:18px;">${pl.emoji||'🎵'}</span>`;
+    return `<button class="ifound-pl-btn" onclick="inetAddSong('${pl.name.replace(/'/g,"\\'")}')">
+      ${cover}<span>${x(pl.name)}</span>
+    </button>`;
+  }).join('');
+
+  el.innerHTML=`
+  <div class="ifound">
+    <div class="ifound-header">
+      <div class="ifound-title">${x(s.title)}</div>
+      <div class="ifound-artist">${x(s.artist)}</div>
+    </div>
+    <div class="ifound-lyrics">${x(s.lyrics).replace(/\n/g,'<br>')}</div>
+    <div class="ifound-actions">
+      <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);margin-bottom:4px;">Добавить в плейлист</div>
+      <div class="ifound-pl-list">
+        ${plBtns}
+      </div>
+      <button class="ifound-nopl" onclick="inetAddSong(null)">Добавить без плейлиста</button>
+    </div>
+  </div>`;
+}
+
+function inetAddSong(plName){
+  if(!inetFoundSong)return;
+  const s={
+    id:'s'+Date.now(),
+    title:inetFoundSong.title,
+    artist:inetFoundSong.artist,
+    key:inetFoundSong.key,
+    instr:'Guitar',
+    playlist:plName||'',
+    lyrics:inetFoundSong.lyrics,
+    cover:''
+  };
+  songs.unshift(s);
+  sv(SK,songs);
+  if(plName&&!pls.find(p=>p.name===plName)){
+    pls.push({id:'p'+Date.now(),name:plName,desc:'',emoji:'🎵',color:'#636366',img:''});
+    sv(PK,pls);
+  }
+  renderRep();renderPL();
+  renderSongs(filterPl?songs.filter(s2=>(s2.playlist||'')===filterPl):songs);
+  inetFoundSong=null;
+  document.getElementById('inetRes').innerHTML=`<div class="ildr" style="color:var(--accent2);">✓ «${x(s.title)}» добавлена!</div>`;
+  document.getElementById('inetQ').value='';
+  toast('Добавлено: '+s.title);
+}
+
 function quickImp(t){document.getElementById('fTitle').value=t;openModal('song','');}
 
 // ── UTILS ──
