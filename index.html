@@ -317,14 +317,13 @@
     <div class="chords-peek" id="chordsPeek" onclick="showChordsBar()"></div>
     <!-- обёртка для плавного скрытия -->
     <div class="chords-bar-wrap" id="chordsBarWrap">
-    <!-- Аккорды (свайп вверх — скрыть) -->
-    <div class="chords-bar" id="chordsBar"
-      ontouchstart="cbSwipeStart(event)"
-      ontouchend="cbSwipeEnd(event)">
-      <span class="cb-val" id="chordsVal">—</span>
-      <span class="cb-edit" style="margin-left:6px;cursor:pointer;padding:6px 8px;" onclick="event.stopPropagation();openChordsEdit()">✎</span>
+    <div class="chords-bar" id="chordsBar" style="position:relative;">
+      <!-- невидимая зона по центру — клик скрывает панель -->
+      <div onclick="hideChordsBar()" style="position:absolute;inset:0;z-index:1;cursor:pointer;"></div>
+      <span class="cb-val" id="chordsVal" style="position:relative;z-index:2;pointer-events:none;">—</span>
+      <span class="cb-edit" style="margin-left:6px;cursor:pointer;padding:6px 8px;position:relative;z-index:2;" onclick="openChordsEdit()">✎</span>
       <span style="flex:1;"></span>
-      <button class="fav-btn" id="favBtn" onclick="event.stopPropagation();toggleFav()" style="font-size:20px;">♡</button>
+      <button class="fav-btn" id="favBtn" onclick="toggleFav()" style="font-size:20px;position:relative;z-index:2;">♡</button>
     </div>
     </div><!-- /chordsBarWrap -->
     <div class="chords-edit-wrap" id="chordsEditWrap">
@@ -1098,33 +1097,9 @@ function saveArtist(){}
 
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 
-// ── SWIPE/TAP CHORDS BAR ──
+// ── CHORDS BAR HIDE/SHOW ──
 let chordsBarHidden=false;
-let cbT0Y=0, cbT0X=0, cbT0Time=0;
 
-function cbSwipeStart(e){
-  if(e.touches.length!==1)return;
-  cbT0Y=e.touches[0].clientY;
-  cbT0X=e.touches[0].clientX;
-  cbT0Time=Date.now();
-}
-function cbSwipeMove(e){
-  // только блокируем скролл страницы если явный свайп вверх
-  if(e.touches.length!==1)return;
-  const dy=cbT0Y-e.touches[0].clientY;
-  if(dy>10) e.preventDefault();
-}
-function cbSwipeEnd(e){
-  const t=e.changedTouches[0];if(!t)return;
-  const dy=cbT0Y-t.clientY;
-  const dx=Math.abs(t.clientX-cbT0X);
-  const dt=Date.now()-cbT0Time;
-  // тап: мало движения и быстро
-  const isTap=(Math.abs(dy)<10&&dx<10&&dt<300);
-  // свайп вверх
-  const isSwipeUp=(dy>15&&dx<100);
-  if(isTap||isSwipeUp) hideChordsBar();
-}
 function hideChordsBar(){
   if(chordsBarHidden)return;
   chordsBarHidden=true;
