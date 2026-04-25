@@ -312,12 +312,12 @@
     <!-- полоска-триггер возврата панели аккордов (видна когда панель скрыта) -->
     <div class="chords-peek" id="chordsPeek" onclick="showChordsBar()"></div>
     <!-- Аккорды (кликабельно для редактирования, свайп вверх — скрыть) -->
-    <div class="chords-bar" id="chordsBar" onclick="openChordsEdit()"
+    <div class="chords-bar" id="chordsBar"
       ontouchstart="cbSwipeStart(event)"
       ontouchmove="cbSwipeMove(event)"
       ontouchend="cbSwipeEnd(event)">
       <span class="cb-val" id="chordsVal">—</span>
-      <span class="cb-edit" style="margin-left:6px;">✎</span>
+      <span class="cb-edit" style="margin-left:6px;cursor:pointer;padding:6px 8px;" onclick="openChordsEdit()">✎</span>
       <span style="flex:1;"></span>
       <button class="fav-btn" id="favBtn" onclick="event.stopPropagation();toggleFav()" style="font-size:20px;">♡</button>
     </div>
