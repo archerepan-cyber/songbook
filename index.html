@@ -118,7 +118,12 @@
   .fav-btn:active{transform:scale(1.3);}
 
   /* CHORDS BAR (replaces istrip, single item, tappable) */
-  .chords-bar{background:var(--bg2);border-bottom:.5px solid var(--sep);flex-shrink:0;padding:10px 18px;display:flex;align-items:center;gap:10px;cursor:pointer;}
+  .chords-bar{background:var(--bg2);border-bottom:.5px solid var(--sep);flex-shrink:0;padding:10px 18px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:transform .3s cubic-bezier(.25,.46,.45,.94),opacity .3s,max-height .3s;overflow:hidden;max-height:60px;}
+  .chords-bar.hidden-up{transform:translateY(-110%);opacity:0;max-height:0;padding-top:0;padding-bottom:0;border-bottom:none;pointer-events:none;}
+  /* peek tab — shown when chords bar is hidden */
+  .chords-peek{position:absolute;top:0;left:0;right:0;height:6px;background:var(--accent);opacity:0;cursor:pointer;z-index:5;transition:opacity .2s;}
+  .chords-peek.visible{opacity:.7;}
+  .chords-peek:active{opacity:1;}
   .chords-bar:active{background:var(--bg3);}
   .cb-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);white-space:nowrap;}
   .cb-val{font-size:15px;font-weight:700;color:var(--accent);}  
@@ -304,8 +309,13 @@
 
   <!-- ВСЁ что масштабируется — внутри detail-zoom-wrap -->
   <div id="detailZoomWrap">
-    <!-- Аккорды (кликабельно для редактирования) -->
-    <div class="chords-bar" id="chordsBar" onclick="openChordsEdit()">
+    <!-- полоска-триггер возврата панели аккордов (видна когда панель скрыта) -->
+    <div class="chords-peek" id="chordsPeek" onclick="showChordsBar()"></div>
+    <!-- Аккорды (кликабельно для редактирования, свайп вверх — скрыть) -->
+    <div class="chords-bar" id="chordsBar" onclick="openChordsEdit()"
+      ontouchstart="cbSwipeStart(event)"
+      ontouchmove="cbSwipeMove(event)"
+      ontouchend="cbSwipeEnd(event)">
       <span class="cb-val" id="chordsVal">—</span>
       <span class="cb-edit" style="margin-left:6px;">✎</span>
       <span style="flex:1;"></span>
@@ -676,6 +686,7 @@ function openSong(id){
   fb.textContent=favs.has(_origId)?'♥':'♡';
   closeChordsEdit();
   cancelLyricsEdit();
+  showChordsBar();
   renderLyrics(); stopScroll();
   applyZoom(lzScale, false);
   document.getElementById('lscroll').scrollTop=0;
@@ -1078,6 +1089,41 @@ function closeArtistEdit(){}
 function saveArtist(){}
 
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+
+// ── SWIPE CHORDS BAR ──
+let chordsBarHidden=false;
+let cbTouchStartY=0, cbTouchStartX=0, cbSwiping=false;
+
+function cbSwipeStart(e){
+  if(e.touches.length!==1)return;
+  cbTouchStartY=e.touches[0].clientY;
+  cbTouchStartX=e.touches[0].clientX;
+  cbSwiping=false;
+}
+function cbSwipeMove(e){
+  if(e.touches.length!==1)return;
+  const dy=cbTouchStartY-e.touches[0].clientY;
+  const dx=Math.abs(e.touches[0].clientX-cbTouchStartX);
+  if(!cbSwiping&&(Math.abs(dy)>8||dx>8)) cbSwiping=true;
+  if(cbSwiping&&dy>8) e.preventDefault(); // блокируем скролл только при свайпе вверх
+}
+function cbSwipeEnd(e){
+  if(!cbSwiping)return;
+  const dy=cbTouchStartY-(e.changedTouches[0]?.clientY??cbTouchStartY);
+  const dx=Math.abs((e.changedTouches[0]?.clientX??cbTouchStartX)-cbTouchStartX);
+  if(dy>30&&dx<60) hideChordsBar();
+  cbSwiping=false;
+}
+function hideChordsBar(){
+  chordsBarHidden=true;
+  document.getElementById('chordsBar').classList.add('hidden-up');
+  document.getElementById('chordsPeek').classList.add('visible');
+}
+function showChordsBar(){
+  chordsBarHidden=false;
+  document.getElementById('chordsBar').classList.remove('hidden-up');
+  document.getElementById('chordsPeek').classList.remove('visible');
+}
 
 // ── PINCH-TO-ZOOM ──
 const ZOOM_MIN=1.0, ZOOM_MAX=3.0, CHORDS_FREEZE=2.0;
