@@ -1080,9 +1080,10 @@ function saveArtist(){}
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 
 // ── PINCH-TO-ZOOM ──
-const ZOOM_MIN=1.0, ZOOM_MAX=3.0;
+const ZOOM_MIN=1.0, ZOOM_MAX=3.0, CHORDS_FREEZE=2.0;
 let lzScale=1.0;
 let pinchActive=false, pinchDist0=0, pinchScale0=1, pinchMidY=0;
+let zoomBadgeTimer=null;
 
 function ptDist(t1,t2){const dx=t1.clientX-t2.clientX,dy=t1.clientY-t2.clientY;return Math.sqrt(dx*dx+dy*dy);}
 
@@ -1093,40 +1094,70 @@ function applyZoom(scale, animate){
   const btn=document.getElementById('zoomResetBtn');
   if(!wrap)return;
   wrap.classList.toggle('snapping',!!animate);
-  // Scale from top-left; width compensates so layout stays full-width
   wrap.style.transform=`scale(${scale})`;
   wrap.style.width=(100/scale)+'%';
-  // font-weight bonus: lyrics 400→800, chords 700→900
+  // font-weight: lyrics 400→800, chords 700→900
   const t=(scale-1)/(ZOOM_MAX-1);
   const lw=Math.round(400+t*400);
   const cw=Math.round(700+t*200);
   document.querySelectorAll('#lb .ll').forEach(el=>el.style.fontWeight=lw);
   document.querySelectorAll('#lb .cl').forEach(el=>el.style.fontWeight=cw);
-  if(Math.abs(scale-1)>0.05){btn.textContent='Zoom ×'+scale.toFixed(1)+' ✕';btn.classList.add('visible');}
-  else{btn.classList.remove('visible');}
-  // скрыть сердечко при zoom >= 1.5; при zoom < 1.5 восстанавливаем только если оно вообще должно быть видно
+  // аккорды: заморозить рост при scale >= 2.0 через обратный scale на chordsBar
+  const chordsBar=document.getElementById('chordsBar');
+  if(chordsBar){
+    if(scale>CHORDS_FREEZE){
+      const inv=CHORDS_FREEZE/scale;
+      chordsBar.style.transform=`scale(${inv})`;
+      chordsBar.style.transformOrigin='top left';
+      chordsBar.style.width=(100/inv)+'%';
+    } else {
+      chordsBar.style.transform='';
+      chordsBar.style.width='';
+      chordsBar.style.transformOrigin='';
+    }
+  }
+  // значок zoom — только текст масштаба, без ✕
+  if(Math.abs(scale-1)>0.05) btn.textContent='Zoom ×'+scale.toFixed(1);
+  // (видимость управляется отдельно через showZoomBadge/scheduleHideBadge)
+  // сердечко
   const fb=document.getElementById('favBtn');
   if(fb){
     if(scale>=1.5){fb.dataset.hiddenByZoom='1';fb.style.display='none';}
     else if(fb.dataset.hiddenByZoom==='1'){fb.dataset.hiddenByZoom='';fb.style.display=fb.dataset.favHidden==='1'?'none':'block';}
   }
-  // скрыть карандашик при zoom >= 1.7
+  // карандашик
   const pencil=document.querySelector('.cb-edit');
   if(pencil) pencil.style.display=scale>=1.7?'none':'inline';
+}
+
+function showZoomBadge(){
+  const btn=document.getElementById('zoomResetBtn');
+  if(!btn||Math.abs(lzScale-1)<0.05)return;
+  clearTimeout(zoomBadgeTimer);
+  btn.classList.add('visible');
+}
+
+function scheduleHideBadge(){
+  clearTimeout(zoomBadgeTimer);
+  zoomBadgeTimer=setTimeout(()=>{
+    document.getElementById('zoomResetBtn')?.classList.remove('visible');
+  },1200);
 }
 
 function resetZoom(){
   applyZoom(1.0,true);
   document.getElementById('lscroll').scrollTop=0;
+  clearTimeout(zoomBadgeTimer);
+  document.getElementById('zoomResetBtn').classList.remove('visible');
 }
 
 function initPinchZoom(){
-  // Listen on the whole detail screen so pinch anywhere works
   const el=document.getElementById('scr-detail');
   if(!el)return;
   el.addEventListener('touchstart',function(e){
     if(e.touches.length===2){
       pinchActive=true;
+      clearTimeout(zoomBadgeTimer);
       pinchDist0=ptDist(e.touches[0],e.touches[1]);
       pinchScale0=lzScale;
       const scroll=document.getElementById('lscroll');
@@ -1141,6 +1172,7 @@ function initPinchZoom(){
       const d=ptDist(e.touches[0],e.touches[1]);
       const newScale=Math.max(ZOOM_MIN,Math.min(ZOOM_MAX,pinchScale0*(d/pinchDist0)));
       applyZoom(newScale,false);
+      showZoomBadge();
       const scroll=document.getElementById('lscroll');
       const r=scroll.getBoundingClientRect();
       const midVP=((e.touches[0].clientY+e.touches[1].clientY)/2)-r.top;
@@ -1150,13 +1182,13 @@ function initPinchZoom(){
   el.addEventListener('touchend',function(e){
     if(pinchActive&&e.touches.length<2){
       pinchActive=false;
-      if(lzScale<1.08)applyZoom(1.0,true);
+      if(lzScale<1.08){applyZoom(1.0,true);clearTimeout(zoomBadgeTimer);document.getElementById('zoomResetBtn').classList.remove('visible');}
+      else scheduleHideBadge();
     }
   });
-  el.addEventListener('touchcancel',function(){pinchActive=false;});
-  // Desktop: Ctrl+wheel
+  el.addEventListener('touchcancel',function(){pinchActive=false;scheduleHideBadge();});
   el.addEventListener('wheel',function(e){
-    if(e.ctrlKey||e.metaKey){e.preventDefault();applyZoom(lzScale*(e.deltaY>0?0.9:1.1),false);}
+    if(e.ctrlKey||e.metaKey){e.preventDefault();applyZoom(lzScale*(e.deltaY>0?0.9:1.1),false);showZoomBadge();scheduleHideBadge();}
   },{passive:false});
 }
 
