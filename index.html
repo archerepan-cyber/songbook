@@ -691,8 +691,8 @@ function openSong(id){
   showChordsBar();
   renderLyrics(); stopScroll();
   applyZoom(lzScale, false);
-  document.getElementById('lscroll').scrollTop=0;
   show('detail');
+  requestAnimationFrame(()=>{ document.getElementById('lscroll').scrollTop=0; });
 }
 function renderLyrics(){
   const el=document.getElementById('lb');if(!curSong)return;
