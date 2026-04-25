@@ -1110,6 +1110,9 @@ function applyZoom(scale, animate){
     if(scale>=1.5){fb.dataset.hiddenByZoom='1';fb.style.display='none';}
     else if(fb.dataset.hiddenByZoom==='1'){fb.dataset.hiddenByZoom='';fb.style.display=fb.dataset.favHidden==='1'?'none':'block';}
   }
+  // скрыть карандашик при zoom >= 1.7
+  const pencil=document.querySelector('.cb-edit');
+  if(pencil) pencil.style.display=scale>=1.7?'none':'inline';
 }
 
 function resetZoom(){
