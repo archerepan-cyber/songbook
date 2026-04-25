@@ -671,6 +671,8 @@ function openSong(id){
   const isInFav=curSong.id.startsWith('__fav__')||filterPl==='Избранное';
   const fb=document.getElementById('favBtn');
   fb.style.display=isInFav?'none':'block';
+  fb.dataset.favHidden=isInFav?'1':'';
+  fb.dataset.hiddenByZoom='';
   fb.textContent=favs.has(_origId)?'♥':'♡';
   closeChordsEdit();
   cancelLyricsEdit();
@@ -1102,6 +1104,12 @@ function applyZoom(scale, animate){
   document.querySelectorAll('#lb .cl').forEach(el=>el.style.fontWeight=cw);
   if(Math.abs(scale-1)>0.05){btn.textContent='Zoom ×'+scale.toFixed(1)+' ✕';btn.classList.add('visible');}
   else{btn.classList.remove('visible');}
+  // скрыть сердечко при zoom >= 1.5; при zoom < 1.5 восстанавливаем только если оно вообще должно быть видно
+  const fb=document.getElementById('favBtn');
+  if(fb){
+    if(scale>=1.5){fb.dataset.hiddenByZoom='1';fb.style.display='none';}
+    else if(fb.dataset.hiddenByZoom==='1'){fb.dataset.hiddenByZoom='';fb.style.display=fb.dataset.favHidden==='1'?'none':'block';}
+  }
 }
 
 function resetZoom(){
