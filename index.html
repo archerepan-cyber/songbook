@@ -638,7 +638,10 @@ function openSong(id){
   prevPrevScr=prevScr; prevScr=curScr; curScr="detail";
   closeMetaEdit();
   document.getElementById('chordsVal').textContent=curSong.key||'—';
-  document.getElementById('favBtn').textContent=favs.has(curSong.id)?'♥':'♡';
+  const isInFav=curSong.id.startsWith('__fav__')||filterPl==='Избранное';
+  const fb=document.getElementById('favBtn');
+  fb.style.display=isInFav?'none':'block';
+  fb.textContent=favs.has(curSong.id)?'♥':'♡';
   closeChordsEdit();
   cancelLyricsEdit();
   renderLyrics(); stopScroll();
