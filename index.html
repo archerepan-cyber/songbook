@@ -676,8 +676,8 @@ function openSong(id){
   fb.textContent=favs.has(_origId)?'♥':'♡';
   closeChordsEdit();
   cancelLyricsEdit();
-  applyZoom(1.0,false);
   renderLyrics(); stopScroll();
+  applyZoom(lzScale, false);
   document.getElementById('lscroll').scrollTop=0;
   show('detail');
 }
@@ -1141,7 +1141,7 @@ function scheduleHideBadge(){
   clearTimeout(zoomBadgeTimer);
   zoomBadgeTimer=setTimeout(()=>{
     document.getElementById('zoomResetBtn')?.classList.remove('visible');
-  },1200);
+  },400);
 }
 
 function resetZoom(){
@@ -1149,6 +1149,7 @@ function resetZoom(){
   document.getElementById('lscroll').scrollTop=0;
   clearTimeout(zoomBadgeTimer);
   document.getElementById('zoomResetBtn').classList.remove('visible');
+  try{localStorage.setItem('sb_zoom','1');}catch{}
 }
 
 function initPinchZoom(){
@@ -1182,8 +1183,8 @@ function initPinchZoom(){
   el.addEventListener('touchend',function(e){
     if(pinchActive&&e.touches.length<2){
       pinchActive=false;
-      if(lzScale<1.08){applyZoom(1.0,true);clearTimeout(zoomBadgeTimer);document.getElementById('zoomResetBtn').classList.remove('visible');}
-      else scheduleHideBadge();
+      if(lzScale<1.08){applyZoom(1.0,true);clearTimeout(zoomBadgeTimer);document.getElementById('zoomResetBtn').classList.remove('visible');try{localStorage.setItem('sb_zoom','1');}catch{}}
+      else{scheduleHideBadge();try{localStorage.setItem('sb_zoom',lzScale);}catch{};}
     }
   });
   el.addEventListener('touchcancel',function(){pinchActive=false;scheduleHideBadge();});
@@ -1195,6 +1196,8 @@ function initPinchZoom(){
 // ── INIT ──
 document.getElementById("tabbar").classList.remove("in-detail");
 initPinchZoom();
+// восстановить сохранённый zoom
+try{const z=parseFloat(localStorage.getItem('sb_zoom'));if(z&&z>1.05){lzScale=z;}}catch{}
 renderPL();renderRep();renderSongs(songs);
 </script>
 </body>
