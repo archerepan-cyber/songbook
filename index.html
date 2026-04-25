@@ -313,17 +313,15 @@
 
   <!-- ВСЁ что масштабируется — внутри detail-zoom-wrap -->
   <div id="detailZoomWrap">
-    <!-- полоска-триггер возврата панели аккордов (видна когда панель скрыта) -->
+    <!-- полоска-триггер возврата панели аккордов -->
     <div class="chords-peek" id="chordsPeek" onclick="showChordsBar()"></div>
     <!-- обёртка для плавного скрытия -->
     <div class="chords-bar-wrap" id="chordsBarWrap">
-    <div class="chords-bar" id="chordsBar" style="position:relative;">
-      <!-- невидимая зона по центру — клик скрывает панель -->
-      <div onclick="hideChordsBar()" style="position:absolute;inset:0;z-index:1;cursor:pointer;"></div>
-      <span class="cb-val" id="chordsVal" style="position:relative;z-index:2;pointer-events:none;">—</span>
-      <span class="cb-edit" style="margin-left:6px;cursor:pointer;padding:6px 8px;position:relative;z-index:2;" onclick="openChordsEdit()">✎</span>
+    <div class="chords-bar" id="chordsBar">
+      <span class="cb-val" id="chordsVal">—</span>
+      <span class="cb-edit" style="margin-left:6px;cursor:pointer;padding:6px 8px;" onclick="openChordsEdit()">✎</span>
       <span style="flex:1;"></span>
-      <button class="fav-btn" id="favBtn" onclick="toggleFav()" style="font-size:20px;position:relative;z-index:2;">♡</button>
+      <button class="fav-btn" id="favBtn" onclick="toggleFav()" style="font-size:20px;">♡</button>
     </div>
     </div><!-- /chordsBarWrap -->
     <div class="chords-edit-wrap" id="chordsEditWrap">
@@ -1121,6 +1119,32 @@ function showChordsBar(){
   wrap.style.height=h+'px';
   setTimeout(()=>{ if(!chordsBarHidden)wrap.style.height=''; },340);
 }
+function initChordsBarGestures(){
+  const bar=document.getElementById('chordsBar');
+  if(!bar)return;
+  let t0y=0,t0x=0,t0t=0,moved=false;
+  bar.addEventListener('touchstart',function(e){
+    const t=e.touches[0];
+    t0y=t.clientY; t0x=t.clientX; t0t=Date.now(); moved=false;
+  },{passive:true});
+  bar.addEventListener('touchmove',function(e){
+    const dy=t0y-e.touches[0].clientY;
+    const dx=Math.abs(e.touches[0].clientX-t0x);
+    if(Math.abs(dy)>8||dx>8) moved=true;
+  },{passive:true});
+  bar.addEventListener('touchend',function(e){
+    const t=e.changedTouches[0];
+    const dy=t0y-t.clientY;
+    const dx=Math.abs(t.clientX-t0x);
+    const dt=Date.now()-t0t;
+    const isTap=!moved&&dt<350;
+    const isSwipeUp=dy>20&&dx<80;
+    // не скрываем если нажали на карандашик или сердечко
+    const tgt=e.target;
+    const isBtn=tgt.closest('.cb-edit')||tgt.closest('.fav-btn');
+    if(!isBtn&&(isTap||isSwipeUp)) hideChordsBar();
+  },{passive:true});
+}
 
 // ── PINCH-TO-ZOOM ──
 const ZOOM_MIN=1.0, ZOOM_MAX=3.0, CHORDS_FREEZE=2.0;
@@ -1239,6 +1263,7 @@ function initPinchZoom(){
 // ── INIT ──
 document.getElementById("tabbar").classList.remove("in-detail");
 initPinchZoom();
+initChordsBarGestures();
 // восстановить сохранённый zoom
 try{const z=parseFloat(localStorage.getItem('sb_zoom'));if(z&&z>1.05){lzScale=z;}}catch{}
 renderPL();renderRep();renderSongs(songs);
