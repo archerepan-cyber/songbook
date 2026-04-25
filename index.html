@@ -138,15 +138,17 @@
 
   .lscroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:18px 18px 12px;}
   /* zoom-reset button — fixed overlay inside detail screen */
-  .zoom-reset-btn{position:fixed;top:calc(var(--safe-top) + 54px);right:14px;background:rgba(10,132,255,.22);border:none;border-radius:20px;padding:6px 14px;font-size:12px;font-weight:600;color:#0a84ff;cursor:pointer;opacity:0;pointer-events:none;transition:opacity .25s;z-index:100;white-space:nowrap;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}
+  .zoom-reset-btn{position:fixed;top:calc(var(--safe-top) + 54px);right:14px;background:rgba(10,132,255,.22);border:none;border-radius:20px;padding:6px 14px;font-size:12px;font-weight:600;color:#0a84ff;cursor:pointer;opacity:0;pointer-events:none;transition:opacity .15s;z-index:100;white-space:nowrap;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}
   .zoom-reset-btn.visible{opacity:1;pointer-events:auto;}
   /* detail zoom wrapper — this whole block scales */
   #detailZoomWrap{flex:1;display:flex;flex-direction:column;min-height:0;transform-origin:top left;will-change:transform;overflow:hidden;}
   #detailZoomWrap.snapping{transition:transform .2s cubic-bezier(.25,.46,.45,.94);}
-  .lb{font-size:16px;line-height:1.8;white-space:pre-wrap;}
-  .vl{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:#ff9f0a;margin:20px 0 4px;}
-  .cl{display:block;font-family:'SF Mono',Menlo,monospace;font-size:14px;font-weight:700;color:#64d2ff;line-height:1.5;margin-top:8px;}
-  .ll{display:block;line-height:1.75;color:var(--text2);}
+  /* ── Shazam-style lyrics ── */
+  .lb{font-size:22px;line-height:1.0;white-space:normal;}
+  .vl{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.8px;color:#ff9f0a;margin:32px 0 14px;}
+  .cl{display:block;font-family:'SF Mono',Menlo,monospace;font-size:15px;font-weight:700;color:#64d2ff;line-height:1.4;margin-bottom:6px;}
+  .ll{display:block;font-size:22px;font-weight:400;line-height:1.25;color:var(--text);margin-bottom:18px;letter-spacing:-.2px;}
+  .ll-gap{display:block;height:10px;}
   .inline-pencil{background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;padding:0 0 0 14px;line-height:1;vertical-align:middle;}
 
   .sc2{display:flex;align-items:center;gap:10px;}
@@ -698,12 +700,14 @@ function renderLyrics(){
   el.innerHTML=(curSong.lyrics||'').split('\n').map(line=>{
     if(/^\[.+\]$/.test(line.trim()))
       return`<span class="vl">${x(line.trim().replace(/^\[|\]$/g,''))}</span>`;
-    if(!firstDone&&line.trim()){
+    if(!line.trim())
+      return`<span class="ll-gap"></span>`; // пустая строка — просто разрыв
+    if(!firstDone){
       firstDone=true;
       return`<span class="ll">${x(line)}<button class="inline-pencil" onclick="toggleMetaEdit()">✎</button></span>`;
     }
-    return`<span class="ll">${line?x(line):'\u00a0'}</span>`;
-  }).join('\n');
+    return`<span class="ll">${x(line)}</span>`;
+  }).join('');
 }
 function toggleLyricsEdit(){ closeMetaEdit(); }
 function cancelLyricsEdit(){
@@ -1187,7 +1191,7 @@ function scheduleHideBadge(){
   clearTimeout(zoomBadgeTimer);
   zoomBadgeTimer=setTimeout(()=>{
     document.getElementById('zoomResetBtn')?.classList.remove('visible');
-  },400);
+  },150);
 }
 
 function resetZoom(){
