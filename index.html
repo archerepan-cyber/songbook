@@ -323,10 +323,9 @@
       ontouchstart="cbSwipeStart(event)"
       ontouchmove="cbSwipeMove(event)"
       ontouchend="cbSwipeEnd(event)">
-      <span class="cb-val" id="chordsVal">—</span>
-      <span class="cb-edit" style="margin-left:6px;cursor:pointer;padding:6px 8px;" onclick="openChordsEdit()">✎</span>
-      <span style="flex:1;"></span>
-      <button class="fav-btn" id="favBtn" onclick="event.stopPropagation();toggleFav()" style="font-size:20px;">♡</button>
+      <span class="cb-edit" style="cursor:pointer;padding:6px 8px;min-width:36px;" onclick="openChordsEdit()">✎</span>
+      <span style="flex:1;text-align:center;"><span class="cb-val" id="chordsVal">—</span></span>
+      <button class="fav-btn" id="favBtn" onclick="event.stopPropagation();toggleFav()" style="font-size:20px;min-width:36px;">♡</button>
     </div>
     </div><!-- /chordsBarWrap -->
     <div class="chords-edit-wrap" id="chordsEditWrap">
@@ -1194,9 +1193,9 @@ function applyZoom(scale, animate){
     if(scale>=1.5){fb.dataset.hiddenByZoom='1';fb.style.display='none';}
     else if(fb.dataset.hiddenByZoom==='1'){fb.dataset.hiddenByZoom='';fb.style.display=fb.dataset.favHidden==='1'?'none':'block';}
   }
-  // карандашик
+  // карандашик — visibility чтобы место сохранялось и аккорды оставались по центру
   const pencil=document.querySelector('.cb-edit');
-  if(pencil) pencil.style.display=scale>=1.7?'none':'inline';
+  if(pencil) pencil.style.visibility=scale>=1.7?'hidden':'visible';
 }
 
 function showZoomBadge(){
