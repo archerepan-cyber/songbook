@@ -319,7 +319,6 @@
     <div class="chords-bar-wrap" id="chordsBarWrap">
     <!-- Аккорды (свайп вверх — скрыть) -->
     <div class="chords-bar" id="chordsBar"
-      onclick="hideChordsBar()"
       ontouchstart="cbSwipeStart(event)"
       ontouchmove="cbSwipeMove(event)"
       ontouchend="cbSwipeEnd(event)">
@@ -1102,38 +1101,33 @@ if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch((
 
 // ── SWIPE CHORDS BAR ──
 let chordsBarHidden=false;
-let cbTouchStartY=0, cbTouchStartX=0, cbSwiping=false;
+let cbTouchStartY=0, cbTouchStartX=0, cbMoved=false;
 
 function cbSwipeStart(e){
   if(e.touches.length!==1)return;
   cbTouchStartY=e.touches[0].clientY;
   cbTouchStartX=e.touches[0].clientX;
-  cbSwiping=false;
+  cbMoved=false;
 }
 function cbSwipeMove(e){
   if(e.touches.length!==1)return;
   const dy=cbTouchStartY-e.touches[0].clientY;
   const dx=Math.abs(e.touches[0].clientX-cbTouchStartX);
-  if(!cbSwiping&&(Math.abs(dy)>8||dx>8)) cbSwiping=true;
-  if(cbSwiping&&dy>8) e.preventDefault(); // блокируем скролл только при свайпе вверх
+  if(Math.abs(dy)>6||dx>6) cbMoved=true;
+  if(dy>6) e.preventDefault();
 }
 function cbSwipeEnd(e){
-  if(!cbSwiping)return;
-  const dy=cbTouchStartY-(e.changedTouches[0]?.clientY??cbTouchStartY);
-  const dx=Math.abs((e.changedTouches[0]?.clientX??cbTouchStartX)-cbTouchStartX);
-  if(dy>30&&dx<60) hideChordsBar();
-  cbSwiping=false;
-  // блокируем следующий click если был свайп
-  cbWasSwipe=true;
-  setTimeout(()=>cbWasSwipe=false,200);
+  const t=e.changedTouches[0];
+  const dy=cbTouchStartY-(t?.clientY??cbTouchStartY);
+  const dx=Math.abs((t?.clientX??cbTouchStartX)-cbTouchStartX);
+  // свайп вверх (>20px) ИЛИ тап (почти без движения) — скрываем
+  if(dy>20&&dx<80){hideChordsBar();return;}
+  if(!cbMoved&&dy>-10&&dx<20){hideChordsBar();return;}
 }
-let cbWasSwipe=false;
 function hideChordsBar(){
-  if(cbWasSwipe) return;
   chordsBarHidden=true;
   const wrap=document.getElementById('chordsBarWrap');
   const bar=document.getElementById('chordsBar');
-  // зафиксировать текущую высоту явно, потом анимировать в 0
   wrap.style.height=bar.offsetHeight+'px';
   requestAnimationFrame(()=>{
     wrap.classList.add('hidden-up');
@@ -1148,7 +1142,6 @@ function showChordsBar(){
   wrap.classList.remove('hidden-up');
   const h=bar.offsetHeight||44;
   wrap.style.height=h+'px';
-  // после анимации снять фиксированную высоту
   setTimeout(()=>{ if(!chordsBarHidden) wrap.style.height=''; },340);
   document.getElementById('chordsPeek').classList.remove('visible');
 }
