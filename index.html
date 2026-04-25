@@ -131,7 +131,13 @@
   .chords-save{background:var(--accent);border:none;border-radius:10px;padding:9px 16px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;}
   .chords-save:active{opacity:.8;}
 
-  .lscroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:18px 18px 12px;}
+  .lscroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;position:relative;touch-action:pan-y;}
+  /* zoom-reset button */
+  .zoom-reset-btn{position:absolute;top:10px;right:14px;background:rgba(10,132,255,.18);border:none;border-radius:20px;padding:5px 13px;font-size:12px;font-weight:600;color:#0a84ff;cursor:pointer;opacity:0;pointer-events:none;transition:opacity .2s;z-index:10;white-space:nowrap;}
+  .zoom-reset-btn.visible{opacity:1;pointer-events:auto;}
+  /* zoom wrapper — gets transform:scale() */
+  #lyricsZoomWrap{padding:18px 18px 12px;transform-origin:top left;will-change:transform;}
+  #lyricsZoomWrap.snapping{transition:transform .18s cubic-bezier(.25,.46,.45,.94);}
   .lb{font-size:16px;line-height:1.8;white-space:pre-wrap;}
   .vl{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:#ff9f0a;margin:20px 0 4px;}
   .cl{display:block;font-family:'SF Mono',Menlo,monospace;font-size:14px;font-weight:700;color:#64d2ff;line-height:1.5;margin-top:8px;}
@@ -322,7 +328,10 @@
       <button class="mep-save" onclick="saveMetaEdit()">Сохранить</button>
     </div>
   </div>
-  <div class="lscroll" id="lscroll"><div class="lb" id="lb"></div></div>
+  <div class="lscroll" id="lscroll">
+    <button class="zoom-reset-btn" id="zoomResetBtn" onclick="resetZoom()">Zoom ×1 ✕</button>
+    <div id="lyricsZoomWrap"><div class="lb" id="lb"></div></div>
+  </div>
   <div id="lyricsEditWrap" style="display:none;"></div>
 
 </div>
@@ -661,6 +670,7 @@ function openSong(id){
   fb.textContent=favs.has(_origId)?'♥':'♡';
   closeChordsEdit();
   cancelLyricsEdit();
+  applyZoom(1.0,false);
   renderLyrics(); stopScroll();
   document.getElementById('lscroll').scrollTop=0;
   show('detail');
@@ -1063,8 +1073,69 @@ function saveArtist(){}
 
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 
+// ── PINCH-TO-ZOOM ──
+const ZOOM_MIN=1.0, ZOOM_MAX=3.5;
+let lzScale=1.0;
+let pinchActive=false, pinchDist0=0, pinchScale0=1, pinchMidY=0;
+
+function ptDist(t1,t2){const dx=t1.clientX-t2.clientX,dy=t1.clientY-t2.clientY;return Math.sqrt(dx*dx+dy*dy);}
+
+function applyZoom(scale,animate){
+  scale=Math.max(ZOOM_MIN,Math.min(ZOOM_MAX,scale));
+  lzScale=scale;
+  const wrap=document.getElementById('lyricsZoomWrap');
+  const btn=document.getElementById('zoomResetBtn');
+  if(!wrap)return;
+  wrap.classList.toggle('snapping',!!animate);
+  wrap.style.transform=`scale(${scale})`;
+  wrap.style.width=(100/scale)+'%';
+  // font-weight: lyrics 400→800, chords 700→900
+  const t=(scale-1)/(ZOOM_MAX-1);
+  const lw=Math.round(400+t*400);
+  const cw=Math.round(700+t*200);
+  document.querySelectorAll('#lb .ll').forEach(el=>el.style.fontWeight=lw);
+  document.querySelectorAll('#lb .cl').forEach(el=>el.style.fontWeight=cw);
+  if(Math.abs(scale-1)>0.05){btn.textContent='Zoom ×'+scale.toFixed(1)+' ✕';btn.classList.add('visible');}
+  else{btn.classList.remove('visible');}
+}
+
+function resetZoom(){applyZoom(1.0,true);document.getElementById('lscroll').scrollTop=0;}
+
+function initPinchZoom(){
+  const el=document.getElementById('lscroll');if(!el)return;
+  el.addEventListener('touchstart',function(e){
+    if(e.touches.length===2){
+      pinchActive=true;
+      pinchDist0=ptDist(e.touches[0],e.touches[1]);
+      pinchScale0=lzScale;
+      const r=el.getBoundingClientRect();
+      pinchMidY=((e.touches[0].clientY+e.touches[1].clientY)/2)-r.top+el.scrollTop;
+      e.preventDefault();
+    }
+  },{passive:false});
+  el.addEventListener('touchmove',function(e){
+    if(pinchActive&&e.touches.length===2){
+      e.preventDefault();
+      const d=ptDist(e.touches[0],e.touches[1]);
+      const newScale=Math.max(ZOOM_MIN,Math.min(ZOOM_MAX,pinchScale0*(d/pinchDist0)));
+      applyZoom(newScale,false);
+      const r=el.getBoundingClientRect();
+      const midVP=((e.touches[0].clientY+e.touches[1].clientY)/2)-r.top;
+      el.scrollTop=pinchMidY*newScale-midVP;
+    }
+  },{passive:false});
+  el.addEventListener('touchend',function(e){
+    if(pinchActive&&e.touches.length<2){pinchActive=false;if(lzScale<1.08)applyZoom(1.0,true);}
+  });
+  el.addEventListener('touchcancel',function(){pinchActive=false;});
+  el.addEventListener('wheel',function(e){
+    if(e.ctrlKey||e.metaKey){e.preventDefault();applyZoom(lzScale*(e.deltaY>0?0.9:1.1),false);}
+  },{passive:false});
+}
+
 // ── INIT ──
 document.getElementById("tabbar").classList.remove("in-detail");
+initPinchZoom();
 renderPL();renderRep();renderSongs(songs);
 </script>
 </body>
