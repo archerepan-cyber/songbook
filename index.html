@@ -22,7 +22,7 @@
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
   html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,'SF Pro Text',system-ui,sans-serif;overflow:hidden;}
   #app{display:flex;flex-direction:column;height:100dvh;}
-  .screen{display:none;flex-direction:column;flex:1;min-height:0;}
+  .screen{display:none;flex-direction:column;flex:1;min-height:0;position:relative;}
   .screen.active{display:flex;}
   .scroll-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;}
 
@@ -308,10 +308,10 @@
 
 <!-- ── ДЕТАЛЬНЫЙ ── -->
 <div class="screen" id="scr-detail">
-  <!-- кнопка сброса зума — вне zoom-wrap, поверх всего -->
   <button class="zoom-reset-btn" id="zoomResetBtn" onclick="resetZoom()">Zoom ×1 ✕</button>
+  <!-- свайп-оверлей вне zoom-wrap — не искажается scale() -->
+  <div id="chordsSwipeOverlay" style="position:absolute;top:0;left:0;right:0;height:60px;z-index:20;touch-action:none;"></div>
 
-  <!-- ВСЁ что масштабируется — внутри detail-zoom-wrap -->
   <div id="detailZoomWrap">
     <!-- полоска-триггер возврата панели аккордов -->
     <div class="chords-peek" id="chordsPeek" onclick="showChordsBar()"></div>
@@ -1120,31 +1120,29 @@ function showChordsBar(){
   setTimeout(()=>{ if(!chordsBarHidden)wrap.style.height=''; },340);
 }
 function initChordsBarGestures(){
-  const bar=document.getElementById('chordsBar');
-  if(!bar)return;
-  bar.style.touchAction='none';
-  let p0y=0, p0x=0, p0t=0, pdx=0, pdy=0, active=false;
+  // Вешаем на оверлей СНАРУЖИ detailZoomWrap — не искажается transform:scale()
+  const overlay=document.getElementById('chordsSwipeOverlay');
+  if(!overlay)return;
+  let p0y=0, p0t=0, pdy=0, active=false;
 
-  bar.addEventListener('pointerdown',function(e){
-    if(e.target.closest('.cb-edit')||e.target.closest('.fav-btn'))return;
-    bar.setPointerCapture(e.pointerId);
-    p0y=e.clientY; p0x=e.clientX; p0t=Date.now();
-    pdx=0; pdy=0; active=true;
+  overlay.addEventListener('pointerdown',function(e){
+    if(chordsBarHidden)return; // панель уже скрыта — не обрабатываем
+    overlay.setPointerCapture(e.pointerId);
+    p0y=e.clientY; p0t=Date.now(); pdy=0; active=true;
   });
-  bar.addEventListener('pointermove',function(e){
+  overlay.addEventListener('pointermove',function(e){
     if(!active)return;
     pdy=p0y-e.clientY;
-    pdx=Math.abs(e.clientX-p0x);
   });
-  bar.addEventListener('pointerup',function(e){
+  overlay.addEventListener('pointerup',function(e){
     if(!active)return;
     active=false;
     const dt=Date.now()-p0t;
-    const isTap=(Math.abs(pdy)<12&&pdx<12&&dt<400);
-    const isSwipeUp=(pdy>8&&pdx<120);
+    const isTap=(Math.abs(pdy)<15&&dt<350);
+    const isSwipeUp=(pdy>10);
     if(isTap||isSwipeUp) hideChordsBar();
   });
-  bar.addEventListener('pointercancel',function(){active=false;});
+  overlay.addEventListener('pointercancel',function(){active=false;});
 }
 
 // ── PINCH-TO-ZOOM ──
