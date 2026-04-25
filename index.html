@@ -322,7 +322,6 @@
       <span class="cb-edit" style="margin-left:6px;cursor:pointer;padding:6px 8px;" onclick="openChordsEdit()">✎</span>
       <span style="flex:1;"></span>
       <button class="fav-btn" id="favBtn" onclick="toggleFav()" style="font-size:20px;">♡</button>
-      <button onclick="hideChordsBar()" style="background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;padding:6px 4px 6px 8px;line-height:1;flex-shrink:0;">↑</button>
     </div>
     </div><!-- /chordsBarWrap -->
     <div class="chords-edit-wrap" id="chordsEditWrap">
@@ -1120,6 +1119,33 @@ function showChordsBar(){
   wrap.style.height=h+'px';
   setTimeout(()=>{ if(!chordsBarHidden)wrap.style.height=''; },340);
 }
+function initChordsBarGestures(){
+  const bar=document.getElementById('chordsBar');
+  if(!bar)return;
+  let p0y=0, p0x=0, p0t=0, pdx=0, pdy=0, active=false;
+
+  bar.addEventListener('pointerdown',function(e){
+    // игнорируем карандашик и сердечко
+    if(e.target.closest('.cb-edit')||e.target.closest('.fav-btn'))return;
+    bar.setPointerCapture(e.pointerId);
+    p0y=e.clientY; p0x=e.clientX; p0t=Date.now();
+    pdx=0; pdy=0; active=true;
+  });
+  bar.addEventListener('pointermove',function(e){
+    if(!active)return;
+    pdy=p0y-e.clientY;
+    pdx=Math.abs(e.clientX-p0x);
+  });
+  bar.addEventListener('pointerup',function(e){
+    if(!active)return;
+    active=false;
+    const dt=Date.now()-p0t;
+    const isTap=(Math.abs(pdy)<10&&pdx<10&&dt<300);
+    const isSwipeUp=(pdy>20&&pdx<80);
+    if(isTap||isSwipeUp) hideChordsBar();
+  });
+  bar.addEventListener('pointercancel',function(){active=false;});
+}
 // ── PINCH-TO-ZOOM ──
 const ZOOM_MIN=1.0, ZOOM_MAX=3.0, CHORDS_FREEZE=2.0;
 let lzScale=1.0;
@@ -1237,6 +1263,7 @@ function initPinchZoom(){
 // ── INIT ──
 document.getElementById("tabbar").classList.remove("in-detail");
 initPinchZoom();
+initChordsBarGestures();
 // восстановить сохранённый zoom
 try{const z=parseFloat(localStorage.getItem('sb_zoom'));if(z&&z>1.05){lzScale=z;}}catch{}
 renderPL();renderRep();renderSongs(songs);
