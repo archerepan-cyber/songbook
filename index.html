@@ -320,11 +320,12 @@
     <div class="chords-bar-wrap" id="chordsBarWrap">
     <!-- Аккорды (свайп вверх — скрыть) -->
     <div class="chords-bar" id="chordsBar"
+      onclick="hideChordsBar()"
       ontouchstart="cbSwipeStart(event)"
       ontouchmove="cbSwipeMove(event)"
       ontouchend="cbSwipeEnd(event)">
       <span class="cb-val" id="chordsVal">—</span>
-      <span class="cb-edit" style="margin-left:6px;cursor:pointer;padding:6px 8px;" onclick="openChordsEdit()">✎</span>
+      <span class="cb-edit" style="margin-left:6px;cursor:pointer;padding:6px 8px;" onclick="event.stopPropagation();openChordsEdit()">✎</span>
       <span style="flex:1;"></span>
       <button class="fav-btn" id="favBtn" onclick="event.stopPropagation();toggleFav()" style="font-size:20px;">♡</button>
     </div>
@@ -1123,8 +1124,13 @@ function cbSwipeEnd(e){
   const dx=Math.abs((e.changedTouches[0]?.clientX??cbTouchStartX)-cbTouchStartX);
   if(dy>30&&dx<60) hideChordsBar();
   cbSwiping=false;
+  // блокируем следующий click если был свайп
+  cbWasSwipe=true;
+  setTimeout(()=>cbWasSwipe=false,200);
 }
+let cbWasSwipe=false;
 function hideChordsBar(){
+  if(cbWasSwipe) return;
   chordsBarHidden=true;
   const wrap=document.getElementById('chordsBarWrap');
   const bar=document.getElementById('chordsBar');
