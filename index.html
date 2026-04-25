@@ -320,7 +320,6 @@
     <!-- Аккорды (свайп вверх — скрыть) -->
     <div class="chords-bar" id="chordsBar"
       ontouchstart="cbSwipeStart(event)"
-      ontouchmove="cbSwipeMove(event)"
       ontouchend="cbSwipeEnd(event)">
       <span class="cb-val" id="chordsVal">—</span>
       <span class="cb-edit" style="margin-left:6px;cursor:pointer;padding:6px 8px;" onclick="event.stopPropagation();openChordsEdit()">✎</span>
@@ -1099,32 +1098,35 @@ function saveArtist(){}
 
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 
-// ── SWIPE CHORDS BAR ──
+// ── SWIPE/TAP CHORDS BAR ──
 let chordsBarHidden=false;
-let cbTouchStartY=0, cbTouchStartX=0, cbMoved=false;
+let cbT0Y=0, cbT0X=0, cbT0Time=0;
 
 function cbSwipeStart(e){
   if(e.touches.length!==1)return;
-  cbTouchStartY=e.touches[0].clientY;
-  cbTouchStartX=e.touches[0].clientX;
-  cbMoved=false;
+  cbT0Y=e.touches[0].clientY;
+  cbT0X=e.touches[0].clientX;
+  cbT0Time=Date.now();
 }
 function cbSwipeMove(e){
+  // только блокируем скролл страницы если явный свайп вверх
   if(e.touches.length!==1)return;
-  const dy=cbTouchStartY-e.touches[0].clientY;
-  const dx=Math.abs(e.touches[0].clientX-cbTouchStartX);
-  if(Math.abs(dy)>6||dx>6) cbMoved=true;
-  if(dy>6) e.preventDefault();
+  const dy=cbT0Y-e.touches[0].clientY;
+  if(dy>10) e.preventDefault();
 }
 function cbSwipeEnd(e){
-  const t=e.changedTouches[0];
-  const dy=cbTouchStartY-(t?.clientY??cbTouchStartY);
-  const dx=Math.abs((t?.clientX??cbTouchStartX)-cbTouchStartX);
-  // свайп вверх (>20px) ИЛИ тап (почти без движения) — скрываем
-  if(dy>20&&dx<80){hideChordsBar();return;}
-  if(!cbMoved&&dy>-10&&dx<20){hideChordsBar();return;}
+  const t=e.changedTouches[0];if(!t)return;
+  const dy=cbT0Y-t.clientY;
+  const dx=Math.abs(t.clientX-cbT0X);
+  const dt=Date.now()-cbT0Time;
+  // тап: мало движения и быстро
+  const isTap=(Math.abs(dy)<10&&dx<10&&dt<300);
+  // свайп вверх
+  const isSwipeUp=(dy>15&&dx<100);
+  if(isTap||isSwipeUp) hideChordsBar();
 }
 function hideChordsBar(){
+  if(chordsBarHidden)return;
   chordsBarHidden=true;
   const wrap=document.getElementById('chordsBarWrap');
   const bar=document.getElementById('chordsBar');
@@ -1133,17 +1135,16 @@ function hideChordsBar(){
     wrap.classList.add('hidden-up');
     wrap.style.height='0';
   });
-  document.getElementById('chordsPeek').classList.add('visible');
 }
 function showChordsBar(){
+  if(!chordsBarHidden)return;
   chordsBarHidden=false;
   const wrap=document.getElementById('chordsBarWrap');
   const bar=document.getElementById('chordsBar');
   wrap.classList.remove('hidden-up');
   const h=bar.offsetHeight||44;
   wrap.style.height=h+'px';
-  setTimeout(()=>{ if(!chordsBarHidden) wrap.style.height=''; },340);
-  document.getElementById('chordsPeek').classList.remove('visible');
+  setTimeout(()=>{ if(!chordsBarHidden)wrap.style.height=''; },340);
 }
 
 // ── PINCH-TO-ZOOM ──
