@@ -573,7 +573,8 @@ function sCover(s){
   return `<div class="s-cover" style="background:${bg}">${icon}</div>`;
 }
 function sCard(s, showDel=false){
-  const fv=favs.has(s.id)?' ♥':'';
+  const _oid=s.id.startsWith('__fav__')?s.id.slice(7):s.id;
+  const fv=favs.has(_oid)?' ♥':'';
   return `<div class="s-item" id="si-${s.id}"
     onclick="openSong('${s.id}')"
     ontouchstart="lpStart(event,'${s.id}')"
@@ -596,7 +597,22 @@ function renderSongs(list){const el=document.getElementById('songList');el.inner
 function renderRep(list){list=list||(songs.filter(s=>!s.id.startsWith('__fav__')));const el=document.getElementById('repList');el.innerHTML=list.length?list.map(s=>sCard(s)).join(''):'<div class="empty"><span class="empty-icon">🎵</span>Нет песен</div>';}
 function filterRep(){const q=document.getElementById('repSrch').value.toLowerCase().trim();const base=songs.filter(s=>!s.id.startsWith('__fav__'));renderRep(q?base.filter(s=>s.title.toLowerCase().includes(q)||s.artist.toLowerCase().includes(q)):base);}
 function filterSong(){const q=document.getElementById('songSrch').value.toLowerCase().trim();const base=filterPl?songs.filter(s=>(s.playlist||'')===filterPl):songs;renderSongs(q?base.filter(s=>s.title.toLowerCase().includes(q)||s.artist.toLowerCase().includes(q)):base);}
-function delSong(id){if(!confirm('Удалить эту песню?'))return;songs=songs.filter(s=>s.id!==id);sv(SK,songs);renderRep();renderPL();renderSongs(filterPl?songs.filter(s=>(s.playlist||'')===filterPl):songs);if(curSong&&curSong.id===id)goBack();toast('Песня удалена');}
+function delSong(id){
+  if(!confirm('Удалить эту песню?'))return;
+  // if deleting a fav copy — also remove from favs
+  const FAV_COPY_PREFIX='__fav__';
+  if(id.startsWith(FAV_COPY_PREFIX)){
+    const origId=id.slice(FAV_COPY_PREFIX.length);
+    favs.delete(origId);
+    sv(FK,favs);
+  }
+  songs=songs.filter(s=>s.id!==id);
+  sv(SK,songs);
+  renderRep();renderPL();
+  renderSongs(filterPl?songs.filter(s=>(s.playlist||'')===filterPl):songs);
+  if(curSong&&curSong.id===id)goBack();
+  toast('Песня удалена');
+}
 
 // ── LONG PRESS (assign playlist) ──
 function lpStart(e,id){
@@ -638,10 +654,11 @@ function openSong(id){
   prevPrevScr=prevScr; prevScr=curScr; curScr="detail";
   closeMetaEdit();
   document.getElementById('chordsVal').textContent=curSong.key||'—';
+  const _origId=curSong.id.startsWith('__fav__')?curSong.id.slice(7):curSong.id;
   const isInFav=curSong.id.startsWith('__fav__')||filterPl==='Избранное';
   const fb=document.getElementById('favBtn');
   fb.style.display=isInFav?'none':'block';
-  fb.textContent=favs.has(curSong.id)?'♥':'♡';
+  fb.textContent=favs.has(_origId)?'♥':'♡';
   closeChordsEdit();
   cancelLyricsEdit();
   renderLyrics(); stopScroll();
@@ -738,27 +755,27 @@ function toggleFav(){
   if(!curSong)return;
   const FAV_PL='Избранное';
   const FAV_COPY_PREFIX='__fav__';
-  const favCopyId=FAV_COPY_PREFIX+curSong.id;
+  // get original id (in case we're viewing a fav copy)
+  const origId=curSong.id.startsWith(FAV_COPY_PREFIX)?curSong.id.slice(FAV_COPY_PREFIX.length):curSong.id;
+  const favCopyId=FAV_COPY_PREFIX+origId;
 
-  if(favs.has(curSong.id)){
-    // un-favourite: remove copy from Избранное, keep original
-    favs.delete(curSong.id);
+  if(favs.has(origId)){
+    // un-favourite
+    favs.delete(origId);
     document.getElementById('favBtn').textContent='♡';
     songs=songs.filter(s=>s.id!==favCopyId);
     sv(SK,songs);
     toast('Убрано из избранного');
   } else {
-    // favourite: create a copy in Избранное
-    favs.add(curSong.id);
+    // favourite
+    favs.add(origId);
     document.getElementById('favBtn').textContent='♥';
-    // ensure Избранное playlist exists
     if(!pls.find(p=>p.name===FAV_PL)){
       pls.unshift({id:'pfav',name:FAV_PL,desc:'Любимые песни',emoji:'❤️',color:'#e8375a',img:''});
       sv(PK,pls);
     }
-    // remove old copy if exists, add fresh copy
     songs=songs.filter(s=>s.id!==favCopyId);
-    const orig=songs.find(s=>s.id===curSong.id);
+    const orig=songs.find(s=>s.id===origId);
     if(orig){
       const copy={...orig,id:favCopyId,playlist:FAV_PL};
       songs.unshift(copy);
