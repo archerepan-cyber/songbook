@@ -139,7 +139,7 @@
   .zoom-reset-btn{position:fixed;top:calc(var(--safe-top) + 54px);right:14px;background:rgba(10,132,255,.22);border:none;border-radius:20px;padding:6px 14px;font-size:12px;font-weight:600;color:#0a84ff;cursor:pointer;opacity:0;pointer-events:none;transition:opacity .15s;z-index:100;white-space:nowrap;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}
   .zoom-reset-btn.visible{opacity:1;pointer-events:auto;}
   /* detail zoom wrapper — this whole block scales */
-  #detailZoomWrap{flex:1;display:flex;flex-direction:column;min-height:0;transform-origin:top left;will-change:transform;transform:translateZ(0);backface-visibility:hidden;-webkit-backface-visibility:hidden;}
+  #detailZoomWrap{flex:1;display:flex;flex-direction:column;min-height:0;transform-origin:top left;will-change:transform;overflow:hidden;transform:translateZ(0);backface-visibility:hidden;-webkit-backface-visibility:hidden;}
   #detailZoomWrap.snapping{transition:transform .2s cubic-bezier(.25,.46,.45,.94);}
   .lscroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:18px 18px 12px;}
   /* ── Shazam-style lyrics ── */
@@ -1105,81 +1105,25 @@ async function inetSearch(){
   if(!q)return;
   const el=document.getElementById('inetRes');
   el.innerHTML=`<div class="ildr">🔍 Ищем «${x(q)}»...</div>`;
-
-  function hasCyrillic(s){return /[а-яёА-ЯЁ]/.test(s);}
-
-  // Транслитерация кириллицы в латиницу
-  function translit(s){
-    const map={'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'yo','ж':'zh','з':'z','и':'i','й':'y','к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f','х':'kh','ц':'ts','ч':'ch','ш':'sh','щ':'sch','ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya',' ':' '};
-    return s.toLowerCase().split('').map(c=>map[c]!==undefined?map[c]:c).join('');
-  }
-
-  // Словарь популярных написаний (кириллица → оригинал)
-  const artistAliases={
-    'мистер кредо':'Mr.Credo','мр кредо':'Mr.Credo','мр.кредо':'Mr.Credo',
-    'би 2':'Би-2','би2':'Би-2',
-    'дайте танк':'Дайте танк (!)','дайте танк !':'Дайте танк (!)',
-    'тату':'t.A.T.u.','тату группа':'t.A.T.u.',
-    'моя михайловна':'Моя Михайловна',
-    'дdn':'ДДТ','ддт':'ДДТ',
-  };
-
-  // Парсим запрос
-  const dashIdx=q.indexOf(' - ');
-  const qArtist=dashIdx>0?q.slice(0,dashIdx).trim():'';
-  const qTitle=dashIdx>0?q.slice(dashIdx+3).trim():q;
-
-  // Проверяем словарь для исполнителя
-  const artistLower=qArtist.toLowerCase();
-  const mappedArtist=artistAliases[artistLower]||null;
-
-  // Строим список запросов
-  const queries=[q];
-
-  if(mappedArtist&&qTitle){
-    // Если нашли в словаре — добавляем с правильным написанием первым
-    queries.unshift(mappedArtist+' - '+qTitle);
-    queries.unshift(mappedArtist+' '+qTitle);
-  }
-
-  if(hasCyrillic(q)){
-    const tq=translit(q);
-    queries.push(tq);
-    if(qArtist&&qTitle){
-      queries.push(translit(qArtist)+' '+qTitle);
-      queries.push(translit(qArtist)+' '+translit(qTitle));
-      queries.push(qArtist+' '+translit(qTitle));
+  try{
+    const r=await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(q)}`);
+    if(!r.ok) throw new Error('Сервис недоступен');
+    const results=await r.json();
+    const hit=results&&(results.find(r=>r.plainLyrics)||results[0]);
+    if(!hit||!hit.plainLyrics){
+      el.innerHTML=`<div class="ildr">😔 Текст не найден.<br><span style="font-size:13px">Попробуйте уточнить запрос</span></div>`;
+      return;
     }
+    inetFoundSong={
+      title:hit.trackName||q,
+      artist:hit.artistName||'',
+      key:'',
+      lyrics:autoFormatLyrics(hit.plainLyrics.replace(/\r\n/g,'\n').replace(/\r/g,'\n').replace(/\n{3,}/g,'\n\n').trim())
+    };
+    renderFoundSong(el);
+  }catch(e){
+    el.innerHTML=`<div class="ildr">⚠️ ${x(e.message||'Ошибка поиска')}</div>`;
   }
-
-  // Дедупликация
-  const seen=new Set();
-  const uniqueQueries=queries.filter(q=>{if(seen.has(q))return false;seen.add(q);return true;});
-
-  let hit=null;
-  for(const query of uniqueQueries){
-    try{
-      const r=await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(query)}`);
-      if(!r.ok) continue;
-      const results=await r.json();
-      const found=results&&(results.find(r=>r.plainLyrics)||results[0]);
-      if(found&&found.plainLyrics){hit=found;break;}
-    }catch(e){}
-  }
-
-  if(!hit||!hit.plainLyrics){
-    el.innerHTML=`<div class="ildr">😔 Текст не найден.<br><span style="font-size:13px">Попробуйте написать название на английском или латинице</span></div>`;
-    return;
-  }
-
-  // Используем оригинальное название из базы
-  inetFoundSong={
-    title:hit.trackName||qTitle||q,
-    artist:hit.artistName||mappedArtist||qArtist||'',
-    key:'',
-    lyrics:autoFormatLyrics(hit.plainLyrics.replace(/\r\n/g,'\n').replace(/\r/g,'\n').replace(/\n{3,}/g,'\n\n').trim())
-  };
-  renderFoundSong(el);
 }
 
 
@@ -1508,35 +1452,22 @@ function applyZoom(scale, animate){
   const wrap=document.getElementById('detailZoomWrap');
   const btn=document.getElementById('zoomResetBtn');
   if(!wrap)return;
-
-  // Вместо transform:scale — увеличиваем font-size напрямую
-  // Это правильно работает со скроллом
-  const baseFontSize=22; // базовый размер .ll
-  const newFontSize=(baseFontSize*scale).toFixed(1);
-  wrap.style.transform='';
-  wrap.style.width='';
-
-  // Масштабируем шрифт всего контента
-  const lb=document.getElementById('lb');
-  if(lb) lb.style.fontSize=newFontSize+'px';
-
+  wrap.classList.toggle('snapping',!!animate);
+  wrap.style.transform=`scale(${scale})`;
+  wrap.style.width=(100/scale)+'%';
+  // Растягиваем lscroll чтобы скролл работал с увеличенным контентом
+  const lscroll=document.getElementById('lscroll');
+  if(lscroll){
+    lscroll.style.height=(100/scale)+'%';
+    lscroll.style.minHeight=(100/scale)+'%';
+  }
   // font-weight: lyrics 400→800, chords 700→900
   const t=(scale-1)/(ZOOM_MAX-1);
   const lw=Math.round(400+t*400);
   const cw=Math.round(700+t*200);
-  document.querySelectorAll('#lb .ll').forEach(el=>{
-    el.style.fontWeight=lw;
-    el.style.fontSize=newFontSize+'px';
-  });
-  document.querySelectorAll('#lb .cl').forEach(el=>{
-    el.style.fontWeight=cw;
-    el.style.fontSize=(15*scale).toFixed(1)+'px';
-  });
-  document.querySelectorAll('#lb .vl').forEach(el=>{
-    el.style.fontSize=(11*scale).toFixed(1)+'px';
-  });
-
-  // Аккорды: не масштабируем после CHORDS_FREEZE
+  document.querySelectorAll('#lb .ll').forEach(el=>el.style.fontWeight=lw);
+  document.querySelectorAll('#lb .cl').forEach(el=>el.style.fontWeight=cw);
+  // аккорды: заморозить рост при scale >= 2.0
   const chordsWrap=document.getElementById('chordsBarWrap');
   if(chordsWrap){
     if(scale>CHORDS_FREEZE){
@@ -1550,33 +1481,17 @@ function applyZoom(scale, animate){
       chordsWrap.style.transformOrigin='';
     }
   }
-
-  // Значок zoom
+  // значок zoom
   if(Math.abs(scale-1)>0.05) btn.textContent='Zoom ×'+scale.toFixed(1);
-
-  // Сердечко
+  // сердечко
   const fb=document.getElementById('favBtn');
   if(fb){
     if(scale>=1.5){fb.dataset.hiddenByZoom='1';fb.style.display='none';}
     else if(fb.dataset.hiddenByZoom==='1'){fb.dataset.hiddenByZoom='';fb.style.display=fb.dataset.favHidden==='1'?'none':'block';}
   }
-  // Карандашик
+  // карандашик
   const pencil=document.querySelector('.cb-edit');
-  const cbSpacer=document.getElementById('cbSpacer');
-  if(pencil){
-    if(scale>=1.7){
-      pencil.style.display='none';
-      const chordsBar=document.getElementById('chordsBar');
-      if(chordsBar) chordsBar.style.justifyContent='center';
-      if(cbSpacer) cbSpacer.style.display='none';
-    } else {
-      pencil.style.display='inline';
-      const chordsBar=document.getElementById('chordsBar');
-      if(chordsBar) chordsBar.style.justifyContent='';
-      if(cbSpacer) cbSpacer.style.display='';
-    }
-  }
-  // Обновляем оверлеи
+  if(pencil) pencil.style.display=scale>=1.7?'none':'inline';
   if(!pinchActive) updateChordsOverlays();
 }
 
