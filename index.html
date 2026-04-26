@@ -1396,6 +1396,7 @@ function hideChordsBar(){
     wrap.classList.add('hidden-up');
     wrap.style.height='0';
   });
+  document.getElementById('lscroll').style.marginTop='0';
   setTimeout(updateChordsOverlays,350);
   updateChordsOverlays();
 }
@@ -1407,10 +1408,13 @@ function showChordsBar(){
   wrap.classList.remove('hidden-up');
   const h=bar.offsetHeight||44;
   wrap.style.height=h+'px';
+  // Восстанавливаем marginTop
+  const extra=h*(lzScale-1);
+  document.getElementById('lscroll').style.marginTop=extra+'px';
   setTimeout(()=>{
     if(!chordsBarHidden){
       wrap.style.height='';
-      updateChordsOverlays(); // обновляем после завершения анимации
+      updateChordsOverlays();
     }
   },340);
   updateChordsOverlays();
