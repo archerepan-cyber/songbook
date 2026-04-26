@@ -961,50 +961,68 @@ async function inetSearch(){
   const parser=new DOMParser();
 
   try{
-    // Шаг 1: поиск на amdm.ru
-    const searchUrl=`https://amdm.ru/search/?q=${encodeURIComponent(q)}`;
+    // Поиск на amdm.ru
+    const searchUrl=`https://amdm.ru/search/?q=${encodeURIComponent(q)}&type=skordi`;
     const sr=await fetch(proxy(searchUrl));
     const shtml=await sr.text();
     const sdoc=parser.parseFromString(shtml,'text/html');
 
-    // Первая ссылка результата
-    const link=sdoc.querySelector('table.items td.artist a, .items a, h3 a');
-    if(!link) throw new Error('not found on amdm');
+    // Ищем ссылку на песню в результатах
+    // amdm возвращает таблицу с результатами
+    let songUrl=null;
+    const allLinks=sdoc.querySelectorAll('a[href*="/akkordi/"]');
+    if(allLinks.length>0){
+      const href=allLinks[0].getAttribute('href');
+      songUrl=href.startsWith('http')?href:`https://amdm.ru${href}`;
+    }
 
-    const href=link.getAttribute('href');
-    const pageUrl=href.startsWith('http')?href:`https://amdm.ru${href}`;
-    el.innerHTML=`<div class="ildr">🎸 Загружаем аккорды...</div>`;
+    if(!songUrl) throw new Error('not found');
 
-    // Шаг 2: страница песни
-    const pr=await fetch(proxy(pageUrl));
+    el.innerHTML=`<div class="ildr">🎸 Загружаем аккорды и текст...</div>`;
+
+    // Загружаем страницу песни
+    const pr=await fetch(proxy(songUrl));
     const phtml=await pr.text();
     const pdoc=parser.parseFromString(phtml,'text/html');
 
-    // Заголовок и исполнитель
+    // Заголовок
     const h1=pdoc.querySelector('h1');
     const titleFull=h1?h1.textContent.trim():q;
-    const parts=titleFull.split(' - ');
-    const artist=parts.length>1?parts[0].trim():'';
-    const title=parts.length>1?parts[1].trim():titleFull;
+    const dashIdx=titleFull.indexOf(' - ');
+    const artist=dashIdx>0?titleFull.slice(0,dashIdx).trim():'';
+    const title=dashIdx>0?titleFull.slice(dashIdx+3).trim():titleFull;
 
-    // Текст и аккорды в div с классом 't'
-    const tDiv=pdoc.querySelector('.t, #song-text, .song_text');
-    if(!tDiv) throw new Error('no lyrics on amdm');
+    // Блок с текстом и аккордами — ищем div.t или pre
+    const tDiv=pdoc.querySelector('div.t, pre.t, #song-text, .song_text, .b-chords__text');
 
-    // Собираем аккорды из тегов <a class="a">
-    const chordEls=tDiv.querySelectorAll('a.a, .a, b');
+    if(!tDiv) throw new Error('no text block');
+
+    // Аккорды — теги <a> с классом a, или просто <b>
+    const chordEls=tDiv.querySelectorAll('a.a, span.a, .chord');
     const chordsArr=[];
     chordEls.forEach(c=>{
       const t=c.textContent.trim();
-      if(t&&t.length<=5&&/^[A-GА-Яa-g#bmMsud0-9\/]+$/.test(t)&&!chordsArr.includes(t))
-        chordsArr.push(t);
+      if(t&&t.length<=6&&!chordsArr.includes(t)) chordsArr.push(t);
     });
-    const chords=chordsArr.slice(0,10).join(' ');
 
-    // Текст: убираем теги аккордов, оставляем строки
+    // Если не нашли через классы — ищем по паттерну аккордов в тексте
+    let chords=chordsArr.slice(0,10).join(' ');
+    if(!chords){
+      // Ищем строки где только аккорды (Am G F C и т.д.)
+      const allText=tDiv.innerHTML;
+      const chordMatches=allText.match(/\b([A-G][#b]?(?:m|maj|min|dim|aug|sus|add)?[0-9]?(?:\/[A-G][#b]?)?)\b/g);
+      if(chordMatches){
+        const unique=[...new Set(chordMatches)].slice(0,10);
+        chords=unique.join(' ');
+      }
+    }
+
+    // Убираем теги аккордов, получаем чистый текст
     chordEls.forEach(c=>c.remove());
     tDiv.querySelectorAll('br').forEach(br=>br.replaceWith('\n'));
-    const lyrics=tDiv.textContent.replace(/\r\n/g,'\n').replace(/\r/g,'\n').replace(/\n{3,}/g,'\n\n').trim();
+    const lyrics=tDiv.textContent.replace(/\r\n/g,'\n').replace(/\r/g,'\n').replace(/[ \t]+\n/g,'\n').replace(/\n{3,}/g,'\n\n').trim();
+
+    if(!lyrics) throw new Error('empty lyrics');
 
     inetFoundSong={title,artist,key:chords,lyrics};
     renderFoundSong(el);
@@ -1014,6 +1032,7 @@ async function inetSearch(){
     try{
       el.innerHTML=`<div class="ildr">📄 Ищем текст...</div>`;
       const r=await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(q)}`);
+      if(!r.ok) throw new Error('lrclib fail');
       const results=await r.json();
       const hit=results&&(results.find(r=>r.plainLyrics)||results[0]);
       if(!hit||!hit.plainLyrics) throw new Error('not found');
