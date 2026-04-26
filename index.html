@@ -139,10 +139,10 @@
   .zoom-reset-btn{position:fixed;top:calc(var(--safe-top) + 54px);right:14px;background:rgba(10,132,255,.22);border:none;border-radius:20px;padding:6px 14px;font-size:12px;font-weight:600;color:#0a84ff;cursor:pointer;opacity:0;pointer-events:none;transition:opacity .15s;z-index:100;white-space:nowrap;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}
   .zoom-reset-btn.visible{opacity:1;pointer-events:auto;}
   /* detail zoom wrapper — this whole block scales */
-  #detailZoomWrap{flex-shrink:0;transform-origin:top left;will-change:transform;transform:translateZ(0);backface-visibility:hidden;-webkit-backface-visibility:hidden;}
+  #detailZoomWrap{position:absolute;top:0;left:0;right:0;transform-origin:top left;will-change:transform;transform:translateZ(0);backface-visibility:hidden;-webkit-backface-visibility:hidden;z-index:2;}
   #detailZoomWrap.snapping{transition:transform .2s cubic-bezier(.25,.46,.45,.94);}
   #lyricsScaleWrap{transform-origin:top left;will-change:transform;}
-  .lscroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:18px 18px 12px;}
+  .lscroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:18px 18px 12px;position:relative;z-index:1;}
   /* ── Shazam-style lyrics ── */
   .lb{font-size:22px;line-height:1.0;white-space:normal;}
   .vl{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.8px;color:#ff9f0a;margin:32px 0 14px;backface-visibility:hidden;-webkit-backface-visibility:hidden;}
@@ -804,6 +804,9 @@ function openSong(id){
   showChordsBar();
   renderLyrics(); stopScroll();
   applyZoom(lzScale, false);
+  // Устанавливаем начальный отступ
+  const wrap=document.getElementById('detailZoomWrap');
+  if(wrap) document.getElementById('lscroll').style.marginTop=wrap.scrollHeight+'px';
   show('detail');
   requestAnimationFrame(()=>{
     document.getElementById('lscroll').scrollTop=0;
@@ -1465,10 +1468,9 @@ function applyZoom(scale, animate){
   // Панель аккордов — масштабируем через detailZoomWrap
   wrap.style.transform=`scale(${scale})`;
   wrap.style.width=(100/scale)+'%';
-  // Обновляем отступ lscroll чтобы текст не налезал на панель
+  // Отступ lscroll = реальная (не масштабированная) высота панели
   const naturalH=wrap.scrollHeight;
-  const scaledH=naturalH*scale;
-  document.getElementById('lscroll').style.marginTop=(scaledH-naturalH)+'px';
+  document.getElementById('lscroll').style.marginTop=naturalH+'px';
 
   // Текст — масштабируем lyricsScaleWrap, lscroll знает реальную высоту
   lyricWrap.style.transform=`scale(${scale})`;
