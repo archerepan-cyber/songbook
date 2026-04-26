@@ -959,70 +959,66 @@ async function inetSearch(){
 
   const proxy=u=>`https://corsproxy.io/?${encodeURIComponent(u)}`;
   const parser=new DOMParser();
+  const CHORD_RE=/^[A-G][#b]?(m|maj|min|dim|aug|sus|add)?[0-9]?(\/[A-G][#b]?)?$/;
 
   try{
-    // Поиск на amdm.ru
-    const searchUrl=`https://amdm.ru/search/?q=${encodeURIComponent(q)}&type=skordi`;
+    // Шаг 1: поиск на amdm.ru
+    const searchUrl=`https://amdm.ru/search/?q=${encodeURIComponent(q)}`;
     const sr=await fetch(proxy(searchUrl));
     const shtml=await sr.text();
     const sdoc=parser.parseFromString(shtml,'text/html');
 
-    // Ищем ссылку на песню в результатах
-    // amdm возвращает таблицу с результатами
-    let songUrl=null;
-    const allLinks=sdoc.querySelectorAll('a[href*="/akkordi/"]');
-    if(allLinks.length>0){
-      const href=allLinks[0].getAttribute('href');
-      songUrl=href.startsWith('http')?href:`https://amdm.ru${href}`;
-    }
+    // Берём первую ссылку с /akkordi/
+    const link=sdoc.querySelector('a[href*="/akkordi/"]');
+    if(!link) throw new Error('not found');
 
-    if(!songUrl) throw new Error('not found');
+    const href=link.getAttribute('href');
+    const songUrl=href.startsWith('http')?href:`https://amdm.ru${href}`;
 
-    el.innerHTML=`<div class="ildr">🎸 Загружаем аккорды и текст...</div>`;
+    el.innerHTML=`<div class="ildr">🎸 Загружаем...</div>`;
 
-    // Загружаем страницу песни
+    // Шаг 2: загружаем страницу песни
     const pr=await fetch(proxy(songUrl));
     const phtml=await pr.text();
     const pdoc=parser.parseFromString(phtml,'text/html');
 
     // Заголовок
     const h1=pdoc.querySelector('h1');
-    const titleFull=h1?h1.textContent.trim():q;
+    const titleFull=(h1?h1.textContent:'').replace(', аккорды','').trim();
     const dashIdx=titleFull.indexOf(' - ');
     const artist=dashIdx>0?titleFull.slice(0,dashIdx).trim():'';
-    const title=dashIdx>0?titleFull.slice(dashIdx+3).trim():titleFull;
+    const title=dashIdx>0?titleFull.slice(dashIdx+3).trim():titleFull||q;
 
-    // Блок с текстом и аккордами — ищем div.t или pre
-    const tDiv=pdoc.querySelector('div.t, pre.t, #song-text, .song_text, .b-chords__text');
+    // Шаг 3: берём весь текст страницы и разбиваем по строкам
+    // Аккорды и текст на amdm перемешаны — каждая строка либо аккорд либо текст
+    const tDiv=pdoc.querySelector('.t, #song-text, pre');
+    if(!tDiv) throw new Error('no text');
 
-    if(!tDiv) throw new Error('no text block');
+    // Заменяем <br> на \n
+    tDiv.querySelectorAll('br').forEach(br=>br.replaceWith('\n'));
 
-    // Аккорды — теги <a> с классом a, или просто <b>
-    const chordEls=tDiv.querySelectorAll('a.a, span.a, .chord');
-    const chordsArr=[];
-    chordEls.forEach(c=>{
-      const t=c.textContent.trim();
-      if(t&&t.length<=6&&!chordsArr.includes(t)) chordsArr.push(t);
-    });
+    // Получаем все строки
+    const allLines=tDiv.textContent.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
 
-    // Если не нашли через классы — ищем по паттерну аккордов в тексте
-    let chords=chordsArr.slice(0,10).join(' ');
-    if(!chords){
-      // Ищем строки где только аккорды (Am G F C и т.д.)
-      const allText=tDiv.innerHTML;
-      const chordMatches=allText.match(/\b([A-G][#b]?(?:m|maj|min|dim|aug|sus|add)?[0-9]?(?:\/[A-G][#b]?)?)\b/g);
-      if(chordMatches){
-        const unique=[...new Set(chordMatches)].slice(0,10);
-        chords=unique.join(' ');
+    // Разделяем: аккорды (короткие, соответствуют паттерну) и текст (длинные)
+    const chordsFound=new Set();
+    const lyricsLines=[];
+
+    for(const line of allLines){
+      // Строка состоит только из аккордов если все слова — аккорды
+      const words=line.split(/\s+/);
+      const isChordLine=words.length<=6&&words.every(w=>CHORD_RE.test(w)||w==='|'||w==='}x2'||w==='}x3'||w==='}x4');
+      if(isChordLine){
+        words.forEach(w=>{if(CHORD_RE.test(w))chordsFound.add(w);});
+      } else {
+        lyricsLines.push(line);
       }
     }
 
-    // Убираем теги аккордов, получаем чистый текст
-    chordEls.forEach(c=>c.remove());
-    tDiv.querySelectorAll('br').forEach(br=>br.replaceWith('\n'));
-    const lyrics=tDiv.textContent.replace(/\r\n/g,'\n').replace(/\r/g,'\n').replace(/[ \t]+\n/g,'\n').replace(/\n{3,}/g,'\n\n').trim();
+    const chords=[...chordsFound].slice(0,12).join(' ');
+    const lyrics=lyricsLines.join('\n').replace(/\n{3,}/g,'\n\n').trim();
 
-    if(!lyrics) throw new Error('empty lyrics');
+    if(!lyrics&&!chords) throw new Error('empty');
 
     inetFoundSong={title,artist,key:chords,lyrics};
     renderFoundSong(el);
@@ -1032,7 +1028,7 @@ async function inetSearch(){
     try{
       el.innerHTML=`<div class="ildr">📄 Ищем текст...</div>`;
       const r=await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(q)}`);
-      if(!r.ok) throw new Error('lrclib fail');
+      if(!r.ok) throw new Error('fail');
       const results=await r.json();
       const hit=results&&(results.find(r=>r.plainLyrics)||results[0]);
       if(!hit||!hit.plainLyrics) throw new Error('not found');
