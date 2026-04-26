@@ -307,10 +307,19 @@
 
 <!-- ── ИНТЕРНЕТ ── -->
 <div class="screen" id="scr-inet">
-  <div class="ph"><div class="ph-row"><div class="ph-title">Интернет</div></div></div>
+  <div class="ph"><div class="ph-row"><div class="ph-title">Поиск песен</div></div></div>
   <div class="scroll-body">
     <div class="iwrap">
-      <div class="ihead">Найдите аккорды и текст любой песни и добавьте в репертуар.</div>
+      <!-- API key section -->
+      <div id="apiKeySection" style="margin-bottom:16px;">
+        <div style="font-size:12px;color:var(--text3);margin-bottom:6px;">Anthropic API ключ <span style="opacity:.6;">(сохраняется на устройстве)</span></div>
+        <div style="display:flex;gap:8px;">
+          <input id="apiKeyInput" type="password" placeholder="sk-ant-..." autocomplete="off"
+            style="flex:1;background:var(--bg3);border:none;border-radius:10px;padding:10px 13px;font-size:14px;color:var(--text);outline:none;"/>
+          <button onclick="saveApiKey()" style="background:var(--bg3);border:none;border-radius:10px;padding:10px 14px;color:var(--accent);font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;">Сохранить</button>
+        </div>
+        <div id="apiKeyStatus" style="font-size:12px;margin-top:5px;color:var(--text3);"></div>
+      </div>
       <div class="irow">
         <input id="inetQ" type="search" placeholder="Название или исполнитель..." autocomplete="off" onkeydown="if(event.key==='Enter')inetSearch()"/>
         <button class="igo" onclick="inetSearch()">Найти</button>
@@ -323,19 +332,20 @@
 <!-- ── ДЕТАЛЬНЫЙ ── -->
 <div class="screen" id="scr-detail">
   <button class="zoom-reset-btn" id="zoomResetBtn" onclick="resetZoom()">Zoom ×1 ✕</button>
-  <!-- свайп-оверлей вне zoom-wrap — не искажается scale() -->
-  <div id="chordsSwipeOverlay" style="position:absolute;top:0;left:0;right:0;height:60px;z-index:20;touch-action:none;"></div>
+  <!-- оба оверлея СНАРУЖИ zoom-wrap — не искажаются scale() -->
+  <!-- оверлей для скрытия панели (поверх панели аккордов) -->
+  <div id="chordsHideOverlay" style="position:absolute;left:0;right:0;z-index:20;touch-action:none;display:block;"></div>
+  <!-- оверлей для возврата панели (поверх области где была панель) -->
+  <div id="chordsShowOverlay" style="position:absolute;left:0;right:0;z-index:20;touch-action:none;display:none;" onclick="showChordsBar()"></div>
 
   <div id="detailZoomWrap">
-    <!-- полоска-триггер возврата панели аккордов -->
-    <div class="chords-peek" id="chordsPeek" onclick="showChordsBar()"></div>
     <!-- обёртка для плавного скрытия -->
     <div class="chords-bar-wrap" id="chordsBarWrap">
     <div class="chords-bar" id="chordsBar">
       <span class="cb-val" id="chordsVal">—</span>
-      <span class="cb-edit" style="margin-left:6px;cursor:pointer;padding:6px 8px;" onclick="openChordsEdit()">✎</span>
+      <span class="cb-edit" style="margin-left:6px;cursor:pointer;padding:6px 8px;position:relative;z-index:21;" onclick="openChordsEdit()">✎</span>
       <span style="flex:1;"></span>
-      <button class="fav-btn" id="favBtn" onclick="toggleFav()" style="font-size:20px;">♡</button>
+      <button class="fav-btn" id="favBtn" onclick="toggleFav()" style="font-size:20px;position:relative;z-index:21;">♡</button>
     </div>
     </div><!-- /chordsBarWrap -->
     <div class="chords-edit-wrap" id="chordsEditWrap">
@@ -707,7 +717,10 @@ function openSong(id){
   renderLyrics(); stopScroll();
   applyZoom(lzScale, false);
   show('detail');
-  requestAnimationFrame(()=>{ document.getElementById('lscroll').scrollTop=0; });
+  requestAnimationFrame(()=>{
+    document.getElementById('lscroll').scrollTop=0;
+    updateChordsOverlays();
+  });
 }
 function renderLyrics(){
   const el=document.getElementById('lb');if(!curSong)return;
@@ -944,24 +957,57 @@ function saveItem(){
 }
 
 // ── INTERNET ──
-let inetFoundSong=null; // найденная песня
+let inetFoundSong=null;
+
+function saveApiKey(){
+  const key=document.getElementById('apiKeyInput').value.trim();
+  if(!key){document.getElementById('apiKeyStatus').textContent='Введите ключ';return;}
+  try{localStorage.setItem('sb_apikey',key);}catch{}
+  document.getElementById('apiKeyInput').value='';
+  document.getElementById('apiKeyStatus').textContent='✓ Ключ сохранён';
+  document.getElementById('apiKeyStatus').style.color='var(--accent2)';
+  setTimeout(()=>{document.getElementById('apiKeyStatus').textContent='';},2000);
+}
+
+function getApiKey(){
+  try{return localStorage.getItem('sb_apikey')||'';}catch{return '';}
+}
+
+function initApiKeyUI(){
+  const key=getApiKey();
+  const status=document.getElementById('apiKeyStatus');
+  if(key){
+    status.textContent='✓ Ключ установлен';
+    status.style.color='var(--accent2)';
+  }
+}
 
 async function inetSearch(){
   const q=document.getElementById('inetQ').value.trim();
   if(!q)return;
+  const apiKey=getApiKey();
+  if(!apiKey){
+    document.getElementById('inetRes').innerHTML=`<div class="ildr">⚠️ Сначала введите API ключ выше</div>`;
+    return;
+  }
   const el=document.getElementById('inetRes');
   el.innerHTML=`<div class="ildr">🔍 Ищем «${x(q)}»...</div>`;
   try{
     const resp=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key':apiKey,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
       body:JSON.stringify({
         model:'claude-sonnet-4-20250514',
-        max_tokens:1000,
+        max_tokens:2000,
         system:`Ты помогаешь найти текст песни. Пользователь вводит название или исполнителя.
 Верни ТОЛЬКО JSON объект (без markdown, без пояснений):
 {
-  "found": true/false,
+  "found": true,
   "title": "точное название песни",
   "artist": "исполнитель",
   "key": "тональность или основные аккорды если знаешь, иначе пустая строка",
@@ -973,8 +1019,9 @@ async function inetSearch(){
       })
     });
     const data=await resp.json();
+    if(data.error){throw new Error(data.error.message);}
     const raw=data.content&&data.content[0]&&data.content[0].text;
-    if(!raw) throw new Error('no response');
+    if(!raw)throw new Error('no response');
     const json=JSON.parse(raw.replace(/```json|```/g,'').trim());
     if(!json.found){
       el.innerHTML=`<div class="ildr">😔 Текст не найден.<br><span style="font-size:13px">Попробуйте другой запрос</span></div>`;
@@ -982,8 +1029,8 @@ async function inetSearch(){
     }
     inetFoundSong={title:json.title,artist:json.artist,key:json.key||'',lyrics:json.lyrics||''};
     renderFoundSong(el);
-  } catch(e){
-    el.innerHTML=`<div class="ildr">⚠️ Ошибка поиска.<br><span style="font-size:13px">Проверьте подключение</span></div>`;
+  }catch(e){
+    el.innerHTML=`<div class="ildr">⚠️ ${x(e.message||'Ошибка поиска')}</div>`;
   }
 }
 
@@ -1192,6 +1239,31 @@ if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch((
 // ── CHORDS BAR HIDE/SHOW ──
 let chordsBarHidden=false;
 
+function updateChordsOverlays(){
+  const screen=document.getElementById('scr-detail');
+  const wrap=document.getElementById('chordsBarWrap');
+  const hideOv=document.getElementById('chordsHideOverlay');
+  const showOv=document.getElementById('chordsShowOverlay');
+  if(!screen||!wrap||!hideOv||!showOv)return;
+  const sr=screen.getBoundingClientRect();
+  const wr=wrap.getBoundingClientRect();
+  if(!chordsBarHidden){
+    // оверлей поверх всей панели аккордов
+    const top=wr.top-sr.top;
+    const h=Math.max(wr.height,44);
+    hideOv.style.top=top+'px';
+    hideOv.style.height=h+'px';
+    hideOv.style.display='block';
+    showOv.style.display='none';
+  } else {
+    hideOv.style.display='none';
+    // оверлей возврата — сверху, высота 44px
+    showOv.style.top='0px';
+    showOv.style.height='44px';
+    showOv.style.display='block';
+  }
+}
+
 function hideChordsBar(){
   if(chordsBarHidden)return;
   chordsBarHidden=true;
@@ -1202,6 +1274,8 @@ function hideChordsBar(){
     wrap.classList.add('hidden-up');
     wrap.style.height='0';
   });
+  setTimeout(updateChordsOverlays,350);
+  updateChordsOverlays();
 }
 function showChordsBar(){
   if(!chordsBarHidden)return;
@@ -1212,31 +1286,32 @@ function showChordsBar(){
   const h=bar.offsetHeight||44;
   wrap.style.height=h+'px';
   setTimeout(()=>{ if(!chordsBarHidden)wrap.style.height=''; },340);
+  updateChordsOverlays();
 }
+
 function initChordsBarGestures(){
-  // Вешаем на оверлей СНАРУЖИ detailZoomWrap — не искажается transform:scale()
-  const overlay=document.getElementById('chordsSwipeOverlay');
-  if(!overlay)return;
+  const hideOv=document.getElementById('chordsHideOverlay');
+  if(!hideOv)return;
   let p0y=0, p0t=0, pdy=0, active=false;
 
-  overlay.addEventListener('pointerdown',function(e){
-    if(chordsBarHidden)return; // панель уже скрыта — не обрабатываем
-    overlay.setPointerCapture(e.pointerId);
+  hideOv.addEventListener('pointerdown',function(e){
+    // пропускаем клики на карандашик и сердечко (они выше по z-index)
+    hideOv.setPointerCapture(e.pointerId);
     p0y=e.clientY; p0t=Date.now(); pdy=0; active=true;
   });
-  overlay.addEventListener('pointermove',function(e){
+  hideOv.addEventListener('pointermove',function(e){
     if(!active)return;
     pdy=p0y-e.clientY;
   });
-  overlay.addEventListener('pointerup',function(e){
+  hideOv.addEventListener('pointerup',function(e){
     if(!active)return;
     active=false;
     const dt=Date.now()-p0t;
-    const isTap=(Math.abs(pdy)<15&&dt<350);
-    const isSwipeUp=(pdy>10);
+    const isTap=(Math.abs(pdy)<15&&dt<400);
+    const isSwipeUp=(pdy>8);
     if(isTap||isSwipeUp) hideChordsBar();
   });
-  overlay.addEventListener('pointercancel',function(){active=false;});
+  hideOv.addEventListener('pointercancel',function(){active=false;});
 }
 
 // ── PINCH-TO-ZOOM ──
