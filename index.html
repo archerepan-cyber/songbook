@@ -957,45 +957,80 @@ async function inetSearch(){
   const el=document.getElementById('inetRes');
   el.innerHTML=`<div class="ildr">🔍 Ищем «${x(q)}»...</div>`;
 
-  // Пробуем API по очереди
-  const apis=[
-    ()=>searchLrclib(q),
-    ()=>searchItunes(q),
-  ];
-
-  for(const api of apis){
+  try{
+    // Шаг 1: ищем текст через lrclib
+    let lyricsResult=null;
     try{
-      const result=await api();
-      if(result){
-        inetFoundSong=result;
-        renderFoundSong(el);
-        return;
+      const r=await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(q)}`);
+      if(r.ok){
+        const results=await r.json();
+        const hit=results&&results.find(r=>r.plainLyrics)||results&&results[0];
+        if(hit&&hit.plainLyrics){
+          lyricsResult={
+            title:hit.trackName||q,
+            artist:hit.artistName||'',
+            lyrics:hit.plainLyrics.replace(/\r\n/g,'\n').replace(/\r/g,'\n').replace(/\n{3,}/g,'\n\n').trim()
+          };
+        }
       }
     }catch(e){}
+
+    // Шаг 2: ищем аккорды через mychords.net (есть CORS)
+    let chordsResult='';
+    try{
+      el.innerHTML=`<div class="ildr">🎸 Ищем аккорды...</div>`;
+      // Поиск на mychords
+      const sr=await fetch(`https://mychords.net/search/?q=${encodeURIComponent(q)}`);
+      if(sr.ok){
+        const html=await sr.text();
+        const parser=new DOMParser();
+        const doc=parser.parseFromString(html,'text/html');
+        // Берём первую ссылку результата
+        const firstLink=doc.querySelector('.item-title a, .search-results a, h2 a');
+        if(firstLink){
+          const href=firstLink.getAttribute('href');
+          const pageUrl=href.startsWith('http')?href:`https://mychords.net${href}`;
+          const pr=await fetch(pageUrl);
+          if(pr.ok){
+            const phtml=await pr.text();
+            const pdoc=parser.parseFromString(phtml,'text/html');
+            // Ищем аккорды в тексте страницы
+            const chordEl=pdoc.querySelector('.chord-title, .b-chords, [class*="chord"]');
+            if(chordEl) chordsResult=chordEl.textContent.trim().split('\n').slice(0,1).join('');
+          }
+        }
+      }
+    }catch(e){}
+
+    // Если ничего не нашли
+    if(!lyricsResult){
+      // Попробуем iTunes хотя бы для названия
+      try{
+        const r=await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&media=music&limit=1`);
+        const d=await r.json();
+        if(d.results&&d.results.length){
+          const hit=d.results[0];
+          lyricsResult={title:hit.trackName||q,artist:hit.artistName||'',lyrics:''};
+        }
+      }catch(e){}
+    }
+
+    if(!lyricsResult){
+      el.innerHTML=`<div class="ildr">😔 Не найдено.<br><span style="font-size:13px">Попробуйте: Исполнитель Название</span></div>`;
+      return;
+    }
+
+    inetFoundSong={
+      title:lyricsResult.title,
+      artist:lyricsResult.artist,
+      key:chordsResult,
+      lyrics:lyricsResult.lyrics
+    };
+    renderFoundSong(el);
+
+  }catch(e){
+    el.innerHTML=`<div class="ildr">⚠️ ${x(e.message||'Ошибка поиска')}</div>`;
   }
-
-  el.innerHTML=`<div class="ildr">😔 Текст не найден.<br><span style="font-size:13px">Попробуйте: Исполнитель - Название</span></div>`;
-}
-
-async function searchLrclib(q){
-  const r=await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(q)}`);
-  if(!r.ok) return null;
-  const results=await r.json();
-  if(!results||!results.length) return null;
-  const hit=results.find(r=>r.plainLyrics)||results[0];
-  const lyrics=(hit.plainLyrics||'').trim();
-  if(!lyrics) return null;
-  return{title:hit.trackName||q,artist:hit.artistName||'',key:'',lyrics:lyrics.replace(/\r\n/g,'\n').replace(/\r/g,'\n').replace(/\n{3,}/g,'\n\n')};
-}
-
-async function searchItunes(q){
-  // iTunes не даёт текст, но покажем что нашли песню и предложим добавить без текста
-  const r=await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&media=music&limit=1`);
-  if(!r.ok) return null;
-  const d=await r.json();
-  if(!d.results||!d.results.length) return null;
-  const hit=d.results[0];
-  return{title:hit.trackName||q,artist:hit.artistName||'',key:'',lyrics:'[Текст не найден]\n\nДобавьте текст вручную после сохранения песни.'};
 }
 
 function formatLyrics(raw){
