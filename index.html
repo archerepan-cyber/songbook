@@ -139,10 +139,10 @@
   .zoom-reset-btn{position:fixed;top:calc(var(--safe-top) + 54px);right:14px;background:rgba(10,132,255,.22);border:none;border-radius:20px;padding:6px 14px;font-size:12px;font-weight:600;color:#0a84ff;cursor:pointer;opacity:0;pointer-events:none;transition:opacity .15s;z-index:100;white-space:nowrap;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}
   .zoom-reset-btn.visible{opacity:1;pointer-events:auto;}
   /* detail zoom wrapper — this whole block scales */
-  #detailZoomWrap{position:absolute;top:0;left:0;right:0;transform-origin:top left;will-change:transform;transform:translateZ(0);backface-visibility:hidden;-webkit-backface-visibility:hidden;z-index:2;}
-  #detailZoomWrap.snapping{transition:transform .2s cubic-bezier(.25,.46,.45,.94);}
+  #detailZoomWrap{flex:1;display:flex;flex-direction:column;min-height:0;transform:translateZ(0);}
   #lyricsScaleWrap{transform-origin:top left;will-change:transform;}
-  .lscroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:18px 18px 12px;position:relative;z-index:1;}
+  #lyricsScaleWrap.snapping{transition:transform .2s cubic-bezier(.25,.46,.45,.94);}
+  .lscroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:18px 18px 12px;}
   /* ── Shazam-style lyrics ── */
   .lb{font-size:22px;line-height:1.0;white-space:normal;}
   .vl{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.8px;color:#ff9f0a;margin:32px 0 14px;backface-visibility:hidden;-webkit-backface-visibility:hidden;}
@@ -396,14 +396,13 @@
         <button class="mep-save" onclick="saveMetaEdit()">Сохранить</button>
       </div>
     </div>
-  </div><!-- /detailZoomWrap -->
-  <!-- lscroll СНАРУЖИ zoom-wrap — скролл не зависит от scale -->
-  <div class="lscroll" id="lscroll">
-    <div id="lyricsScaleWrap">
-      <div class="lb" id="lb"></div>
+    <div class="lscroll" id="lscroll">
+      <div id="lyricsScaleWrap">
+        <div class="lb" id="lb"></div>
+      </div>
     </div>
-  </div>
-  <div id="lyricsEditWrap" style="display:none;"></div>
+    <div id="lyricsEditWrap" style="display:none;"></div>
+  </div><!-- /detailZoomWrap -->
 </div>
 
 <!-- ── НАСТРОЙКИ ── -->
@@ -804,9 +803,6 @@ function openSong(id){
   showChordsBar();
   renderLyrics(); stopScroll();
   applyZoom(lzScale, false);
-  // Устанавливаем начальный отступ
-  const wrap=document.getElementById('detailZoomWrap');
-  if(wrap) document.getElementById('lscroll').style.marginTop=(wrap.scrollHeight*lzScale)+'px';
   show('detail');
   requestAnimationFrame(()=>{
     document.getElementById('lscroll').scrollTop=0;
@@ -1457,25 +1453,15 @@ function applyZoom(scale, animate){
   scale=Math.max(ZOOM_MIN,Math.min(ZOOM_MAX,scale));
   lzScale=scale;
 
-  const wrap=document.getElementById('detailZoomWrap');
   const lyricWrap=document.getElementById('lyricsScaleWrap');
   const btn=document.getElementById('zoomResetBtn');
-  if(!wrap||!lyricWrap)return;
+  if(!lyricWrap)return;
 
-  wrap.classList.toggle('snapping',!!animate);
   lyricWrap.classList.toggle('snapping',!!animate);
 
-  // Панель аккордов — масштабируем через detailZoomWrap
-  wrap.style.transform=`scale(${scale})`;
-  wrap.style.width=(100/scale)+'%';
-  // Отступ lscroll = визуальная высота панели (с учётом scale)
-  const scaledH=wrap.scrollHeight*scale;
-  document.getElementById('lscroll').style.marginTop=scaledH+'px';
-
-  // Текст — масштабируем lyricsScaleWrap, lscroll знает реальную высоту
+  // Масштабируем только текст — lscroll остаётся нетронутым, скролл работает
   lyricWrap.style.transform=`scale(${scale})`;
   lyricWrap.style.width=(100/scale)+'%';
-  lyricWrap.style.transformOrigin='top left';
 
   // font-weight
   const t=(scale-1)/(ZOOM_MAX-1);
