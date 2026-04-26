@@ -1465,6 +1465,10 @@ function applyZoom(scale, animate){
   // Панель аккордов — масштабируем через detailZoomWrap
   wrap.style.transform=`scale(${scale})`;
   wrap.style.width=(100/scale)+'%';
+  // Обновляем отступ lscroll чтобы текст не налезал на панель
+  const naturalH=wrap.scrollHeight;
+  const scaledH=naturalH*scale;
+  document.getElementById('lscroll').style.marginTop=(scaledH-naturalH)+'px';
 
   // Текст — масштабируем lyricsScaleWrap, lscroll знает реальную высоту
   lyricWrap.style.transform=`scale(${scale})`;
