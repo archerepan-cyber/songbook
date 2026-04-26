@@ -806,7 +806,7 @@ function openSong(id){
   applyZoom(lzScale, false);
   // Устанавливаем начальный отступ
   const wrap=document.getElementById('detailZoomWrap');
-  if(wrap) document.getElementById('lscroll').style.marginTop=wrap.scrollHeight+'px';
+  if(wrap) document.getElementById('lscroll').style.marginTop=(wrap.scrollHeight*lzScale)+'px';
   show('detail');
   requestAnimationFrame(()=>{
     document.getElementById('lscroll').scrollTop=0;
@@ -1468,9 +1468,9 @@ function applyZoom(scale, animate){
   // Панель аккордов — масштабируем через detailZoomWrap
   wrap.style.transform=`scale(${scale})`;
   wrap.style.width=(100/scale)+'%';
-  // Отступ lscroll = реальная (не масштабированная) высота панели
-  const naturalH=wrap.scrollHeight;
-  document.getElementById('lscroll').style.marginTop=naturalH+'px';
+  // Отступ lscroll = визуальная высота панели (с учётом scale)
+  const scaledH=wrap.scrollHeight*scale;
+  document.getElementById('lscroll').style.marginTop=scaledH+'px';
 
   // Текст — масштабируем lyricsScaleWrap, lscroll знает реальную высоту
   lyricWrap.style.transform=`scale(${scale})`;
