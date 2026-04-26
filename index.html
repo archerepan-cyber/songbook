@@ -958,114 +958,83 @@ async function inetSearch(){
   el.innerHTML=`<div class="ildr">🔍 Ищем «${x(q)}»...</div>`;
 
   const proxy=u=>`https://corsproxy.io/?${encodeURIComponent(u)}`;
-  const CHORD_RE=/^[A-G][#b]?(m|maj|min|dim|aug|sus|add|2|4|5|6|7|9|11|13)*(\/[A-G][#b]?)?$/;
+  const CHORD_RE=/\b([A-G][#b]?(m|maj|min|dim|aug|sus|add|2|4|5|6|7|9|11|13)*(\/[A-G][#b]?)?)\b/g;
 
-  // Конвертируем запрос в URL-формат amdm
   function toSlug(s){
-    return s.toLowerCase()
-      .replace(/ё/g,'e').replace(/й/g,'j').replace(/ц/g,'c').replace(/у/g,'u')
-      .replace(/к/g,'k').replace(/е/g,'e').replace(/н/g,'n').replace(/г/g,'g')
-      .replace(/ш/g,'sh').replace(/щ/g,'sh').replace(/з/g,'z').replace(/х/g,'h')
-      .replace(/ъ/g,'').replace(/ф/g,'f').replace(/ы/g,'y').replace(/в/g,'v')
-      .replace(/а/g,'a').replace(/п/g,'p').replace(/р/g,'r').replace(/о/g,'o')
-      .replace(/л/g,'l').replace(/д/g,'d').replace(/ж/g,'zh').replace(/э/g,'e')
-      .replace(/я/g,'ya').replace(/ч/g,'ch').replace(/с/g,'s').replace(/м/g,'m')
-      .replace(/и/g,'i').replace(/т/g,'t').replace(/ь/g,'').replace(/б/g,'b')
-      .replace(/ю/g,'yu').replace(/х/g,'h').replace(/ъ/g,'')
-      .replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
+    const map={'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'e','ж':'zh','з':'z','и':'i','й':'j','к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f','х':'h','ц':'c','ч':'ch','ш':'sh','щ':'sh','ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya'};
+    return s.toLowerCase().split('').map(c=>map[c]||c).join('').replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
   }
 
-  async function tryFetchChords(url){
-    const pr=await fetch(proxy(url));
-    if(!pr.ok) return null;
-    const phtml=await pr.text();
-    const parser=new DOMParser();
-    const pdoc=parser.parseFromString(phtml,'text/html');
-
-    // Заголовок
-    const h1=pdoc.querySelector('h1');
-    const titleFull=(h1?h1.textContent:'').replace(', аккорды','').trim();
-    const dashIdx=titleFull.indexOf(' - ');
-    const artist=dashIdx>0?titleFull.slice(0,dashIdx).trim():'';
-    const title=dashIdx>0?titleFull.slice(dashIdx+3).trim():titleFull||q;
-
-    // Ищем текст — amdm хранит в .t
-    const tDiv=pdoc.querySelector('.t');
-    if(!tDiv) return null;
-
-    tDiv.querySelectorAll('br').forEach(br=>br.replaceWith('\n'));
-    const allLines=tDiv.textContent.split('\n').map(l=>l.trim()).filter(l=>l);
-    const chordsSet=new Set();
-    const lyricsLines=[];
-
-    for(const line of allLines){
-      const words=line.split(/\s+/).filter(w=>w&&w!=='|');
-      const isChordLine=words.length>0&&words.length<=8&&
-        words.every(w=>CHORD_RE.test(w)||/^\}?x\d$/.test(w));
-      if(isChordLine) words.forEach(w=>{if(CHORD_RE.test(w))chordsSet.add(w);});
-      else if(line.length>2) lyricsLines.push(line);
-    }
-
-    const chords=[...chordsSet].slice(0,12).join(' ');
-    const lyrics=lyricsLines.join('\n').replace(/\n{3,}/g,'\n\n').trim();
-    if(!lyrics&&!chords) return null;
-    return {title,artist,key:chords,lyrics};
-  }
+  // Парсим запрос
+  let artistQ='', titleQ=q;
+  const dash=q.match(/^(.+?)\s*[-–]\s*(.+)$/);
+  if(dash){artistQ=dash[1].trim();titleQ=dash[2].trim();}
 
   try{
-    // Парсим запрос: "Исполнитель - Название" или просто "Название"
-    let artistQ='', titleQ=q;
-    const dash=q.match(/^(.+?)\s*[-–]\s*(.+)$/);
-    if(dash){artistQ=dash[1].trim();titleQ=dash[2].trim();}
+    // Ищем через lrclib для текста
+    el.innerHTML=`<div class="ildr">📄 Ищем текст...</div>`;
+    let lyrics='', title=titleQ||q, artist=artistQ||'';
 
-    let result=null;
+    try{
+      const r=await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(q)}`);
+      if(r.ok){
+        const results=await r.json();
+        const hit=results&&(results.find(r=>r.plainLyrics)||results[0]);
+        if(hit&&hit.plainLyrics){
+          lyrics=hit.plainLyrics.replace(/\r\n/g,'\n').replace(/\n{3,}/g,'\n\n').trim();
+          title=hit.trackName||title;
+          artist=hit.artistName||artist;
+        }
+      }
+    }catch(e){}
 
-    // Стратегия 1: если есть исполнитель и название — строим URL напрямую
-    if(artistQ&&titleQ){
-      const url=`https://amdm.ru/akkordi/${toSlug(artistQ)}/${toSlug(titleQ)}/`;
-      el.innerHTML=`<div class="ildr">🎸 Ищем аккорды...</div>`;
-      result=await tryFetchChords(url);
-    }
+    // Ищем аккорды на amdm через прямой URL
+    el.innerHTML=`<div class="ildr">🎸 Ищем аккорды...</div>`;
+    let chords='';
 
-    // Стратегия 2: поиск через amdm API (если есть)
-    if(!result){
-      el.innerHTML=`<div class="ildr">🎸 Ищем аккорды...</div>`;
-      const apiUrl=`https://amdm.ru/api/search/?query=${encodeURIComponent(q)}&limit=1`;
+    // Строим URL для amdm
+    const slugArtist=toSlug(artistQ||titleQ);
+    const slugTitle=toSlug(titleQ);
+    const amdmUrls=[
+      `https://amdm.ru/akkordi/${slugArtist}/${slugTitle}/`,
+      `https://amdm.ru/akkordi/${toSlug(q)}/`,
+    ];
+
+    for(const url of amdmUrls){
       try{
-        const ar=await fetch(proxy(apiUrl));
-        const ad=await ar.json();
-        if(ad&&ad[0]&&ad[0].url){
-          result=await tryFetchChords(ad[0].url);
+        const pr=await fetch(proxy(url));
+        if(!pr.ok) continue;
+        const phtml=await pr.text();
+        const parser=new DOMParser();
+        const pdoc=parser.parseFromString(phtml,'text/html');
+
+        // Ищем аккорды в мета description
+        const meta=pdoc.querySelector('meta[name="description"]');
+        const desc=meta?meta.getAttribute('content'):'';
+
+        // Также берём весь текст страницы
+        const bodyText=pdoc.body?pdoc.body.innerText||pdoc.body.textContent:'';
+        const fullText=desc+' '+bodyText;
+
+        // Извлекаем уникальные аккорды
+        const found=new Set();
+        let m;
+        const re=/\b([A-G][#b]?(m|maj|min|dim|aug|sus|add|2|4|5|6|7|9|11|13)*(\/[A-G][#b]?)?)\b/g;
+        while((m=re.exec(fullText))!==null){
+          if(m[0].length<=6) found.add(m[0]);
+        }
+        if(found.size>0){
+          chords=[...found].slice(0,12).join(' ');
+          break;
         }
       }catch(e){}
     }
 
-    if(result){
-      inetFoundSong=result;
-      renderFoundSong(el);
-      return;
-    }
-    throw new Error('not found on amdm');
+    inetFoundSong={title,artist,key:chords,lyrics};
+    renderFoundSong(el);
 
   }catch(e){
-    // Fallback: lrclib только текст
-    try{
-      el.innerHTML=`<div class="ildr">📄 Ищем текст...</div>`;
-      const r=await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(q)}`);
-      if(!r.ok) throw new Error('fail');
-      const results=await r.json();
-      const hit=results&&(results.find(r=>r.plainLyrics)||results[0]);
-      if(!hit||!hit.plainLyrics) throw new Error('not found');
-      inetFoundSong={
-        title:hit.trackName||q,
-        artist:hit.artistName||'',
-        key:'',
-        lyrics:hit.plainLyrics.replace(/\r\n/g,'\n').replace(/\n{3,}/g,'\n\n').trim()
-      };
-      renderFoundSong(el);
-    }catch(e2){
-      el.innerHTML=`<div class="ildr">😔 Не найдено.<br><span style="font-size:13px">Попробуйте: Исполнитель - Название</span></div>`;
-    }
+    el.innerHTML=`<div class="ildr">😔 Не найдено.<br><span style="font-size:13px">Попробуйте: Исполнитель - Название</span></div>`;
   }
 }
 
