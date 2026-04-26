@@ -959,7 +959,7 @@ async function inetSearch(){
 
   const proxy=u=>`https://corsproxy.io/?${encodeURIComponent(u)}`;
   const parser=new DOMParser();
-  const CHORD_RE=/^[A-G][#b]?(m|maj|min|dim|aug|sus|add)?[0-9]?(\/[A-G][#b]?)?$/;
+  const CHORD_RE=/^[A-G][#b]?(m|maj|min|dim|aug|sus|add|2|4|5|6|7|9|11|13)*(\/[A-G][#b]?)?$/;
 
   try{
     // Шаг 1: поиск на amdm.ru
@@ -968,14 +968,21 @@ async function inetSearch(){
     const shtml=await sr.text();
     const sdoc=parser.parseFromString(shtml,'text/html');
 
-    // Берём первую ссылку с /akkordi/
-    const link=sdoc.querySelector('a[href*="/akkordi/"]');
-    if(!link) throw new Error('not found');
+    // Ищем ссылку на песню — у неё в URL есть числовой ID (напр. /akkordi/artist/12345/song/)
+    let songUrl=null;
+    const allLinks=sdoc.querySelectorAll('a');
+    for(const a of allLinks){
+      const href=a.getAttribute('href')||'';
+      // Ссылка на конкретную песню содержит числовой сегмент
+      const fullHref=href.includes('amdm.ru')?href:(href.startsWith('/')?`https://amdm.ru${href}`:'');
+      if(fullHref.includes('/akkordi/')&&/\/\d+\//.test(fullHref)){
+        songUrl=fullHref; break;
+      }
+    }
 
-    const href=link.getAttribute('href');
-    const songUrl=href.startsWith('http')?href:`https://amdm.ru${href}`;
+    if(!songUrl) throw new Error('not found');
 
-    el.innerHTML=`<div class="ildr">🎸 Загружаем...<br><small>${songUrl}</small></div>`;
+    el.innerHTML=`<div class="ildr">🎸 Загружаем аккорды...</div>`;
 
     // Шаг 2: загружаем страницу песни
     const pr=await fetch(proxy(songUrl));
@@ -989,39 +996,50 @@ async function inetSearch(){
     const artist=dashIdx>0?titleFull.slice(0,dashIdx).trim():'';
     const title=dashIdx>0?titleFull.slice(dashIdx+3).trim():titleFull||q;
 
-    // Шаг 3: берём весь текст страницы и разбиваем по строкам
-    // Аккорды и текст на amdm перемешаны — каждая строка либо аккорд либо текст
-    const tDiv=pdoc.querySelector('.t, #song-text, pre');
-    if(!tDiv) throw new Error('no text');
+    // Блок с текстом — пробуем разные селекторы
+    const tDiv=pdoc.querySelector('.t, #song-text, .song-text, pre, .b-chords__text')
+                ||pdoc.querySelector('div[class="t"]');
 
-    // Заменяем <br> на \n
-    tDiv.querySelectorAll('br').forEach(br=>br.replaceWith('\n'));
+    let chords='', lyrics='';
 
-    // Получаем все строки
-    const allLines=tDiv.textContent.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
-
-    // Разделяем: аккорды (короткие, соответствуют паттерну) и текст (длинные)
-    const chordsFound=new Set();
-    const lyricsLines=[];
-
-    for(const line of allLines){
-      // Строка состоит только из аккордов если все слова — аккорды
-      const words=line.split(/\s+/);
-      const isChordLine=words.length<=6&&words.every(w=>CHORD_RE.test(w)||w==='|'||w==='}x2'||w==='}x3'||w==='}x4');
-      if(isChordLine){
-        words.forEach(w=>{if(CHORD_RE.test(w))chordsFound.add(w);});
-      } else {
-        lyricsLines.push(line);
+    if(tDiv){
+      tDiv.querySelectorAll('br').forEach(br=>br.replaceWith('\n'));
+      const allLines=tDiv.textContent.split('\n').map(l=>l.trim()).filter(l=>l);
+      const chordsSet=new Set();
+      const lyricsLines=[];
+      for(const line of allLines){
+        const words=line.split(/\s+/).filter(w=>w&&w!=='|');
+        if(words.length>0&&words.length<=8&&words.every(w=>CHORD_RE.test(w)||w.match(/^[|}]{1,3}x\d$/))){
+          words.forEach(w=>{if(CHORD_RE.test(w))chordsSet.add(w);});
+        } else if(line.length>2){
+          lyricsLines.push(line);
+        }
       }
+      chords=[...chordsSet].slice(0,12).join(' ');
+      lyrics=lyricsLines.join('\n').replace(/\n{3,}/g,'\n\n').trim();
     }
 
-    const chords=[...chordsFound].slice(0,12).join(' ');
-    console.log('tDiv found:', !!tDiv, 'allLines:', allLines.slice(0,10), 'chords:', chords, 'lyrics lines:', lyricsLines.slice(0,3));
-    el.innerHTML=`<div class="ildr">DEBUG: tDiv=${!!tDiv} lines=${allLines.length} chords="${chords}" lyrics_lines=${lyricsLines.length}</div>`;
-    await new Promise(r=>setTimeout(r,3000));
-    const lyrics=lyricsLines.join('\n').replace(/\n{3,}/g,'\n\n').trim();
-
-    if(!lyrics&&!chords) throw new Error('empty');
+    // Если не нашли блок — берём весь текст body
+    if(!lyrics){
+      const body=pdoc.body;
+      if(body){
+        body.querySelectorAll('script,style,nav,header,footer,.header,.footer,form').forEach(e=>e.remove());
+        body.querySelectorAll('br').forEach(br=>br.replaceWith('\n'));
+        const lines=body.textContent.split('\n').map(l=>l.trim()).filter(l=>l.length>3);
+        const chordsSet=new Set();
+        const lyricsLines=[];
+        for(const line of lines){
+          const words=line.split(/\s+/).filter(w=>w&&w!=='|');
+          if(words.length>0&&words.length<=8&&words.every(w=>CHORD_RE.test(w)||w.match(/^[|}]{1,3}x\d$/))){
+            words.forEach(w=>{if(CHORD_RE.test(w))chordsSet.add(w);});
+          } else if(line.length>5&&!line.includes('©')&&!line.includes('http')){
+            lyricsLines.push(line);
+          }
+        }
+        chords=[...chordsSet].slice(0,12).join(' ');
+        lyrics=lyricsLines.slice(0,100).join('\n').replace(/\n{3,}/g,'\n\n').trim();
+      }
+    }
 
     inetFoundSong={title,artist,key:chords,lyrics};
     renderFoundSong(el);
