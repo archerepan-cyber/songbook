@@ -1476,6 +1476,9 @@ function applyZoom(scale, animate){
     chordsWrap.style.transform=`scale(${scale})`;
     chordsWrap.style.transformOrigin='top left';
     chordsWrap.style.width=(100/scale)+'%';
+    // Сдвигаем lscroll вниз на добавленную высоту панели
+    const extra=chordsWrap.scrollHeight*(scale-1);
+    document.getElementById('lscroll').style.marginTop=extra+'px';
   }
 
   // Значок zoom
