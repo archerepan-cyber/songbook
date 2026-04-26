@@ -956,90 +956,25 @@ async function inetSearch(){
   if(!q)return;
   const el=document.getElementById('inetRes');
   el.innerHTML=`<div class="ildr">🔍 Ищем «${x(q)}»...</div>`;
-
-  const proxy=u=>`https://corsproxy.io/?${encodeURIComponent(u)}`;
-  const CHORD_RE=/\b([A-G][#b]?(m|maj|min|dim|aug|sus|add|2|4|5|6|7|9|11|13)*(\/[A-G][#b]?)?)\b/g;
-
-  function toSlug(s){
-    const map={'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'e','ж':'zh','з':'z','и':'i','й':'j','к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f','х':'h','ц':'c','ч':'ch','ш':'sh','щ':'sh','ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya'};
-    return s.toLowerCase().split('').map(c=>map[c]||c).join('').replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
-  }
-
-  // Парсим запрос
-  let artistQ='', titleQ=q;
-  const dash=q.match(/^(.+?)\s*[-–]\s*(.+)$/);
-  if(dash){artistQ=dash[1].trim();titleQ=dash[2].trim();}
-
   try{
-    // Ищем через lrclib для текста
-    el.innerHTML=`<div class="ildr">📄 Ищем текст...</div>`;
-    let lyrics='', title=titleQ||q, artist=artistQ||'';
-
-    try{
-      const r=await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(q)}`);
-      if(r.ok){
-        const results=await r.json();
-        const hit=results&&(results.find(r=>r.plainLyrics)||results[0]);
-        if(hit&&hit.plainLyrics){
-          lyrics=hit.plainLyrics.replace(/\r\n/g,'\n').replace(/\n{3,}/g,'\n\n').trim();
-          title=hit.trackName||title;
-          artist=hit.artistName||artist;
-        }
-      }
-    }catch(e){}
-
-    // Ищем аккорды на amdm через прямой URL
-    el.innerHTML=`<div class="ildr">🎸 Ищем аккорды...</div>`;
-    let chords='';
-
-    // Строим URL для amdm
-    const slugArtist=toSlug(artistQ||titleQ);
-    const slugTitle=toSlug(titleQ);
-    const amdmUrls=[
-      `https://amdm.ru/akkordi/${slugArtist}/${slugTitle}/`,
-      `https://amdm.ru/akkordi/${toSlug(q)}/`,
-    ];
-
-    for(const url of amdmUrls){
-      try{
-        const pr=await fetch(proxy(url));
-        if(!pr.ok) continue;
-        const phtml=await pr.text();
-        const parser=new DOMParser();
-        const pdoc=parser.parseFromString(phtml,'text/html');
-
-        // Ищем аккорды в мета description
-        const meta=pdoc.querySelector('meta[name="description"]');
-        const desc=meta?meta.getAttribute('content'):'';
-
-        // Также берём весь текст страницы
-        const bodyText=pdoc.body?pdoc.body.innerText||pdoc.body.textContent:'';
-        const fullText=desc+' '+bodyText;
-
-        // Извлекаем уникальные аккорды
-        const found=new Set();
-        let m;
-        const re=/\b([A-G][#b]?(m|maj|min|dim|aug|sus|add|2|4|5|6|7|9|11|13)*(\/[A-G][#b]?)?)\b/g;
-        while((m=re.exec(fullText))!==null){
-          if(m[0].length<=6) found.add(m[0]);
-        }
-        if(found.size>0){
-          chords=[...found].slice(0,12).join(' ');
-          break;
-        }
-      }catch(e){}
+    const r=await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(q)}`);
+    if(!r.ok) throw new Error('Сервис недоступен');
+    const results=await r.json();
+    const hit=results&&(results.find(r=>r.plainLyrics)||results[0]);
+    if(!hit||!hit.plainLyrics){
+      el.innerHTML=`<div class="ildr">😔 Текст не найден.<br><span style="font-size:13px">Попробуйте уточнить запрос</span></div>`;
+      return;
     }
-
-    inetFoundSong={title,artist,key:chords,lyrics};
+    inetFoundSong={
+      title:hit.trackName||q,
+      artist:hit.artistName||'',
+      key:'',
+      lyrics:hit.plainLyrics.replace(/\r\n/g,'\n').replace(/\r/g,'\n').replace(/\n{3,}/g,'\n\n').trim()
+    };
     renderFoundSong(el);
-
   }catch(e){
-    el.innerHTML=`<div class="ildr">😔 Не найдено.<br><span style="font-size:13px">Попробуйте: Исполнитель - Название</span></div>`;
+    el.innerHTML=`<div class="ildr">⚠️ ${x(e.message||'Ошибка поиска')}</div>`;
   }
-}
-
-function formatLyrics(raw){
-  return raw.replace(/\r\n/g,'\n').replace(/\r/g,'\n').replace(/\n{3,}/g,'\n\n').trim();
 }
 
 function renderFoundSong(el){
