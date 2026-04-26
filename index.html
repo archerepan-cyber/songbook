@@ -123,10 +123,6 @@
   .chords-bar{background:var(--bg2);border-bottom:.5px solid var(--sep);padding:10px 18px;display:flex;align-items:center;gap:10px;will-change:transform;transition:transform .32s cubic-bezier(.4,0,.2,1);-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;}
   .chords-bar-wrap.hidden-up{height:0 !important;}
   .chords-bar-wrap.hidden-up .chords-bar{transform:translateY(-100%);}
-  /* peek tab */
-  .chords-peek{position:absolute;top:0;left:0;right:0;height:44px;background:transparent;cursor:pointer;z-index:5;}
-  .chords-peek:active{background:rgba(255,255,255,.04);}
-  .chords-bar:active{background:var(--bg3);}
   .cb-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);white-space:nowrap;}
   .cb-val{font-size:15px;font-weight:700;color:var(--accent);}  
   .cb-edit{font-size:20px;color:var(--text3);}
@@ -335,17 +331,20 @@
   <!-- оба оверлея СНАРУЖИ zoom-wrap — не искажаются scale() -->
   <!-- оверлей для скрытия панели (поверх панели аккордов) -->
   <div id="chordsHideOverlay" style="position:absolute;left:0;right:0;z-index:20;touch-action:none;display:block;"></div>
-  <!-- оверлей для возврата панели (поверх области где была панель) -->
+  <!-- оверлей для возврата панели -->
   <div id="chordsShowOverlay" style="position:absolute;left:0;right:0;z-index:20;touch-action:none;display:none;" onclick="showChordsBar()"></div>
+  <!-- кнопки поверх hide-оверлея -->
+  <div id="chordsPencilOverlay" style="position:absolute;z-index:22;display:none;" onclick="openChordsEdit()"></div>
+  <div id="chordsFavOverlay" style="position:absolute;z-index:22;display:none;" onclick="toggleFav()"></div>
 
   <div id="detailZoomWrap">
     <!-- обёртка для плавного скрытия -->
     <div class="chords-bar-wrap" id="chordsBarWrap">
     <div class="chords-bar" id="chordsBar">
       <span class="cb-val" id="chordsVal">—</span>
-      <span class="cb-edit" style="margin-left:6px;cursor:pointer;padding:6px 8px;position:relative;z-index:21;" onclick="openChordsEdit()">✎</span>
+      <span class="cb-edit" style="margin-left:6px;padding:6px 8px;">✎</span>
       <span style="flex:1;"></span>
-      <button class="fav-btn" id="favBtn" onclick="toggleFav()" style="font-size:20px;position:relative;z-index:21;">♡</button>
+      <button class="fav-btn" id="favBtn" style="font-size:20px;pointer-events:none;">♡</button>
     </div>
     </div><!-- /chordsBarWrap -->
     <div class="chords-edit-wrap" id="chordsEditWrap">
@@ -1245,20 +1244,41 @@ function updateChordsOverlays(){
   const wrap=document.getElementById('chordsBarWrap');
   const hideOv=document.getElementById('chordsHideOverlay');
   const showOv=document.getElementById('chordsShowOverlay');
+  const pencilOv=document.getElementById('chordsPencilOverlay');
+  const favOv=document.getElementById('chordsFavOverlay');
   if(!screen||!wrap||!hideOv||!showOv)return;
   const sr=screen.getBoundingClientRect();
   const wr=wrap.getBoundingClientRect();
   if(!chordsBarHidden){
-    // оверлей поверх всей панели аккордов
     const top=wr.top-sr.top;
     const h=Math.max(wr.height,44);
     hideOv.style.top=top+'px';
     hideOv.style.height=h+'px';
     hideOv.style.display='block';
     showOv.style.display='none';
+    // позиционируем оверлеи карандашика и сердечка
+    const pencil=document.querySelector('.cb-edit');
+    const fav=document.getElementById('favBtn');
+    if(pencilOv&&pencil){
+      const pr=pencil.getBoundingClientRect();
+      pencilOv.style.top=(pr.top-sr.top)+'px';
+      pencilOv.style.left=(pr.left-sr.left)+'px';
+      pencilOv.style.width=pr.width+'px';
+      pencilOv.style.height=pr.height+'px';
+      pencilOv.style.display='block';
+    }
+    if(favOv&&fav){
+      const fr=fav.getBoundingClientRect();
+      favOv.style.top=(fr.top-sr.top)+'px';
+      favOv.style.left=(fr.left-sr.left)+'px';
+      favOv.style.width=fr.width+'px';
+      favOv.style.height=fr.height+'px';
+      favOv.style.display=fav.style.display==='none'?'none':'block';
+    }
   } else {
     hideOv.style.display='none';
-    // оверлей возврата — сверху, высота 44px
+    if(pencilOv) pencilOv.style.display='none';
+    if(favOv) favOv.style.display='none';
     showOv.style.top='0px';
     showOv.style.height='44px';
     showOv.style.display='block';
