@@ -991,8 +991,9 @@ async function inetSearch(){
     return;
   }
   const el=document.getElementById('inetRes');
-  el.innerHTML=`<div class="ildr">🔍 Ищем «${x(q)}»...</div>`;
+  el.innerHTML=`<div class="ildr">🔍 Ищем в интернете «${x(q)}»...</div>`;
   try{
+    // Первый запрос — с web_search для поиска текста в интернете
     const resp=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{
@@ -1003,9 +1004,10 @@ async function inetSearch(){
       },
       body:JSON.stringify({
         model:'claude-sonnet-4-20250514',
-        max_tokens:2000,
-        system:`Ты помогаешь найти текст песни. Пользователь вводит название или исполнителя.
-Верни ТОЛЬКО JSON объект (без markdown, без пояснений):
+        max_tokens:4000,
+        tools:[{type:'web_search_20250305',name:'web_search'}],
+        system:`Ты помогаешь найти текст песни. Найди полный текст песни в интернете используя поиск.
+После поиска верни ТОЛЬКО JSON объект (без markdown, без пояснений):
 {
   "found": true,
   "title": "точное название песни",
@@ -1013,18 +1015,30 @@ async function inetSearch(){
   "key": "тональность или основные аккорды если знаешь, иначе пустая строка",
   "lyrics": "полный текст песни с разметкой секций в квадратных скобках: [Куплет 1], [Припев] и т.д."
 }
-Если песня не найдена или ты не знаешь текст — верни {"found": false}.
-Текст должен быть полным, не обрезанным.`,
-        messages:[{role:'user',content:`Найди текст песни: ${q}`}]
+Если текст не найден — верни {"found": false}.
+Текст должен быть полным. Верни ТОЛЬКО JSON, никакого другого текста.`,
+        messages:[{role:'user',content:`Найди полный текст песни: ${q}`}]
       })
     });
     const data=await resp.json();
     if(data.error){throw new Error(data.error.message);}
-    const raw=data.content&&data.content[0]&&data.content[0].text;
-    if(!raw)throw new Error('no response');
-    const json=JSON.parse(raw.replace(/```json|```/g,'').trim());
+
+    // Извлекаем текстовый ответ из всех блоков контента
+    const textBlock=data.content&&data.content.find(b=>b.type==='text');
+    const raw=textBlock&&textBlock.text;
+    if(!raw)throw new Error('Текст не получен');
+
+    let json;
+    try{
+      // Ищем JSON в ответе
+      const match=raw.match(/\{[\s\S]*\}/);
+      json=JSON.parse(match?match[0]:raw);
+    }catch(e){
+      throw new Error('Не удалось разобрать ответ');
+    }
+
     if(!json.found){
-      el.innerHTML=`<div class="ildr">😔 Текст не найден.<br><span style="font-size:13px">Попробуйте другой запрос</span></div>`;
+      el.innerHTML=`<div class="ildr">😔 Текст не найден в интернете.<br><span style="font-size:13px">Попробуйте уточнить запрос</span></div>`;
       return;
     }
     inetFoundSong={title:json.title,artist:json.artist,key:json.key||'',lyrics:json.lyrics||''};
@@ -1033,6 +1047,7 @@ async function inetSearch(){
     el.innerHTML=`<div class="ildr">⚠️ ${x(e.message||'Ошибка поиска')}</div>`;
   }
 }
+
 
 function renderFoundSong(el){
   const s=inetFoundSong;
