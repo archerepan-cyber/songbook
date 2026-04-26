@@ -258,13 +258,14 @@
   /* Instagram-style: картинка на фоне, тёмный слой поверх, контент сверху */
   body.has-bg-image{background:transparent;}
   body.has-bg-image #app{background:transparent;}
-  body.has-bg-image #app::before{
+  #app::before{
     content:'';
     position:fixed;
     inset:0;
     z-index:0;
-    background:rgba(0,0,0,var(--overlay-alpha,0.55));
+    background:rgba(0,0,0,var(--overlay-alpha,0));
     pointer-events:none;
+    transition:background .2s;
   }
   body.has-bg-image .screen,
   body.has-bg-image .tabbar,
@@ -1622,7 +1623,8 @@ function updateOverlay(val){
   applyOverlay(parseInt(val));
   try{
     const saved=JSON.parse(localStorage.getItem('sb_bg')||'{}');
-    if(saved.type==='image'){saved.overlay=parseInt(val);localStorage.setItem('sb_bg',JSON.stringify(saved));}
+    saved.overlay=parseInt(val);
+    localStorage.setItem('sb_bg',JSON.stringify(saved));
   }catch{}
 }
 
@@ -1647,9 +1649,14 @@ function loadBgSettings(){
       setBg('color',saved.value);
       document.getElementById('bgColorPicker').value=saved.value;
     } else if(saved.type==='image'){
-      document.getElementById('bgOverlay').value=saved.overlay||50;
-      document.getElementById('bgOverlayVal').textContent=(saved.overlay||50)+'%';
       setBg('image',saved.value);
+    }
+    // Восстанавливаем затемнение для любого типа
+    if(saved.overlay){
+      document.getElementById('bgOverlay').value=saved.overlay;
+      const display=Math.round((saved.overlay-50)/40*100);
+      document.getElementById('bgOverlayVal').textContent=display;
+      applyOverlay(saved.overlay);
     }
   }catch{}
 }
