@@ -1460,17 +1460,9 @@ function applyZoom(scale, animate){
   wrap.classList.toggle('snapping',!!animate);
   wrap.style.transform=`scale(${scale})`;
   wrap.style.width=(100/scale)+'%';
-  // Растягиваем lscroll чтобы скролл работал для увеличенного контента
+  // Устанавливаем padding-bottom равный межстрочному расстоянию
   const lscroll=document.getElementById('lscroll');
-  if(lscroll){
-    const lb=document.getElementById('lb');
-    if(lb){
-      const naturalH=lb.scrollHeight;
-      const scaledH=naturalH*scale;
-      const extra=scaledH-naturalH;
-      lscroll.style.paddingBottom=Math.max(12,extra+12)+'px';
-    }
-  }
+  if(lscroll) lscroll.style.paddingBottom=(18*scale)+'px';
   // font-weight: lyrics 400→800, chords 700→900
   const t=(scale-1)/(ZOOM_MAX-1);
   const lw=Math.round(400+t*400);
