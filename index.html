@@ -262,7 +262,7 @@
     content:'';
     position:fixed;
     inset:0;
-    z-index:9999;
+    z-index:0;
     background:rgba(0,0,0,var(--overlay-alpha,0));
     pointer-events:none;
     transition:background .2s;
@@ -1613,7 +1613,8 @@ function lighten(hex,amount){
 }
 
 function applyOverlay(pct){
-  const alpha=(pct/100).toFixed(2);
+  // pct: 50-90, alpha: 0-0.4
+  const alpha=((pct-50)/40*0.4).toFixed(2);
   document.documentElement.style.setProperty('--overlay-alpha', alpha);
 }
 
