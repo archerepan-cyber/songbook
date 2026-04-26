@@ -255,26 +255,39 @@
   .bg-preset{width:44px;height:44px;border-radius:12px;border:2px solid transparent;cursor:pointer;transition:border-color .15s;}
   .bg-preset:active{transform:scale(.92);}
   .bg-preset.active{border-color:var(--accent);}
-  /* Когда установлена картинка — все панели с текстом получают backdrop */
-  body.has-bg-image .ph,
-  body.has-bg-image .chords-bar,
-  body.has-bg-image .chords-edit-wrap,
-  body.has-bg-image .meta-edit-panel,
-  body.has-bg-image .lscroll,
+  /* Instagram-style: картинка на фоне, тёмный слой поверх, контент сверху */
+  body.has-bg-image{background:transparent;}
+  body.has-bg-image #app{background:transparent;}
+  body.has-bg-image #app::before{
+    content:'';
+    position:fixed;
+    inset:0;
+    z-index:0;
+    background:rgba(0,0,0,var(--overlay-alpha,0.55));
+    pointer-events:none;
+  }
+  body.has-bg-image .screen,
   body.has-bg-image .tabbar,
-  body.has-bg-image .msheet,
-  body.has-bg-image .choice-sheet,
-  body.has-bg-image .scroll-body,
-  body.has-bg-image .iwrap,
-  body.has-bg-image .icard,
-  body.has-bg-image .ifound{
-    background:var(--bg) !important;
-    backdrop-filter:blur(2px);
-    -webkit-backdrop-filter:blur(2px);
-  }
-  body.has-bg-image #app{
+  body.has-bg-image .modal-bg{
     background:transparent !important;
+    position:relative;
+    z-index:1;
   }
+  /* Панели с текстом — слегка тёмный фон для читаемости */
+  body.has-bg-image .ph{background:rgba(0,0,0,0.3) !important;}
+  body.has-bg-image .chords-bar{background:rgba(0,0,0,0.35) !important;}
+  body.has-bg-image .chords-edit-wrap{background:rgba(0,0,0,0.4) !important;}
+  body.has-bg-image .tabbar{background:rgba(0,0,0,0.5) !important;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);}
+  body.has-bg-image .s-item{background:transparent;}
+  body.has-bg-image .s-item:active{background:rgba(255,255,255,0.08);}
+  body.has-bg-image .pl-item{background:transparent;}
+  body.has-bg-image .msheet,
+  body.has-bg-image .choice-sheet{background:rgba(20,20,20,0.92) !important;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);}
+  body.has-bg-image .lscroll{background:transparent;}
+  body.has-bg-image .meta-edit-panel{background:rgba(0,0,0,0.5) !important;}
+  body.has-bg-image .chords-bar-wrap{background:transparent;}
+  body.has-bg-image .ifound{background:rgba(20,20,20,0.85) !important;}
+  body.has-bg-image .icard{background:rgba(20,20,20,0.85) !important;}
 </style>
 </head>
 <body>
@@ -1570,12 +1583,17 @@ function setBg(type, value){
     document.getElementById('bgOverlayWrap').style.display='none';
     try{localStorage.setItem('sb_bg',JSON.stringify({type,value}));}catch{}
   } else if(type==='image'){
+    // Восстанавливаем дефолтные bg переменные — они не нужны при картинке
+    root.style.setProperty('--bg','#121212');
+    root.style.setProperty('--bg2','#1c1c1e');
+    root.style.setProperty('--bg3','#2c2c2e');
+    root.style.setProperty('--bg4','#3a3a3c');
     app.style.backgroundImage=`url(${value})`;
     app.style.backgroundSize='cover';
     app.style.backgroundPosition='center';
     app.style.backgroundAttachment='fixed';
     document.body.classList.add('has-bg-image');
-    const overlay=parseInt(document.getElementById('bgOverlay').value)||60;
+    const overlay=parseInt(document.getElementById('bgOverlay').value)||55;
     applyOverlay(overlay);
     document.getElementById('bgOverlayWrap').style.display='block';
     try{localStorage.setItem('sb_bg',JSON.stringify({type,value,overlay}));}catch{}
@@ -1593,13 +1611,7 @@ function lighten(hex,amount){
 
 function applyOverlay(pct){
   const alpha=(pct/100).toFixed(2);
-  // Устанавливаем CSS переменную — все элементы с текстом используют её
-  document.documentElement.style.setProperty('--bg-overlay-alpha', alpha);
-  // Обновляем цвета панелей с учётом затемнения
-  document.documentElement.style.setProperty('--bg',`rgba(0,0,0,${alpha})`);
-  document.documentElement.style.setProperty('--bg2',`rgba(0,0,0,${Math.min(1,(parseFloat(alpha)+0.15)).toFixed(2)})`);
-  document.documentElement.style.setProperty('--bg3',`rgba(20,20,20,${Math.min(1,(parseFloat(alpha)+0.25)).toFixed(2)})`);
-  document.documentElement.style.setProperty('--bg4',`rgba(40,40,40,${Math.min(1,(parseFloat(alpha)+0.35)).toFixed(2)})`);
+  document.documentElement.style.setProperty('--overlay-alpha', alpha);
 }
 
 function updateOverlay(val){
