@@ -1470,8 +1470,13 @@ function applyZoom(scale, animate){
   document.querySelectorAll('#lb .ll').forEach(el=>el.style.fontWeight=lw);
   document.querySelectorAll('#lb .cl').forEach(el=>el.style.fontWeight=cw);
 
-  // Аккорды не масштабируем — остаются фиксированного размера
-
+  // Аккорды масштабируем вместе с текстом
+  const chordsWrap=document.getElementById('chordsBarWrap');
+  if(chordsWrap){
+    chordsWrap.style.transform=`scale(${scale})`;
+    chordsWrap.style.transformOrigin='top left';
+    chordsWrap.style.width=(100/scale)+'%';
+  }
 
   // Значок zoom
   if(Math.abs(scale-1)>0.05) btn.textContent='Zoom ×'+scale.toFixed(1);
