@@ -1106,37 +1106,58 @@ async function inetSearch(){
   const el=document.getElementById('inetRes');
   el.innerHTML=`<div class="ildr">🔍 Ищем «${x(q)}»...</div>`;
 
+  function hasCyrillic(s){return /[а-яёА-ЯЁ]/.test(s);}
+
   // Транслитерация кириллицы в латиницу
   function translit(s){
-    const map={'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'yo','ж':'zh','з':'z','и':'i','й':'y','к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f','х':'kh','ц':'ts','ч':'ch','ш':'sh','щ':'sch','ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya'};
+    const map={'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'yo','ж':'zh','з':'z','и':'i','й':'y','к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f','х':'kh','ц':'ts','ч':'ch','ш':'sh','щ':'sch','ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya',' ':' '};
     return s.toLowerCase().split('').map(c=>map[c]!==undefined?map[c]:c).join('');
   }
 
-  function hasCyrillic(s){return /[а-яёА-ЯЁ]/.test(s);}
+  // Словарь популярных написаний (кириллица → оригинал)
+  const artistAliases={
+    'мистер кредо':'Mr.Credo','мр кредо':'Mr.Credo','мр.кредо':'Mr.Credo',
+    'би 2':'Би-2','би2':'Би-2',
+    'дайте танк':'Дайте танк (!)','дайте танк !':'Дайте танк (!)',
+    'тату':'t.A.T.u.','тату группа':'t.A.T.u.',
+    'моя михайловна':'Моя Михайловна',
+    'дdn':'ДДТ','ддт':'ДДТ',
+  };
 
   // Парсим запрос
   const dashIdx=q.indexOf(' - ');
   const qArtist=dashIdx>0?q.slice(0,dashIdx).trim():'';
   const qTitle=dashIdx>0?q.slice(dashIdx+3).trim():q;
 
-  // Строим список запросов для перебора
+  // Проверяем словарь для исполнителя
+  const artistLower=qArtist.toLowerCase();
+  const mappedArtist=artistAliases[artistLower]||null;
+
+  // Строим список запросов
   const queries=[q];
+
+  if(mappedArtist&&qTitle){
+    // Если нашли в словаре — добавляем с правильным написанием первым
+    queries.unshift(mappedArtist+' - '+qTitle);
+    queries.unshift(mappedArtist+' '+qTitle);
+  }
+
   if(hasCyrillic(q)){
-    // Добавляем транслит всего запроса
-    queries.push(translit(q));
-    // Если есть разбивка исполнитель-название
-    if(qArtist){
-      // транслит только исполнителя + оригинальное название
+    const tq=translit(q);
+    queries.push(tq);
+    if(qArtist&&qTitle){
       queries.push(translit(qArtist)+' '+qTitle);
-      // транслит только названия + оригинальный исполнитель
+      queries.push(translit(qArtist)+' '+translit(qTitle));
       queries.push(qArtist+' '+translit(qTitle));
-      // полный транслит с дефисом
-      queries.push(translit(qArtist)+' - '+translit(qTitle));
     }
   }
 
+  // Дедупликация
+  const seen=new Set();
+  const uniqueQueries=queries.filter(q=>{if(seen.has(q))return false;seen.add(q);return true;});
+
   let hit=null;
-  for(const query of queries){
+  for(const query of uniqueQueries){
     try{
       const r=await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(query)}`);
       if(!r.ok) continue;
@@ -1147,14 +1168,14 @@ async function inetSearch(){
   }
 
   if(!hit||!hit.plainLyrics){
-    el.innerHTML=`<div class="ildr">😔 Текст не найден.<br><span style="font-size:13px">Попробуйте уточнить запрос</span></div>`;
+    el.innerHTML=`<div class="ildr">😔 Текст не найден.<br><span style="font-size:13px">Попробуйте написать название на английском или латинице</span></div>`;
     return;
   }
 
-  // Всегда используем оригинальное название из базы
+  // Используем оригинальное название из базы
   inetFoundSong={
     title:hit.trackName||qTitle||q,
-    artist:hit.artistName||qArtist||'',
+    artist:hit.artistName||mappedArtist||qArtist||'',
     key:'',
     lyrics:autoFormatLyrics(hit.plainLyrics.replace(/\r\n/g,'\n').replace(/\r/g,'\n').replace(/\n{3,}/g,'\n\n').trim())
   };
