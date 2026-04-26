@@ -266,6 +266,15 @@
     background:rgba(0,0,0,var(--overlay-alpha,0.55));
     pointer-events:none;
   }
+  /* Overlay для цветного фона */
+  body.has-bg-color #app::before{
+    content:'';
+    position:fixed;
+    inset:0;
+    z-index:0;
+    background:rgba(0,0,0,var(--overlay-alpha,0));
+    pointer-events:none;
+  }
   body.has-bg-image .screen,
   body.has-bg-image .tabbar,
   body.has-bg-image .modal-bg{background:transparent !important;position:relative;z-index:1;}
@@ -1568,12 +1577,14 @@ function setBg(type, value){
     app.style.backgroundImage='';
     app.style.backgroundSize='';
     document.body.classList.remove('has-bg-image');
+    document.body.classList.add('has-bg-color');
     root.style.setProperty('--bg',value);
     root.style.setProperty('--bg2',lighten(value,8));
     root.style.setProperty('--bg3',lighten(value,16));
     root.style.setProperty('--bg4',lighten(value,24));
-    
-    try{localStorage.setItem('sb_bg',JSON.stringify({type,value}));}catch{}
+    const overlay=parseInt(document.getElementById('bgOverlay').value)||50;
+    applyOverlay(overlay);
+    try{localStorage.setItem('sb_bg',JSON.stringify({type,value,overlay}));}catch{}
   } else if(type==='image'){
     // Восстанавливаем дефолтные bg переменные — они не нужны при картинке
     root.style.setProperty('--bg','#121212');
