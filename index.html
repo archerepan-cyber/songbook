@@ -1285,7 +1285,12 @@ function showChordsBar(){
   wrap.classList.remove('hidden-up');
   const h=bar.offsetHeight||44;
   wrap.style.height=h+'px';
-  setTimeout(()=>{ if(!chordsBarHidden)wrap.style.height=''; },340);
+  setTimeout(()=>{
+    if(!chordsBarHidden){
+      wrap.style.height='';
+      updateChordsOverlays(); // обновляем после завершения анимации
+    }
+  },340);
   updateChordsOverlays();
 }
 
