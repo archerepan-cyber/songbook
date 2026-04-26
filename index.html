@@ -975,7 +975,7 @@ async function inetSearch(){
     const href=link.getAttribute('href');
     const songUrl=href.startsWith('http')?href:`https://amdm.ru${href}`;
 
-    el.innerHTML=`<div class="ildr">🎸 Загружаем...</div>`;
+    el.innerHTML=`<div class="ildr">🎸 Загружаем...<br><small>${songUrl}</small></div>`;
 
     // Шаг 2: загружаем страницу песни
     const pr=await fetch(proxy(songUrl));
@@ -1016,6 +1016,9 @@ async function inetSearch(){
     }
 
     const chords=[...chordsFound].slice(0,12).join(' ');
+    console.log('tDiv found:', !!tDiv, 'allLines:', allLines.slice(0,10), 'chords:', chords, 'lyrics lines:', lyricsLines.slice(0,3));
+    el.innerHTML=`<div class="ildr">DEBUG: tDiv=${!!tDiv} lines=${allLines.length} chords="${chords}" lyrics_lines=${lyricsLines.length}</div>`;
+    await new Promise(r=>setTimeout(r,3000));
     const lyrics=lyricsLines.join('\n').replace(/\n{3,}/g,'\n\n').trim();
 
     if(!lyrics&&!chords) throw new Error('empty');
