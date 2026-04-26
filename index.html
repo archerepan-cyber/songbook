@@ -957,76 +957,49 @@ async function inetSearch(){
   const el=document.getElementById('inetRes');
   el.innerHTML=`<div class="ildr">🔍 Ищем «${x(q)}»...</div>`;
 
-  // Пробуем несколько прокси по очереди
-  async function fetchProxy(url){
-    const proxies=[
-      u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-      u=>`https://corsproxy.io/?${encodeURIComponent(u)}`,
-      u=>`https://thingproxy.freeboard.io/fetch/${u}`,
-    ];
-    for(const p of proxies){
-      try{
-        const r=await fetch(p(url),{signal:AbortSignal.timeout(8000)});
-        if(r.ok) return r;
-      }catch(e){}
-    }
-    throw new Error('Нет доступа к интернету');
-  }
+  // Пробуем API по очереди
+  const apis=[
+    ()=>searchLrclib(q),
+    ()=>searchItunes(q),
+  ];
 
-  try{
-    // 1. Поиск на Genius
-    const searchUrl=`https://genius.com/api/search/multi?per_page=1&q=${encodeURIComponent(q)}`;
-    const r=await fetchProxy(searchUrl);
-    const data=await r.json();
-
-    const sections=data.response&&data.response.sections;
-    let hit=null;
-    if(sections){
-      for(const s of sections){
-        if(s.type==='song'&&s.hits&&s.hits.length){hit=s.hits[0].result;break;}
+  for(const api of apis){
+    try{
+      const result=await api();
+      if(result){
+        inetFoundSong=result;
+        renderFoundSong(el);
+        return;
       }
-    }
-    if(!hit){
-      el.innerHTML=`<div class="ildr">😔 Песня не найдена.<br><span style="font-size:13px">Попробуйте уточнить запрос</span></div>`;
-      return;
-    }
-
-    el.innerHTML=`<div class="ildr">📄 Загружаем текст — «${x(hit.title)}»...</div>`;
-
-    // 2. Загружаем страницу песни
-    const pr=await fetchProxy(hit.url);
-    const html=await pr.text();
-
-    // 3. Парсим текст
-    const parser=new DOMParser();
-    const doc=parser.parseFromString(html,'text/html');
-    const containers=doc.querySelectorAll('[data-lyrics-container="true"]');
-    let lyrics='';
-    containers.forEach(c=>{
-      c.querySelectorAll('br').forEach(br=>br.replaceWith('\n'));
-      c.querySelectorAll('[class*="LyricsHeader"],[class*="header"]').forEach(h=>{
-        const t=h.textContent.trim();
-        if(t) h.replaceWith('\n['+t+']\n');
-      });
-      lyrics+=c.textContent+'\n\n';
-    });
-    lyrics=lyrics.replace(/\[([^\]]+)\]\s*\[([^\]]+)\]/g,'[$1]\n[$2]').trim();
-
-    if(!lyrics){
-      el.innerHTML=`<div class="ildr">😔 Текст не найден.<br><span style="font-size:13px">Попробуйте другой запрос</span></div>`;
-      return;
-    }
-
-    inetFoundSong={
-      title:hit.title||q,
-      artist:(hit.primary_artist&&hit.primary_artist.name)||'',
-      key:'',
-      lyrics:lyrics
-    };
-    renderFoundSong(el);
-  }catch(e){
-    el.innerHTML=`<div class="ildr">⚠️ ${x(e.message||'Ошибка поиска')}</div>`;
+    }catch(e){}
   }
+
+  el.innerHTML=`<div class="ildr">😔 Текст не найден.<br><span style="font-size:13px">Попробуйте: Исполнитель - Название</span></div>`;
+}
+
+async function searchLrclib(q){
+  const r=await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(q)}`);
+  if(!r.ok) return null;
+  const results=await r.json();
+  if(!results||!results.length) return null;
+  const hit=results.find(r=>r.plainLyrics)||results[0];
+  const lyrics=(hit.plainLyrics||'').trim();
+  if(!lyrics) return null;
+  return{title:hit.trackName||q,artist:hit.artistName||'',key:'',lyrics:lyrics.replace(/\r\n/g,'\n').replace(/\r/g,'\n').replace(/\n{3,}/g,'\n\n')};
+}
+
+async function searchItunes(q){
+  // iTunes не даёт текст, но покажем что нашли песню и предложим добавить без текста
+  const r=await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&media=music&limit=1`);
+  if(!r.ok) return null;
+  const d=await r.json();
+  if(!d.results||!d.results.length) return null;
+  const hit=d.results[0];
+  return{title:hit.trackName||q,artist:hit.artistName||'',key:'',lyrics:'[Текст не найден]\n\nДобавьте текст вручную после сохранения песни.'};
+}
+
+function formatLyrics(raw){
+  return raw.replace(/\r\n/g,'\n').replace(/\r/g,'\n').replace(/\n{3,}/g,'\n\n').trim();
 }
 
 function renderFoundSong(el){
