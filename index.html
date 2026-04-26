@@ -258,37 +258,26 @@
   /* Instagram-style: картинка на фоне, тёмный слой поверх, контент сверху */
   body.has-bg-image{background:transparent;}
   body.has-bg-image #app{background:transparent;}
-  #app::before{
+  body.has-bg-image #app::before{
     content:'';
     position:fixed;
     inset:0;
     z-index:0;
-    background:rgba(0,0,0,var(--overlay-alpha,0));
+    background:rgba(0,0,0,var(--overlay-alpha,0.55));
     pointer-events:none;
-    transition:background .2s;
   }
   body.has-bg-image .screen,
   body.has-bg-image .tabbar,
-  body.has-bg-image .modal-bg{
-    background:transparent !important;
-    position:relative;
-    z-index:1;
-  }
-  /* Панели с текстом — слегка тёмный фон для читаемости */
+  body.has-bg-image .modal-bg{background:transparent !important;position:relative;z-index:1;}
   body.has-bg-image .ph{background:transparent !important;}
   body.has-bg-image .chords-bar{background:rgba(0,0,0,0.35) !important;}
-  body.has-bg-image .chords-edit-wrap{background:rgba(0,0,0,0.4) !important;}
   body.has-bg-image .tabbar{background:rgba(0,0,0,0.5) !important;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);}
   body.has-bg-image .s-item{background:transparent;}
-  body.has-bg-image .s-item:active{background:rgba(255,255,255,0.08);}
   body.has-bg-image .pl-item{background:transparent;}
-  body.has-bg-image .msheet,
-  body.has-bg-image .choice-sheet{background:rgba(20,20,20,0.92) !important;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);}
+  body.has-bg-image .msheet,.has-bg-image .choice-sheet{background:rgba(20,20,20,0.92) !important;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);}
   body.has-bg-image .lscroll{background:transparent;}
   body.has-bg-image .meta-edit-panel{background:rgba(0,0,0,0.5) !important;}
-  body.has-bg-image .chords-bar-wrap{background:transparent;}
   body.has-bg-image .ifound{background:rgba(20,20,20,0.85) !important;}
-  body.has-bg-image .icard{background:rgba(20,20,20,0.85) !important;}
 </style>
 </head>
 <body>
@@ -1613,13 +1602,14 @@ function lighten(hex,amount){
 }
 
 function applyOverlay(pct){
-  // pct: 50-90, alpha: 0-0.4
-  const alpha=((pct-50)/40*0.4).toFixed(2);
+  // pct: 50-90 → alpha: 0-0.85
+  const alpha=((pct-50)/40*0.85).toFixed(2);
   document.documentElement.style.setProperty('--overlay-alpha', alpha);
 }
 
+
 function updateOverlay(val){
-  const display=Math.round((parseInt(val)-50)/40*100); // 50-90 → 0-100
+  const display=Math.round((parseInt(val)-50)/40*100);
   document.getElementById('bgOverlayVal').textContent=display;
   applyOverlay(parseInt(val));
   try{
