@@ -869,7 +869,7 @@ function startScroll(){
   let acc=0;
   scTimer=setInterval(()=>{
     // После 6 скорость растёт быстрее
-    const boost=spd>6?spd*0.14:spd*0.08;
+    const boost=spd>6?spd*0.10:spd*0.08;
     acc+=boost;
     if(acc>=1){
       area.scrollTop+=Math.floor(acc);
@@ -1019,9 +1019,15 @@ async function inetSearch(){
       el.innerHTML=`<div class="ildr">😔 Текст не найден.<br><span style="font-size:13px">Попробуйте уточнить запрос</span></div>`;
       return;
     }
+    const hasCyrillic=s=>/[а-яёА-ЯЁ]/.test(s);
+    const dashIdx=q.indexOf(' - ');
+    const qTitle=dashIdx>0?q.slice(dashIdx+3).trim():q;
+    const qArtist=dashIdx>0?q.slice(0,dashIdx).trim():'';
+    const finalTitle=hasCyrillic(q)&&!hasCyrillic(hit.trackName||'')?qTitle:(hit.trackName||q);
+    const finalArtist=hasCyrillic(q)&&!hasCyrillic(hit.artistName||'')&&qArtist?qArtist:(hit.artistName||'');
     inetFoundSong={
-      title:hit.trackName||q,
-      artist:hit.artistName||'',
+      title:finalTitle,
+      artist:finalArtist,
       key:'',
       lyrics:autoFormatLyrics(hit.plainLyrics.replace(/\r\n/g,'\n').replace(/\r/g,'\n').replace(/\n{3,}/g,'\n\n').trim())
     };
