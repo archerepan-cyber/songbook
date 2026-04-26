@@ -1604,8 +1604,9 @@ function lighten(hex,amount){
 }
 
 function applyOverlay(pct){
-  // pct: 50-90 → alpha: 0-0.85
-  const alpha=((pct-50)/40*0.85).toFixed(2);
+  // pct: 50-90, display: 0-100
+  // При 0 (pct=50) затемнение = 0.53, при 100 (pct=90) = 0.85
+  const alpha=(0.53+(pct-50)/40*0.32).toFixed(2);
   document.documentElement.style.setProperty('--overlay-alpha', alpha);
 }
 

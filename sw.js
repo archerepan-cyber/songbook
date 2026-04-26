@@ -1,4 +1,4 @@
-const CACHE = 'songbook-v47';
+const CACHE = 'songbook-v48';
 const ASSETS = ['/', '/index.html', '/manifest.json'];
 
 self.addEventListener('install', e => {
