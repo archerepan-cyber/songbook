@@ -866,10 +866,11 @@ function startScroll(){
   const area=document.getElementById('lscroll');
   const spd=curSpd;
   clearInterval(scTimer);
-  // Use accumulator so even speed=1 moves smoothly
   let acc=0;
   scTimer=setInterval(()=>{
-    acc+=spd*0.08;
+    // После 6 скорость растёт быстрее
+    const boost=spd>6?spd*0.14:spd*0.08;
+    acc+=boost;
     if(acc>=1){
       area.scrollTop+=Math.floor(acc);
       acc-=Math.floor(acc);
@@ -1079,7 +1080,12 @@ function inetAddSong(plName){
   renderRep();renderPL();
   renderSongs(filterPl?songs.filter(s2=>(s2.playlist||'')===filterPl):songs);
   inetFoundSong=null;
-  document.getElementById('inetRes').innerHTML=`<div class="ildr" style="color:var(--accent2);">✓ «${x(s.title)}» добавлена!</div>`;
+  const successEl=document.getElementById('inetRes');
+  successEl.innerHTML=`<div class="ildr" style="color:var(--accent2);transition:opacity .5s;">✓ «${x(s.title)}» добавлена!</div>`;
+  setTimeout(()=>{
+    const d=successEl.querySelector('div');
+    if(d){d.style.opacity='0';setTimeout(()=>{successEl.innerHTML='';},500);}
+  },1000);
   document.getElementById('inetQ').value='';
   toast('Добавлено: '+s.title);
 }
