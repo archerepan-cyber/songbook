@@ -719,7 +719,8 @@ function openSong(id){
   show('detail');
   requestAnimationFrame(()=>{
     document.getElementById('lscroll').scrollTop=0;
-    updateChordsOverlays();
+    // дать браузеру применить transform перед измерением позиции
+    setTimeout(updateChordsOverlays, 50);
   });
 }
 function renderLyrics(){
@@ -1368,6 +1369,8 @@ function applyZoom(scale, animate){
   // карандашик
   const pencil=document.querySelector('.cb-edit');
   if(pencil) pencil.style.display=scale>=1.7?'none':'inline';
+  // обновляем оверлей после изменения масштаба (не во время pinch — только после)
+  if(!pinchActive) updateChordsOverlays();
 }
 
 function showZoomBadge(){
@@ -1425,6 +1428,8 @@ function initPinchZoom(){
       pinchActive=false;
       if(lzScale<1.08){applyZoom(1.0,true);clearTimeout(zoomBadgeTimer);document.getElementById('zoomResetBtn').classList.remove('visible');try{localStorage.setItem('sb_zoom','1');}catch{}}
       else{scheduleHideBadge();try{localStorage.setItem('sb_zoom',lzScale);}catch{};}
+      // обновить оверлей после окончания pinch
+      setTimeout(updateChordsOverlays, 50);
     }
   });
   el.addEventListener('touchcancel',function(){pinchActive=false;scheduleHideBadge();});
