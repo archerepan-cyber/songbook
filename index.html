@@ -1105,32 +1105,62 @@ async function inetSearch(){
   if(!q)return;
   const el=document.getElementById('inetRes');
   el.innerHTML=`<div class="ildr">🔍 Ищем «${x(q)}»...</div>`;
-  try{
-    const r=await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(q)}`);
-    if(!r.ok) throw new Error('Сервис недоступен');
-    const results=await r.json();
-    const hit=results&&(results.find(r=>r.plainLyrics)||results[0]);
-    if(!hit||!hit.plainLyrics){
-      el.innerHTML=`<div class="ildr">😔 Текст не найден.<br><span style="font-size:13px">Попробуйте уточнить запрос</span></div>`;
-      return;
-    }
-    const hasCyrillic=s=>/[а-яёА-ЯЁ]/.test(s);
-    const dashIdx=q.indexOf(' - ');
-    const qTitle=dashIdx>0?q.slice(dashIdx+3).trim():q;
-    const qArtist=dashIdx>0?q.slice(0,dashIdx).trim():'';
-    const finalTitle=hasCyrillic(q)&&!hasCyrillic(hit.trackName||'')?qTitle:(hit.trackName||q);
-    const finalArtist=hasCyrillic(q)&&!hasCyrillic(hit.artistName||'')&&qArtist?qArtist:(hit.artistName||'');
-    inetFoundSong={
-      title:finalTitle,
-      artist:finalArtist,
-      key:'',
-      lyrics:autoFormatLyrics(hit.plainLyrics.replace(/\r\n/g,'\n').replace(/\r/g,'\n').replace(/\n{3,}/g,'\n\n').trim())
-    };
-    renderFoundSong(el);
-  }catch(e){
-    el.innerHTML=`<div class="ildr">⚠️ ${x(e.message||'Ошибка поиска')}</div>`;
+
+  // Транслитерация кириллицы в латиницу
+  function translit(s){
+    const map={'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'yo','ж':'zh','з':'z','и':'i','й':'y','к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f','х':'kh','ц':'ts','ч':'ch','ш':'sh','щ':'sch','ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya'};
+    return s.toLowerCase().split('').map(c=>map[c]!==undefined?map[c]:c).join('');
   }
+
+  function hasCyrillic(s){return /[а-яёА-ЯЁ]/.test(s);}
+
+  // Парсим запрос
+  const dashIdx=q.indexOf(' - ');
+  const qArtist=dashIdx>0?q.slice(0,dashIdx).trim():'';
+  const qTitle=dashIdx>0?q.slice(dashIdx+3).trim():q;
+
+  // Строим список запросов для перебора
+  const queries=[q];
+  if(hasCyrillic(q)){
+    // Добавляем транслит всего запроса
+    queries.push(translit(q));
+    // Если есть разбивка исполнитель-название
+    if(qArtist){
+      // транслит только исполнителя + оригинальное название
+      queries.push(translit(qArtist)+' '+qTitle);
+      // транслит только названия + оригинальный исполнитель
+      queries.push(qArtist+' '+translit(qTitle));
+      // полный транслит с дефисом
+      queries.push(translit(qArtist)+' - '+translit(qTitle));
+    }
+  }
+
+  let hit=null;
+  for(const query of queries){
+    try{
+      const r=await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(query)}`);
+      if(!r.ok) continue;
+      const results=await r.json();
+      const found=results&&(results.find(r=>r.plainLyrics)||results[0]);
+      if(found&&found.plainLyrics){hit=found;break;}
+    }catch(e){}
+  }
+
+  if(!hit||!hit.plainLyrics){
+    el.innerHTML=`<div class="ildr">😔 Текст не найден.<br><span style="font-size:13px">Попробуйте уточнить запрос</span></div>`;
+    return;
+  }
+
+  // Всегда используем оригинальное название из базы
+  inetFoundSong={
+    title:hit.trackName||qTitle||q,
+    artist:hit.artistName||qArtist||'',
+    key:'',
+    lyrics:autoFormatLyrics(hit.plainLyrics.replace(/\r\n/g,'\n').replace(/\r/g,'\n').replace(/\n{3,}/g,'\n\n').trim())
+  };
+  renderFoundSong(el);
 }
+
 
 function renderFoundSong(el){
   const s=inetFoundSong;
