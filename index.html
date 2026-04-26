@@ -958,78 +958,91 @@ async function inetSearch(){
   el.innerHTML=`<div class="ildr">🔍 Ищем «${x(q)}»...</div>`;
 
   try{
-    // Шаг 1: ищем текст через lrclib
-    let lyricsResult=null;
-    try{
-      const r=await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(q)}`);
-      if(r.ok){
-        const results=await r.json();
-        const hit=results&&results.find(r=>r.plainLyrics)||results&&results[0];
-        if(hit&&hit.plainLyrics){
-          lyricsResult={
-            title:hit.trackName||q,
-            artist:hit.artistName||'',
-            lyrics:hit.plainLyrics.replace(/\r\n/g,'\n').replace(/\r/g,'\n').replace(/\n{3,}/g,'\n\n').trim()
-          };
-        }
-      }
-    }catch(e){}
+    // Ищем на amdm.ru через их поиск
+    const searchUrl=`https://amdm.ru/search/?q=${encodeURIComponent(q)}`;
+    const proxyUrl=`https://api.allorigins.win/get?url=${encodeURIComponent(searchUrl)}`;
+    const sr=await fetch(proxyUrl);
+    const sd=await sr.json();
+    const html=sd.contents;
 
-    // Шаг 2: ищем аккорды через mychords.net (есть CORS)
-    let chordsResult='';
-    try{
-      el.innerHTML=`<div class="ildr">🎸 Ищем аккорды...</div>`;
-      // Поиск на mychords
-      const sr=await fetch(`https://mychords.net/search/?q=${encodeURIComponent(q)}`);
-      if(sr.ok){
-        const html=await sr.text();
-        const parser=new DOMParser();
-        const doc=parser.parseFromString(html,'text/html');
-        // Берём первую ссылку результата
-        const firstLink=doc.querySelector('.item-title a, .search-results a, h2 a');
-        if(firstLink){
-          const href=firstLink.getAttribute('href');
-          const pageUrl=href.startsWith('http')?href:`https://mychords.net${href}`;
-          const pr=await fetch(pageUrl);
-          if(pr.ok){
-            const phtml=await pr.text();
-            const pdoc=parser.parseFromString(phtml,'text/html');
-            // Ищем аккорды в тексте страницы
-            const chordEl=pdoc.querySelector('.chord-title, .b-chords, [class*="chord"]');
-            if(chordEl) chordsResult=chordEl.textContent.trim().split('\n').slice(0,1).join('');
-          }
-        }
-      }
-    }catch(e){}
+    const parser=new DOMParser();
+    const doc=parser.parseFromString(html,'text/html');
 
-    // Если ничего не нашли
-    if(!lyricsResult){
-      // Попробуем iTunes хотя бы для названия
-      try{
-        const r=await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&media=music&limit=1`);
-        const d=await r.json();
-        if(d.results&&d.results.length){
-          const hit=d.results[0];
-          lyricsResult={title:hit.trackName||q,artist:hit.artistName||'',lyrics:''};
-        }
-      }catch(e){}
-    }
-
-    if(!lyricsResult){
-      el.innerHTML=`<div class="ildr">😔 Не найдено.<br><span style="font-size:13px">Попробуйте: Исполнитель Название</span></div>`;
+    // Берём первую ссылку результата поиска
+    const link=doc.querySelector('.song-list li a, h3 a, .search-results a, td a');
+    if(!link){
+      // Если поиск не дал результат — пробуем lrclib для текста
+      await searchLrclibOnly(q,el);
       return;
     }
 
-    inetFoundSong={
-      title:lyricsResult.title,
-      artist:lyricsResult.artist,
-      key:chordsResult,
-      lyrics:lyricsResult.lyrics
-    };
+    const href=link.getAttribute('href');
+    const pageUrl=href.startsWith('http')?href:`https://amdm.ru${href}`;
+    el.innerHTML=`<div class="ildr">🎸 Загружаем аккорды и текст...</div>`;
+
+    // Загружаем страницу песни
+    const pr=await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(pageUrl)}`);
+    const pd=await pr.json();
+    const phtml=pd.contents;
+    const pdoc=parser.parseFromString(phtml,'text/html');
+
+    // Извлекаем аккорды и текст
+    const titleEl=pdoc.querySelector('h1.artist-name, h1, .song-title');
+    const artistEl=pdoc.querySelector('.artist, h2, .breadcrumb a:last-child');
+
+    // Текст с аккордами на amdm хранится в div.t
+    const lyricsEl=pdoc.querySelector('.t, #text, .song-text, pre');
+    let lyrics='', chords='';
+
+    if(lyricsEl){
+      // Извлекаем аккорды из тегов
+      const chordTags=lyricsEl.querySelectorAll('a[href*="akkordi"], .chord, b');
+      const chordsSet=new Set();
+      chordTags.forEach(c=>{
+        const t=c.textContent.trim();
+        if(t&&t.length<6) chordsSet.add(t);
+      });
+      chords=[...chordsSet].slice(0,8).join(' ');
+
+      // Текст без тегов аккордов
+      chordTags.forEach(c=>c.replaceWith(' '));
+      lyricsEl.querySelectorAll('br').forEach(br=>br.replaceWith('\n'));
+      lyrics=lyricsEl.textContent.replace(/\n{3,}/g,'\n\n').trim();
+    }
+
+    const title=titleEl?titleEl.textContent.trim():q;
+    const artist=artistEl?artistEl.textContent.trim():'';
+
+    if(!lyrics){
+      await searchLrclibOnly(q,el);
+      return;
+    }
+
+    inetFoundSong={title,artist,key:chords,lyrics};
     renderFoundSong(el);
 
   }catch(e){
-    el.innerHTML=`<div class="ildr">⚠️ ${x(e.message||'Ошибка поиска')}</div>`;
+    await searchLrclibOnly(q,el);
+  }
+}
+
+async function searchLrclibOnly(q,el){
+  try{
+    el.innerHTML=`<div class="ildr">📄 Ищем текст...</div>`;
+    const r=await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(q)}`);
+    if(!r.ok) throw new Error('Не найдено');
+    const results=await r.json();
+    const hit=results&&(results.find(r=>r.plainLyrics)||results[0]);
+    if(!hit||!hit.plainLyrics) throw new Error('Не найдено');
+    inetFoundSong={
+      title:hit.trackName||q,
+      artist:hit.artistName||'',
+      key:'',
+      lyrics:hit.plainLyrics.replace(/\r\n/g,'\n').replace(/\r/g,'\n').replace(/\n{3,}/g,'\n\n').trim()
+    };
+    renderFoundSong(el);
+  }catch(e){
+    el.innerHTML=`<div class="ildr">😔 Не найдено.<br><span style="font-size:13px">Попробуйте: Исполнитель - Название</span></div>`;
   }
 }
 
