@@ -27,7 +27,7 @@
   .scroll-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;}
 
   /* HEADER */
-  .ph{padding:calc(var(--safe-top) + 14px) 20px 10px;background:var(--bg);flex-shrink:0;}
+  .ph{padding:calc(var(--safe-top) + 14px) 20px 10px;background:var(--bg);flex-shrink:0;position:relative;z-index:1;}
   .ph-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
   .ph-title{font-size:clamp(18px,6vw,34px);font-weight:700;letter-spacing:-.5px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:10px;}
   .add-btn{background:var(--accent);border:none;border-radius:20px;padding:8px 16px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;flex-shrink:0;white-space:nowrap;}
@@ -275,7 +275,7 @@
     z-index:1;
   }
   /* Панели с текстом — слегка тёмный фон для читаемости */
-  body.has-bg-image .ph{background:rgba(0,0,0,0.3) !important;}
+  body.has-bg-image .ph{background:transparent !important;}
   body.has-bg-image .chords-bar{background:rgba(0,0,0,0.35) !important;}
   body.has-bg-image .chords-edit-wrap{background:rgba(0,0,0,0.4) !important;}
   body.has-bg-image .tabbar{background:rgba(0,0,0,0.5) !important;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);}
@@ -1615,6 +1615,11 @@ function lighten(hex,amount){
 function applyOverlay(pct){
   const alpha=(pct/100).toFixed(2);
   document.documentElement.style.setProperty('--overlay-alpha', alpha);
+  // Когда есть затемнение — шапки делаем прозрачными чтобы оверлей был единым
+  const hasOverlay=pct>50;
+  document.querySelectorAll('.ph').forEach(el=>{
+    el.style.background=hasOverlay?'transparent':'';
+  });
 }
 
 function updateOverlay(val){
