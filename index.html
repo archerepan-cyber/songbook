@@ -980,6 +980,10 @@ async function inetSearch(){
       }
     }
 
+    // DEBUG
+    const allHrefs=[...sdoc.querySelectorAll('a')].map(a=>a.getAttribute('href')).filter(Boolean).slice(0,20);
+    el.innerHTML=`<div class="ildr" style="font-size:11px;text-align:left;padding:10px;">LINKS:<br>${allHrefs.join('<br>')}</div>`;
+    await new Promise(r=>setTimeout(r,8000));
     if(!songUrl) throw new Error('not found');
 
     el.innerHTML=`<div class="ildr">🎸 Загружаем аккорды...</div>`;
