@@ -737,7 +737,7 @@ function cancelLyricsEdit(){
 function saveLyricsEdit(){
   if(!curSong)return;
   // preserve raw text exactly as typed — newlines kept as \n
-  const val=document.getElementById("lyricsTextarea").value;
+  const val=autoFormatLyrics(document.getElementById("lyricsTextarea").value);
   curSong.lyrics=val;
   const idx=songs.findIndex(s=>s.id===curSong.id);
   if(idx>=0){songs[idx].lyrics=val;sv(SK,songs);}
@@ -931,7 +931,7 @@ function saveItem(){
       key:document.getElementById('fKey').value.trim(),
       instr:'Guitar',
       playlist:pl,
-      lyrics:document.getElementById('fLyrics').value,
+      lyrics:autoFormatLyrics(document.getElementById('fLyrics').value),
       cover:window._pendingSongCoverLocal||window._pendingSongCover||''};
     songs.unshift(s);sv(SK,songs);
     if(pl&&!pls.find(p=>p.name===pl)){pls.push({id:'p'+Date.now(),name:pl,desc:'',emoji:'🎵',color:'#636366',img:''});sv(PK,pls);}
@@ -951,6 +951,59 @@ let inetFoundSong=null;
 
 
 
+
+// ── AUTO FORMAT LYRICS ──
+function autoFormatLyrics(raw){
+  if(!raw||!raw.trim()) return raw;
+  // Если уже есть разметка — не трогаем
+  if(/\[.+\]/.test(raw)) return raw;
+
+  const lines=raw.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');
+  
+  // Разбиваем на блоки по пустым строкам
+  const blocks=[];
+  let current=[];
+  for(const line of lines){
+    if(line.trim()===''){
+      if(current.length>0){blocks.push(current);current=[];}
+    } else {
+      current.push(line);
+    }
+  }
+  if(current.length>0) blocks.push(current);
+  if(blocks.length===0) return raw;
+
+  // Определяем повторяющиеся блоки (припев)
+  const blockTexts=blocks.map(b=>b.join('\n').toLowerCase().trim());
+  const freq={};
+  blockTexts.forEach(t=>{freq[t]=(freq[t]||0)+1;});
+  
+  let verseNum=0, chorusLabel='';
+  const result=[];
+  const usedLabels={};
+
+  for(let i=0;i<blocks.length;i++){
+    const btext=blockTexts[i];
+    const isRepeat=freq[btext]>1;
+    
+    if(isRepeat){
+      if(!chorusLabel) chorusLabel=btext;
+      if(btext===chorusLabel){
+        result.push('[Припев]');
+      } else {
+        result.push('[Бридж]');
+      }
+    } else {
+      verseNum++;
+      result.push(verseNum===1?'[Куплет 1]':`[Куплет ${verseNum}]`);
+    }
+    result.push(...blocks[i]);
+    result.push('');
+  }
+
+  return result.join('\n').replace(/\n{3,}/g,'\n\n').trim();
+}
+
 async function inetSearch(){
   const q=document.getElementById('inetQ').value.trim();
   if(!q)return;
@@ -969,7 +1022,7 @@ async function inetSearch(){
       title:hit.trackName||q,
       artist:hit.artistName||'',
       key:'',
-      lyrics:hit.plainLyrics.replace(/\r\n/g,'\n').replace(/\r/g,'\n').replace(/\n{3,}/g,'\n\n').trim()
+      lyrics:autoFormatLyrics(hit.plainLyrics.replace(/\r\n/g,'\n').replace(/\r/g,'\n').replace(/\n{3,}/g,'\n\n').trim())
     };
     renderFoundSong(el);
   }catch(e){
@@ -1161,7 +1214,7 @@ function saveMetaEdit(){
   const artist=document.getElementById('artistInput').value.trim();
   const lyrics=document.getElementById('lyricsTextarea').value;
   if(!title){toast('Введите название');return;}
-  curSong.title=title; curSong.artist=artist; curSong.lyrics=lyrics;
+  curSong.title=title; curSong.artist=artist; curSong.lyrics=autoFormatLyrics(lyrics);
   const idx=songs.findIndex(s=>s.id===curSong.id);
   if(idx>=0){songs[idx].title=title;songs[idx].artist=artist;songs[idx].lyrics=lyrics;sv(SK,songs);}
   closeMetaEdit();
