@@ -1457,19 +1457,35 @@ function applyZoom(scale, animate){
   const wrap=document.getElementById('detailZoomWrap');
   const btn=document.getElementById('zoomResetBtn');
   if(!wrap)return;
-  wrap.classList.toggle('snapping',!!animate);
-  wrap.style.transform=`scale(${scale})`;
-  wrap.style.width=(100/scale)+'%';
-  // Устанавливаем padding-bottom равный межстрочному расстоянию
-  const lscroll=document.getElementById('lscroll');
-  if(lscroll) lscroll.style.paddingBottom=(18*scale)+'px';
+
+  // Вместо transform:scale — увеличиваем font-size напрямую
+  // Это правильно работает со скроллом
+  const baseFontSize=22; // базовый размер .ll
+  const newFontSize=(baseFontSize*scale).toFixed(1);
+  wrap.style.transform='';
+  wrap.style.width='';
+
+  // Масштабируем шрифт всего контента
+  const lb=document.getElementById('lb');
+  if(lb) lb.style.fontSize=newFontSize+'px';
+
   // font-weight: lyrics 400→800, chords 700→900
   const t=(scale-1)/(ZOOM_MAX-1);
   const lw=Math.round(400+t*400);
   const cw=Math.round(700+t*200);
-  document.querySelectorAll('#lb .ll').forEach(el=>el.style.fontWeight=lw);
-  document.querySelectorAll('#lb .cl').forEach(el=>el.style.fontWeight=cw);
-  // аккорды: заморозить рост при scale >= 2.0 через обратный scale на chordsBarWrap
+  document.querySelectorAll('#lb .ll').forEach(el=>{
+    el.style.fontWeight=lw;
+    el.style.fontSize=newFontSize+'px';
+  });
+  document.querySelectorAll('#lb .cl').forEach(el=>{
+    el.style.fontWeight=cw;
+    el.style.fontSize=(15*scale).toFixed(1)+'px';
+  });
+  document.querySelectorAll('#lb .vl').forEach(el=>{
+    el.style.fontSize=(11*scale).toFixed(1)+'px';
+  });
+
+  // Аккорды: не масштабируем после CHORDS_FREEZE
   const chordsWrap=document.getElementById('chordsBarWrap');
   if(chordsWrap){
     if(scale>CHORDS_FREEZE){
@@ -1483,21 +1499,36 @@ function applyZoom(scale, animate){
       chordsWrap.style.transformOrigin='';
     }
   }
-  // значок zoom — только текст масштаба, без ✕
+
+  // Значок zoom
   if(Math.abs(scale-1)>0.05) btn.textContent='Zoom ×'+scale.toFixed(1);
-  // (видимость управляется отдельно через showZoomBadge/scheduleHideBadge)
-  // сердечко
+
+  // Сердечко
   const fb=document.getElementById('favBtn');
   if(fb){
     if(scale>=1.5){fb.dataset.hiddenByZoom='1';fb.style.display='none';}
     else if(fb.dataset.hiddenByZoom==='1'){fb.dataset.hiddenByZoom='';fb.style.display=fb.dataset.favHidden==='1'?'none':'block';}
   }
-  // карандашик
+  // Карандашик
   const pencil=document.querySelector('.cb-edit');
-  if(pencil) pencil.style.display=scale>=1.7?'none':'inline';
-  // обновляем оверлей после изменения масштаба (не во время pinch — только после)
+  const cbSpacer=document.getElementById('cbSpacer');
+  if(pencil){
+    if(scale>=1.7){
+      pencil.style.display='none';
+      const chordsBar=document.getElementById('chordsBar');
+      if(chordsBar) chordsBar.style.justifyContent='center';
+      if(cbSpacer) cbSpacer.style.display='none';
+    } else {
+      pencil.style.display='inline';
+      const chordsBar=document.getElementById('chordsBar');
+      if(chordsBar) chordsBar.style.justifyContent='';
+      if(cbSpacer) cbSpacer.style.display='';
+    }
+  }
+  // Обновляем оверлеи
   if(!pinchActive) updateChordsOverlays();
 }
+
 
 function showZoomBadge(){
   const btn=document.getElementById('zoomResetBtn');
