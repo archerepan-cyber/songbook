@@ -414,13 +414,15 @@
       <!-- Готовые цвета -->
       <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
         <button onclick="setBg('color','#121212')" class="bg-preset" style="background:#121212;" title="Чёрный"></button>
-        <button onclick="setBg('color','#1a0a2e')" class="bg-preset" style="background:#1a0a2e;" title="Тёмно-фиолетовый"></button>
-        <button onclick="setBg('color','#0a1628')" class="bg-preset" style="background:#0a1628;" title="Тёмно-синий"></button>
-        <button onclick="setBg('color','#0a2010')" class="bg-preset" style="background:#0a2010;" title="Тёмно-зелёный"></button>
-        <button onclick="setBg('color','#1a0a0a')" class="bg-preset" style="background:#1a0a0a;" title="Тёмно-красный"></button>
-        <button onclick="setBg('color','#1a1200')" class="bg-preset" style="background:#1a1200;" title="Тёмно-коричневый"></button>
-        <button onclick="setBg('color','#0d0d0d')" class="bg-preset" style="background:#0d0d0d;" title="Почти чёрный"></button>
         <button onclick="setBg('color','#1c1c1e')" class="bg-preset" style="background:#1c1c1e;" title="Тёмно-серый"></button>
+        <button onclick="setBg('color','#0d0d0d')" class="bg-preset" style="background:#0d0d0d;" title="Почти чёрный"></button>
+        <button onclick="setBg('color','#2c2c2e')" class="bg-preset" style="background:#2c2c2e;" title="Серый"></button>
+        <button onclick="setBg('color','#6b5a2a')" class="bg-preset" style="background:#6b5a2a;" title="Amber"></button>
+        <button onclick="setBg('color','#3d2a1a')" class="bg-preset" style="background:#3d2a1a;" title="Cacao"></button>
+        <button onclick="setBg('color','#5a2e08')" class="bg-preset" style="background:#5a2e08;" title="Pumpkin"></button>
+        <button onclick="setBg('color','#2d3520')" class="bg-preset" style="background:#2d3520;" title="Moss"></button>
+        <button onclick="setBg('color','#3d1010')" class="bg-preset" style="background:#3d1010;" title="Rosehip"></button>
+        <button onclick="setBg('color','#182028')" class="bg-preset" style="background:#182028;" title="Lagoon"></button>
       </div>
 
       <!-- Свой цвет -->
@@ -479,7 +481,7 @@
   </div>
   <button class="tab detail-tab" id="scbtn" onclick="toggleScroll()">
     <svg class="t-icon" id="scPlayIcon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
-    <span class="t-lbl" id="scPlayLbl">Прокрутка</span>
+    <span class="t-lbl" id="scPlayLbl">Суфлёр</span>
   </button>
   <div class="tab detail-tab sctrl-spd-tab">
     <div class="spd-ctrl">
@@ -970,7 +972,7 @@ function startScroll(){
     if(area.scrollTop>=area.scrollHeight-area.clientHeight-1)stopScroll();
   },30);
 }
-function stopScroll(){isScroll=false;clearInterval(scTimer);const btn=document.getElementById('scbtn');if(btn){document.getElementById('scPlayIcon').innerHTML='<polygon points="5,3 19,12 5,21"/>';document.getElementById('scbtn').classList.remove('playing');document.getElementById('scPlayLbl').textContent='Прокрутка';btn.classList.remove('playing');}}
+function stopScroll(){isScroll=false;clearInterval(scTimer);const btn=document.getElementById('scbtn');if(btn){document.getElementById('scPlayIcon').innerHTML='<polygon points="5,3 19,12 5,21"/>';document.getElementById('scbtn').classList.remove('playing');document.getElementById('scPlayLbl').textContent='Суфлёр';btn.classList.remove('playing');}}
 let curSpd=3;
 function updSpd(){document.getElementById('scn').textContent=curSpd;if(isScroll){stopScroll();startScroll();}}
 function changeSpd(delta){
