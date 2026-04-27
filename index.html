@@ -1471,7 +1471,7 @@ function applyZoom(scale, animate){
   // Масштабируем только текст — lscroll остаётся нетронутым, скролл работает
   lyricWrap.style.transform=`scale(${scale})`;
   lyricWrap.style.width=(100/scale)+'%';
-  lyricWrap.style.paddingBottom=(80*scale)+'px';
+  lyricWrap.style.paddingBottom=(30*scale)+'px';
 
   // font-weight
   const t=(scale-1)/(ZOOM_MAX-1);
