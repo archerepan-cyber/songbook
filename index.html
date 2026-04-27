@@ -881,11 +881,20 @@ function openSong(id){
 function renderLyrics(){
   const el=document.getElementById('lb');if(!curSong)return;
   let firstDone=false;
-  // Функция для предотвращения переноса знаков препинания на новую строку
-  function fixPunct(line){
-    return x(line)
-      .replace(/([,\.!?;:])(\s)/g,'$1&nbsp;')
-      .replace(/\s([,\.!?;:])/g,'&nbsp;$1');
+
+  function fixPunct(s){
+    return s.replace(/([,\.!?;:]) /g,'$1\u00a0').replace(/ ([,\.!?;:])/g,'\u00a0$1');
+  }
+
+  function wrapLine(line){
+    if(!window.smartWrapLine) return x(fixPunct(line));
+    const lscroll=document.getElementById('lscroll');
+    const scale=window.lzScale||1;
+    const maxW=(lscroll&&lscroll.clientWidth>0?lscroll.clientWidth:window.innerWidth-36)/scale;
+    const size=Math.round(22*scale);
+    const font=`700 ${size}px -apple-system,sans-serif`;
+    const wrapped=window.smartWrapLine(fixPunct(line), maxW, font);
+    return wrapped.split('\n').map(l=>x(l)).join('<br>');
   }
 
   el.innerHTML=(curSong.lyrics||'').split('\n').map(line=>{
@@ -895,9 +904,9 @@ function renderLyrics(){
       return`<span class="ll-gap"></span>`;
     if(!firstDone){
       firstDone=true;
-      return`<span class="ll">${fixPunct(line)}<button class="inline-pencil" onclick="toggleMetaEdit()">✎</button></span>`;
+      return`<span class="ll">${wrapLine(line)}<button class="inline-pencil" onclick="toggleMetaEdit()">✎</button></span>`;
     }
-    return`<span class="ll">${fixPunct(line)}</span>`;
+    return`<span class="ll">${wrapLine(line)}</span>`;
   }).join('');
 }
 function toggleLyricsEdit(){ closeMetaEdit(); }
