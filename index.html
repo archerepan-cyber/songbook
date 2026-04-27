@@ -1815,26 +1815,6 @@ function loadBgSettings(){
   }catch{}
 }
 
-// ── SWIPE BACK ──
-(function(){
-  let sx=0, sy=0, sTime=0;
-  document.addEventListener('touchstart', e=>{
-    sx=e.touches[0].clientX;
-    sy=e.touches[0].clientY;
-    sTime=Date.now();
-  }, {passive:true});
-  document.addEventListener('touchend', e=>{
-    const dx=e.changedTouches[0].clientX-sx;
-    const dy=e.changedTouches[0].clientY-sy;
-    const dt=Date.now()-sTime;
-    // Только на экране detail, только если начало свайпа в правой половине экрана
-    // чтобы не конфликтовать с системным жестом Safari (левый край)
-    if(dx>80&&Math.abs(dy)<100&&dt<500&&curScr==='detail'&&sx>window.innerWidth*0.3){
-      goBack();
-    }
-  }, {passive:true});
-})();
-
 // ── INIT ──
 document.getElementById("tabbar").classList.remove("in-detail");
 initPinchZoom();
