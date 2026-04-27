@@ -816,67 +816,6 @@ function openSong(id){
   });
 }
 
-// ── УМНЫЙ ПЕРЕНОС СЛОВ ──
-(function(){
-  const _canvas=document.createElement('canvas');
-  const _ctx=_canvas.getContext('2d');
-
-  function measureWord(word, font){
-    _ctx.font=font;
-    return _ctx.measureText(word).width;
-  }
-
-  window.smartWrapLine=function(line, maxWidth, font){
-    // Если строка влезает целиком — возвращаем как есть
-    _ctx.font=font;
-    if(_ctx.measureText(line).width<=maxWidth) return line;
-
-    // Разбиваем на слова и собираем строки
-    const words=line.split(' ');
-    let result='';
-    let current='';
-
-    for(let i=0;i<words.length;i++){
-      const word=words[i];
-      const test=current?current+' '+word:word;
-      if(_ctx.measureText(test).width<=maxWidth){
-        current=test;
-      } else {
-        // Слово не влезает
-        if(current){
-          result+=current+'\n';
-          // Проверяем влезает ли слово само по себе
-          if(_ctx.measureText(word).width<=maxWidth){
-            current=word;
-          } else {
-            // Слово длиннее строки — разбиваем с минимум 4 буквами в первой части
-            current=breakLongWord(word, maxWidth, font);
-          }
-        } else {
-          current=breakLongWord(word, maxWidth, font);
-        }
-      }
-    }
-    if(current) result+=current;
-    return result;
-  };
-
-  function breakLongWord(word, maxWidth, font){
-    _ctx.font=font;
-    // Ищем позицию разбивки — максимум букв в первой части
-    let best=Math.ceil(word.length/2);
-    // Убеждаемся что в первой части >= 4 букв
-    best=Math.max(4, best);
-    // Ищем максимальное количество букв которое влезает, но не менее 4
-    for(let i=word.length-1;i>=4;i--){
-      if(_ctx.measureText(word.slice(0,i)).width<=maxWidth){
-        best=i;
-        break;
-      }
-    }
-    return word.slice(0,best)+'\n'+word.slice(best);
-  }
-})();
 
 function renderLyrics(){
   const el=document.getElementById('lb');if(!curSong)return;
