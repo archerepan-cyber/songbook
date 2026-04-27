@@ -1827,9 +1827,9 @@ function loadBgSettings(){
     const dx=e.changedTouches[0].clientX-sx;
     const dy=e.changedTouches[0].clientY-sy;
     const dt=Date.now()-sTime;
-    // Свайп слева направо: dx > 60px, горизонтальный (dy < 80px), быстрый (< 400ms)
-    // и начинается у левого края экрана (sx < 40px)
-    if(dx>60&&Math.abs(dy)<80&&dt<400&&sx<40){
+    // Свайп слева направо: dx > 80px, горизонтальный, быстрый
+    // Только на экране detail
+    if(dx>80&&Math.abs(dy)<100&&dt<500&&curScr==='detail'){
       goBack();
     }
   }, {passive:true});
