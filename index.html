@@ -1862,13 +1862,13 @@ function loadBgSettings(){
     document.querySelectorAll('.screen').forEach(s=>{
       s.style.transition='';
       s.style.transform='';
+      s.style.display='';
       if(!s.classList.contains('active')) s.style.display='none';
     });
   }
 
   document.addEventListener('touchstart', e=>{
-    // Игнорируем если касание на range input или его треке
-    if(e.target.closest('input[type=range]')){return;}
+    if(e.target.closest('input[type=range]')) return;
     sx=e.touches[0].clientX;
     sy=e.touches[0].clientY;
     dragging=false; axis=null;
@@ -1884,15 +1884,15 @@ function loadBgSettings(){
     }
     if(axis!=='x') return;
 
-    const w=window.innerWidth;
     const idx=tabs.indexOf(curScr);
-    const hasNext=idx<tabs.length-1;
-    const hasPrev=idx>0;
-    const hasBack=canSwipeBack();
+    const isBack=canSwipeBack();
+
+    // Запрещаем свайп влево в detail и songs
+    if((curScr==='detail'||curScr==='songs')&&dx<0) return;
 
     if(!dragging){
-      if(dx>0&&(hasPrev||hasBack)) dragging=true;
-      if(dx<0&&hasNext) dragging=true;
+      if(dx>0&&(isBack||idx>0)) dragging=true;
+      if(dx<0&&idx<tabs.length-1&&!isBack) dragging=true;
       if(!dragging) return;
     }
 
@@ -1900,14 +1900,6 @@ function loadBgSettings(){
     if(!cur) return;
     cur.style.transition='none';
     cur.style.transform=`translateX(${dx}px)`;
-
-    if(dx>0&&!hasBack&&idx>0){
-      const prevS=getScr(tabs[idx-1]);
-      if(prevS){prevS.style.display='flex';prevS.style.transition='none';prevS.style.transform=`translateX(${dx-w}px)`;}
-    } else if(dx<0&&hasNext){
-      const nextS=getScr(tabs[idx+1]);
-      if(nextS){nextS.style.display='flex';nextS.style.transition='none';nextS.style.transform=`translateX(${dx+w}px)`;}
-    }
   }, {passive:true});
 
   document.addEventListener('touchend', e=>{
@@ -1923,35 +1915,33 @@ function loadBgSettings(){
 
     function cancel(){
       if(cur){cur.style.transition=tr;cur.style.transform='translateX(0)';}
-      tabs.forEach(t=>{
-        if(t===curScr) return;
-        const s=getScr(t);
-        if(s&&s.style.display==='flex'&&!s.classList.contains('active')){
-          s.style.transition=tr;
-          s.style.transform=dx>0?`translateX(${-w}px)`:`translateX(${w}px)`;
-          setTimeout(()=>{s.style.display='none';s.style.transform='';s.style.transition='';},260);
-        }
-      });
-      setTimeout(()=>{if(cur){cur.style.transition='';cur.style.transform='';}},260);
+      setTimeout(()=>cleanAll(),260);
     }
 
     if(dx>threshold){
       if(canSwipeBack()){
         if(cur){cur.style.transition=tr;cur.style.transform=`translateX(${w}px)`;}
-        setTimeout(()=>{cleanAll();goBack();},250);
+        setTimeout(()=>{cleanAll();goBack();},260);
       } else if(idx>0){
         const prevId=tabs[idx-1];
         const prevS=getScr(prevId);
-        if(cur){cur.style.transition=tr;cur.style.transform=`translateX(${w}px)`;}
-        if(prevS){prevS.style.transition=tr;prevS.style.transform='translateX(0)';}
-        setTimeout(()=>{cleanAll();swTab(prevId);},250);
+        // Показываем предыдущий экран справа→центр
+        if(prevS){prevS.style.display='flex';prevS.style.transform=`translateX(${-w}px)`;prevS.style.transition='none';}
+        requestAnimationFrame(()=>{
+          if(cur){cur.style.transition=tr;cur.style.transform=`translateX(${w}px)`;}
+          if(prevS){prevS.style.transition=tr;prevS.style.transform='translateX(0)';}
+          setTimeout(()=>{cleanAll();swTab(prevId);},260);
+        });
       } else cancel();
-    } else if(dx<-threshold&&idx<tabs.length-1){
+    } else if(dx<-threshold&&idx<tabs.length-1&&!canSwipeBack()){
       const nextId=tabs[idx+1];
       const nextS=getScr(nextId);
-      if(cur){cur.style.transition=tr;cur.style.transform=`translateX(${-w}px)`;}
-      if(nextS){nextS.style.transition=tr;nextS.style.transform='translateX(0)';}
-      setTimeout(()=>{cleanAll();swTab(nextId);},250);
+      if(nextS){nextS.style.display='flex';nextS.style.transform=`translateX(${w}px)`;nextS.style.transition='none';}
+      requestAnimationFrame(()=>{
+        if(cur){cur.style.transition=tr;cur.style.transform=`translateX(${-w}px)`;}
+        if(nextS){nextS.style.transition=tr;nextS.style.transform='translateX(0)';}
+        setTimeout(()=>{cleanAll();swTab(nextId);},260);
+      });
     } else cancel();
   }, {passive:true});
 })();
