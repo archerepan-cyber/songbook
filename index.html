@@ -1157,10 +1157,25 @@ function renderFoundSong(el){
       <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);margin-bottom:4px;">Добавить в плейлист</div>
       <div class="ifound-pl-list">
         ${plBtns}
+        <button class="ifound-pl-btn" onclick="inetCreatePlaylist()" style="border:1.5px dashed var(--text3);">
+          <span style="font-size:18px;">＋</span><span style="color:var(--text2);">Новый плейлист</span>
+        </button>
       </div>
       <button class="ifound-nopl" onclick="inetAddSong(null)">Добавить без плейлиста</button>
     </div>
   </div>`;
+}
+
+function inetCreatePlaylist(){
+  const name=prompt('Название нового плейлиста:');
+  if(!name||!name.trim()) return;
+  const newPl={name:name.trim(),emoji:'🎵',img:'',desc:'',songs:[]};
+  pls.push(newPl);
+  savePls();
+  // Перерисовываем с новым плейлистом
+  renderFoundSong(document.getElementById('inetRes'));
+  // Сразу добавляем в новый плейлист
+  inetAddSong(newPl.name);
 }
 
 function inetAddSong(plName){
