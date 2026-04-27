@@ -147,7 +147,7 @@
   .lb{font-size:22px;line-height:1.0;white-space:normal;}
   .vl{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.8px;color:#ff9f0a;margin:32px 0 14px;backface-visibility:hidden;-webkit-backface-visibility:hidden;}
   .cl{display:block;font-family:'SF Mono',Menlo,monospace;font-size:15px;font-weight:700;color:#64d2ff;line-height:1.4;margin-bottom:6px;backface-visibility:hidden;-webkit-backface-visibility:hidden;}
-  .ll{display:block;font-size:22px;font-weight:400;line-height:1.25;color:var(--text);margin-bottom:18px;letter-spacing:-.2px;backface-visibility:hidden;-webkit-backface-visibility:hidden;word-break:break-word;overflow-wrap:break-word;white-space:normal;}
+  .ll{display:block;font-size:22px;font-weight:400;line-height:1.25;color:var(--text);margin-bottom:18px;letter-spacing:-.2px;backface-visibility:hidden;-webkit-backface-visibility:hidden;word-break:normal;overflow-wrap:normal;white-space:normal;hyphens:manual;}
   .ll-gap{display:block;height:10px;}
   .inline-pencil{background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;padding:0 0 0 14px;line-height:1;vertical-align:middle;}
 
@@ -821,19 +821,23 @@ function renderLyrics(){
   const el=document.getElementById('lb');if(!curSong)return;
   let firstDone=false;
 
-  function fixPunct(s){
-    return s.replace(/([,\.!?;:]) /g,'$1\u00a0').replace(/ ([,\.!?;:])/g,'\u00a0$1');
+  function fixPunct(line){
+    return x(line)
+      .replace(/([,\.!?;:])(\s)/g,'$1&nbsp;')
+      .replace(/\s([,\.!?;:])/g,'&nbsp;$1');
   }
 
-  function wrapLine(line){
-    if(!window.smartWrapLine) return x(fixPunct(line));
-    const lscroll=document.getElementById('lscroll');
-    const scale=window.lzScale||1;
-    const maxW=(lscroll&&lscroll.clientWidth>0?lscroll.clientWidth:window.innerWidth-36)/scale;
-    const size=Math.round(22*scale);
-    const font=`700 ${size}px -apple-system,sans-serif`;
-    const wrapped=window.smartWrapLine(fixPunct(line), maxW, font);
-    return wrapped.split('\n').map(l=>x(l)).join('<br>');
+  // Вставляем &shy; после каждой 2й буквы в словах длиннее 3 букв
+  // Это гарантирует что перенос никогда не оставит 1 букву вверху
+  function addBreaks(html){
+    return html.replace(/([а-яёА-ЯЁa-zA-Z]{4,})/g, w=>{
+      let r='';
+      for(let i=0;i<w.length;i++){
+        r+=w[i];
+        if(i>=1&&i<w.length-1) r+='&shy;';
+      }
+      return r;
+    });
   }
 
   el.innerHTML=(curSong.lyrics||'').split('\n').map(line=>{
@@ -841,11 +845,12 @@ function renderLyrics(){
       return`<span class="vl">${x(line.trim().replace(/^\[|\]$/g,''))}</span>`;
     if(!line.trim())
       return`<span class="ll-gap"></span>`;
+    const html=addBreaks(fixPunct(line));
     if(!firstDone){
       firstDone=true;
-      return`<span class="ll">${wrapLine(line)}<button class="inline-pencil" onclick="toggleMetaEdit()">✎</button></span>`;
+      return`<span class="ll">${html}<button class="inline-pencil" onclick="toggleMetaEdit()">✎</button></span>`;
     }
-    return`<span class="ll">${wrapLine(line)}</span>`;
+    return`<span class="ll">${html}</span>`;
   }).join('');
 }
 function toggleLyricsEdit(){ closeMetaEdit(); }
