@@ -1854,17 +1854,20 @@ function loadBgSettings(){
 (function(){
   let sx=0, sy=0, dragging=false, axis=null;
   const tabs=['pl','rep','inet','settings'];
-
   function getScr(id){ return document.getElementById('scr-'+id); }
   function canSwipeBack(){ return curScr==='detail'||(curScr==='songs'&&filterPl); }
 
-  function cleanAll(){
-    document.querySelectorAll('.screen').forEach(s=>{
-      s.style.transition='';
-      s.style.transform='';
-      s.style.display='';
-      if(!s.classList.contains('active')) s.style.display='none';
-    });
+  function navigateTo(targetId){
+    const cur=getScr(curScr);
+    if(cur){
+      cur.style.transition='opacity .22s ease';
+      cur.style.opacity='0';
+    }
+    setTimeout(()=>{
+      if(cur){cur.style.opacity='';cur.style.transition='';}
+      if(canSwipeBack()||curScr==='detail'||curScr==='songs') goBack();
+      else swTab(targetId);
+    },200);
   }
 
   document.addEventListener('touchstart', e=>{
@@ -1883,23 +1886,12 @@ function loadBgSettings(){
         axis=Math.abs(dx)>Math.abs(dy)?'x':'y';
     }
     if(axis!=='x') return;
-
-    const idx=tabs.indexOf(curScr);
-    const isBack=canSwipeBack();
-
-    // Запрещаем свайп влево в detail и songs
     if((curScr==='detail'||curScr==='songs')&&dx<0) return;
-
     if(!dragging){
-      if(dx>0&&(isBack||idx>0)) dragging=true;
-      if(dx<0&&idx<tabs.length-1&&!isBack) dragging=true;
-      if(!dragging) return;
+      const idx=tabs.indexOf(curScr);
+      if(dx>0&&(canSwipeBack()||idx>0)) dragging=true;
+      if(dx<0&&idx<tabs.length-1&&!canSwipeBack()) dragging=true;
     }
-
-    const cur=getScr(curScr);
-    if(!cur) return;
-    cur.style.transition='none';
-    cur.style.transform=`translateX(${dx}px)`;
   }, {passive:true});
 
   document.addEventListener('touchend', e=>{
@@ -1907,42 +1899,26 @@ function loadBgSettings(){
     if(!dragging){axis=null;return;}
     dragging=false; axis=null;
     const dx=e.changedTouches[0].clientX-sx;
-    const w=window.innerWidth;
-    const threshold=w*0.3;
+    const dy=e.changedTouches[0].clientY-sy;
+    if(Math.abs(dx)<50||Math.abs(dy)>Math.abs(dx)) return;
+
     const idx=tabs.indexOf(curScr);
-    const cur=getScr(curScr);
-    const tr='transform .25s cubic-bezier(.25,.46,.45,.94)';
 
-    function cancel(){
-      if(cur){cur.style.transition=tr;cur.style.transform='translateX(0)';}
-      setTimeout(()=>cleanAll(),260);
-    }
-
-    if(dx>threshold){
+    if(dx>50){
       if(canSwipeBack()){
-        if(cur){cur.style.transition=tr;cur.style.transform=`translateX(${w}px)`;}
-        setTimeout(()=>{cleanAll();goBack();},260);
+        const cur=getScr(curScr);
+        if(cur){cur.style.transition='opacity .2s ease';cur.style.opacity='0';}
+        setTimeout(()=>{if(cur){cur.style.opacity='';cur.style.transition='';}goBack();},200);
       } else if(idx>0){
-        const prevId=tabs[idx-1];
-        const prevS=getScr(prevId);
-        // Показываем предыдущий экран справа→центр
-        if(prevS){prevS.style.display='flex';prevS.style.transform=`translateX(${-w}px)`;prevS.style.transition='none';}
-        requestAnimationFrame(()=>{
-          if(cur){cur.style.transition=tr;cur.style.transform=`translateX(${w}px)`;}
-          if(prevS){prevS.style.transition=tr;prevS.style.transform='translateX(0)';}
-          setTimeout(()=>{cleanAll();swTab(prevId);},260);
-        });
-      } else cancel();
-    } else if(dx<-threshold&&idx<tabs.length-1&&!canSwipeBack()){
-      const nextId=tabs[idx+1];
-      const nextS=getScr(nextId);
-      if(nextS){nextS.style.display='flex';nextS.style.transform=`translateX(${w}px)`;nextS.style.transition='none';}
-      requestAnimationFrame(()=>{
-        if(cur){cur.style.transition=tr;cur.style.transform=`translateX(${-w}px)`;}
-        if(nextS){nextS.style.transition=tr;nextS.style.transform='translateX(0)';}
-        setTimeout(()=>{cleanAll();swTab(nextId);},260);
-      });
-    } else cancel();
+        const cur=getScr(curScr);
+        if(cur){cur.style.transition='opacity .2s ease';cur.style.opacity='0';}
+        setTimeout(()=>{if(cur){cur.style.opacity='';cur.style.transition='';}swTab(tabs[idx-1]);},200);
+      }
+    } else if(dx<-50&&idx<tabs.length-1&&!canSwipeBack()){
+      const cur=getScr(curScr);
+      if(cur){cur.style.transition='opacity .2s ease';cur.style.opacity='0';}
+      setTimeout(()=>{if(cur){cur.style.opacity='';cur.style.transition='';}swTab(tabs[idx+1]);},200);
+    }
   }, {passive:true});
 })();
 
