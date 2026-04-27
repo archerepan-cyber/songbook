@@ -759,7 +759,7 @@ function lpStart(e,id){
   lpEnd();
   const el=e.currentTarget||e.target.closest('.s-item');
   if(el) el.classList.add('pressing');
-  lpTimer=setTimeout(()=>>{
+  lpTimer=setTimeout(()=>{
     if(el) el.classList.remove('pressing');
     lpEnd();
     openAssign(id);
