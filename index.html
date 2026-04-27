@@ -664,6 +664,9 @@ function goBack(){
   if(curScr==='detail'){
     // Если открыли превью из поиска — возвращаемся на поиск
     if(curSong&&curSong.id==='__preview__'){
+      // Удаляем временную песню из репертуара
+      const idx2=songs.findIndex(s=>s.id==='__preview__');
+      if(idx2>=0) songs.splice(idx2,1);
       dest='inet';
     } else {
       dest='songs';
