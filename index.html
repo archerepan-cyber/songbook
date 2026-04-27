@@ -1827,9 +1827,9 @@ function loadBgSettings(){
     const dx=e.changedTouches[0].clientX-sx;
     const dy=e.changedTouches[0].clientY-sy;
     const dt=Date.now()-sTime;
-    // Свайп слева направо: dx > 80px, горизонтальный, быстрый
-    // Только на экране detail
-    if(dx>80&&Math.abs(dy)<100&&dt<500&&curScr==='detail'){
+    // Только на экране detail, только если начало свайпа в правой половине экрана
+    // чтобы не конфликтовать с системным жестом Safari (левый край)
+    if(dx>80&&Math.abs(dy)<100&&dt<500&&curScr==='detail'&&sx>window.innerWidth*0.3){
       goBack();
     }
   }, {passive:true});
