@@ -806,8 +806,13 @@ function openSong(id){
   show('detail');
   requestAnimationFrame(()=>{
     document.getElementById('lscroll').scrollTop=0;
-    // дать браузеру применить transform перед измерением позиции
-    setTimeout(updateChordsOverlays, 50);
+    updateChordsOverlays();
+    // Устанавливаем marginTop сразу при открытии
+    const chordsWrap=document.getElementById('chordsBarWrap');
+    if(chordsWrap){
+      const extra=chordsWrap.scrollHeight*(lzScale-1);
+      document.getElementById('lscroll').style.marginTop=extra+'px';
+    }
   });
 }
 function renderLyrics(){
