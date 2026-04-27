@@ -1246,10 +1246,7 @@ function renderFoundSong(el){
       <div class="ifound-title">${x(s.title)}</div>
       <div class="ifound-artist">${x(s.artist)}</div>
     </div>
-    <div class="ifound-lyrics" onclick="inetPreviewSong()" style="position:relative;">
-      ${x(s.lyrics).replace(/\n/g,'<br>')}
-      <div style="position:sticky;bottom:0;text-align:center;font-size:12px;color:var(--accent);padding:6px 0;background:linear-gradient(transparent,var(--bg2));pointer-events:none;">👆 Нажми чтобы открыть</div>
-    </div>
+    <div class="ifound-lyrics" onclick="inetPreviewSong()">${x(s.lyrics).replace(/\n/g,'<br>')}</div>
     <div class="ifound-actions">
       <button class="ifound-nopl" onclick="inetCreateAndAdd()" style="color:var(--accent);text-decoration:none;font-weight:600;padding:10px 0;display:flex;align-items:center;gap:6px;margin-bottom:8px;">＋ Создать плейлист</button>
       <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);margin-bottom:4px;">Добавить в плейлист</div>
@@ -1263,7 +1260,6 @@ function renderFoundSong(el){
 
 function inetPreviewSong(){
   if(!inetFoundSong) return;
-  // Создаём временную песню для просмотра
   const temp={
     id:'__preview__',
     title:inetFoundSong.title,
@@ -1273,9 +1269,28 @@ function inetPreviewSong(){
     cover:'',
     instr:'Guitar'
   };
-  // Открываем как обычную песню
+  // Добавляем временно в songs чтобы openSong нашёл
+  const existing=songs.findIndex(s=>s.id==='__preview__');
+  if(existing>=0) songs.splice(existing,1);
+  songs.unshift(temp);
+  prevPrevScr=prevScr; prevScr=curScr; curScr='detail';
   curSong=temp;
-  openSong(temp);
+  closeMetaEdit();
+  document.getElementById('chordsVal').textContent=temp.key||'—';
+  document.getElementById('favBtn').style.display='none';
+  showChordsBar();
+  renderLyrics(); stopScroll();
+  applyZoom(lzScale, false);
+  show('detail');
+  requestAnimationFrame(()=>{
+    document.getElementById('lscroll').scrollTop=0;
+    updateChordsOverlays();
+    const chordsWrap=document.getElementById('chordsBarWrap');
+    if(chordsWrap){
+      const extra=chordsWrap.scrollHeight*(lzScale-1);
+      document.getElementById('lscroll').style.marginTop=extra+'px';
+    }
+  });
 }
 
 function inetCreateAndAdd(){  // Запоминаем что после создания плейлиста нужно добавить найденную песню
