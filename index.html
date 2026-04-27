@@ -25,6 +25,15 @@
   #app{display:flex;flex-direction:column;height:100dvh;}
   .screen{display:none;flex-direction:column;flex:1;min-height:0;position:relative;}
   .screen.active{display:flex;}
+  .screen.slide-in-right{animation:slideInRight .28s cubic-bezier(.25,.46,.45,.94) both;}
+  .screen.slide-in-left{animation:slideInLeft .28s cubic-bezier(.25,.46,.45,.94) both;}
+  .screen.slide-out-right{animation:slideOutRight .28s cubic-bezier(.25,.46,.45,.94) both;}
+  .screen.slide-out-left{animation:slideOutLeft .28s cubic-bezier(.25,.46,.45,.94) both;}
+  @keyframes slideInRight{from{transform:translateX(100%);opacity:.6}to{transform:translateX(0);opacity:1}}
+  @keyframes slideInLeft{from{transform:translateX(-100%);opacity:.6}to{transform:translateX(0);opacity:1}}
+  @keyframes slideOutRight{from{transform:translateX(0);opacity:1}to{transform:translateX(100%);opacity:.6}}
+  @keyframes slideOutLeft{from{transform:translateX(0);opacity:1}to{transform:translateX(-100%);opacity:.6}}
+  .screen.active{display:flex;}
   .scroll-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;}
 
   /* HEADER */
@@ -607,23 +616,44 @@ let pendingImg='', assignSongId=null;
 let lpTimer=null; // long-press timer
 
 // ── NAVIGATION ──
-function show(id){
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.getElementById('scr-'+id).classList.add('active');
+function show(id, dir){
+  const prev=document.querySelector('.screen.active');
+  const next=document.getElementById('scr-'+id);
+  if(!next) return;
+  document.querySelectorAll('.screen').forEach(s=>{
+    s.classList.remove('active','slide-in-right','slide-in-left','slide-out-right','slide-out-left');
+    s.style.display='none';
+  });
+  next.style.display='flex';
+  next.classList.add('active');
+  if(dir&&prev&&prev!==next){
+    prev.style.display='flex';
+    if(dir==='left'){
+      next.classList.add('slide-in-right');
+      prev.classList.add('slide-out-left');
+    } else {
+      next.classList.add('slide-in-left');
+      prev.classList.add('slide-out-right');
+    }
+    setTimeout(()=>{
+      prev.style.display='none';
+      prev.classList.remove('slide-out-left','slide-out-right');
+    },280);
+  }
   const tb=document.getElementById('tabbar');
   tb.style.display='flex';
   if(id==='detail'){tb.classList.add('in-detail');}
   else{tb.classList.remove('in-detail');}
 }
-function swTab(id){
+function swTab(id, dir){
   prevPrevScr=prevScr; prevScr=curScr; curScr="detail"; curScr=id;
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('tab-'+id).classList.add('active');
-  if(id==='pl'){show('pl');renderPL();}
-  else if(id==='rep'){show('rep');renderRep();}
-  else if(id==='songs'){filterPl=null;document.getElementById('songsTitle').textContent='Песни';renderSongs(songs);show('songs');}
-  else if(id==='inet'){show('inet');showSearchHistory();updateInetClear();}
-  else if(id==='settings'){show('settings');}
+  if(id==='pl'){show('pl',dir);renderPL();}
+  else if(id==='rep'){show('rep',dir);renderRep();}
+  else if(id==='songs'){filterPl=null;document.getElementById('songsTitle').textContent='Песни';renderSongs(songs);show('songs',dir);}
+  else if(id==='inet'){show('inet',dir);showSearchHistory();updateInetClear();}
+  else if(id==='settings'){show('settings',dir);}
 }
 function goBack(){
   stopScroll();
@@ -631,19 +661,24 @@ function goBack(){
   cancelLyricsEdit();
   closeMetaEdit();
   let dest;
-  if(curScr==="detail"){
-    dest="songs";
-  } else if(curScr==="songs" && filterPl){
-    dest="pl";
+  if(curScr==='detail'){
+    // Если открыли превью из поиска — возвращаемся на поиск
+    if(curSong&&curSong.id==='__preview__'){
+      dest='inet';
+    } else {
+      dest='songs';
+    }
+  } else if(curScr==='songs' && filterPl){
+    dest='pl';
     filterPl=null;
   } else {
-    dest=prevScr==="pl"?"pl":prevScr;
+    dest=prevScr==='pl'?'pl':prevScr;
   }
   curScr=dest; show(dest);
-  if(dest==="pl") renderPL();
-  const tm={pl:"pl",rep:"rep",songs:"songs",inet:"inet"};
-  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
-  if(tm[dest]) document.getElementById("tab-"+tm[dest])?.classList.add("active");
+  if(dest==='pl') renderPL();
+  const tm={pl:'pl',rep:'rep',songs:'songs',inet:'inet',settings:'settings'};
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  if(tm[dest]) document.getElementById('tab-'+tm[dest])?.classList.add('active');
 }
 
 // ── ADD CHOICE ──
@@ -1833,16 +1868,14 @@ function loadBgSettings(){
     if(Math.abs(dx)<60||Math.abs(dy)>Math.abs(dx)||dt>500) return;
 
     if(curScr==='detail'){
-      // Из песни — только назад (вправо)
       if(dx>60) goBack();
       return;
     }
 
-    // Между вкладками
     const idx=tabs.indexOf(curScr);
     if(idx===-1) return;
-    if(dx<-60&&idx<tabs.length-1) swTab(tabs[idx+1]); // влево — следующая
-    if(dx>60&&idx>0) swTab(tabs[idx-1]);               // вправо — предыдущая
+    if(dx<-60&&idx<tabs.length-1) swTab(tabs[idx+1],'left');
+    if(dx>60&&idx>0) swTab(tabs[idx-1],'right');
   }, {passive:true});
 })();
 
