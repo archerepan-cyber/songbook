@@ -37,12 +37,12 @@
   .scroll-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;}
 
   /* HEADER */
-  .ph{padding:calc(var(--safe-top) + 14px) 20px 10px;background:transparent;flex-shrink:0;position:relative;z-index:1;}
+  .ph{padding:calc(var(--safe-top) + 14px) 20px 12px;background:transparent;flex-shrink:0;position:relative;z-index:1;}
   .ph-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
   .ph-title{font-size:clamp(18px,6vw,34px);font-weight:700;letter-spacing:-.5px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:10px;}
   .add-btn{background:var(--accent);border:none;border-radius:20px;padding:8px 16px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;flex-shrink:0;white-space:nowrap;}
   .add-btn:active{opacity:.75;}
-  .sbar{display:flex;align-items:center;gap:8px;background:var(--bg3);border-radius:12px;padding:9px 13px;}
+  .sbar{display:flex;align-items:center;gap:8px;background:var(--bg3);border-radius:12px;padding:9px 13px;margin-top:10px;}
   .sbar input{background:none;border:none;color:var(--text);font-size:15px;width:100%;outline:none;}
   .sbar input::placeholder{color:var(--text3);}
 
@@ -1213,7 +1213,7 @@ function showSearchHistory(){
     <div class="ihistory-title">История поиска</div>
     ${filtered.map(item=>`
       <div class="ihistory-item" onclick="selectHistory('${x(item).replace(/'/g,"\\'")}')">
-        <span class="ihistory-icon">🕐</span>
+        <span class="ihistory-icon"></span>
         <span class="ihistory-text">${x(item)}</span>
         <button class="ihistory-del" onclick="event.stopPropagation();deleteFromHistory('${x(item).replace(/'/g,"\\'")}')">✕</button>
       </div>`).join('')}
