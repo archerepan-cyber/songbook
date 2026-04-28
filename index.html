@@ -1712,7 +1712,25 @@ function resetZoom(){
 function initPinchZoom(){
   const el=document.getElementById('scr-detail');
   if(!el)return;
-  let originX=0, originY=0;
+  let originX=0.5, originY=0.5; // относительные (0-1)
+  let absOriginY=0; // абсолютная Y в px внутри lyricsScaleWrap до масштаба
+
+  function setOrigin(touches){
+    const lscroll=document.getElementById('lscroll');
+    const wrap=document.getElementById('lyricsScaleWrap');
+    if(!lscroll||!wrap) return;
+    const r=lscroll.getBoundingClientRect();
+    // Центр пинча в viewport координатах относительно lscroll
+    const midX=((touches[0].clientX+touches[1].clientX)/2)-r.left;
+    const midY=((touches[0].clientY+touches[1].clientY)/2)-r.top;
+    // Абсолютная позиция в контенте (с учётом скролла и текущего масштаба)
+    const scrollY=lscroll.scrollTop+midY;
+    absOriginY=scrollY/lzScale; // позиция в "нативных" px до масштаба
+    const absOriginX=midX/lzScale;
+    // Устанавливаем transform-origin
+    wrap.style.transformOrigin=`${absOriginX}px ${absOriginY}px`;
+    pinchMidY=scrollY;
+  }
 
   el.addEventListener('touchstart',function(e){
     if(e.touches.length===2){
@@ -1720,15 +1738,7 @@ function initPinchZoom(){
       clearTimeout(zoomBadgeTimer);
       pinchDist0=ptDist(e.touches[0],e.touches[1]);
       pinchScale0=lzScale;
-      const lscroll=document.getElementById('lscroll');
-      if(lscroll){
-        const r=lscroll.getBoundingClientRect();
-        const midX=((e.touches[0].clientX+e.touches[1].clientX)/2)-r.left;
-        const midY=((e.touches[0].clientY+e.touches[1].clientY)/2)-r.top+lscroll.scrollTop;
-        originX=midX/lzScale;
-        originY=midY/lzScale;
-        pinchMidY=midY;
-      }
+      setOrigin(e.touches);
       e.preventDefault();
     }
   },{passive:false});
@@ -1738,15 +1748,16 @@ function initPinchZoom(){
       e.preventDefault();
       const d=ptDist(e.touches[0],e.touches[1]);
       const newScale=Math.max(ZOOM_MIN,Math.min(ZOOM_MAX,pinchScale0*(d/pinchDist0)));
-      const wrap=document.getElementById('lyricsScaleWrap');
-      if(wrap) wrap.style.transformOrigin=`${originX}px ${originY}px`;
       applyZoom(newScale,false);
       showZoomBadge();
+      // Удерживаем точку пинча на месте
       const lscroll=document.getElementById('lscroll');
       if(lscroll){
         const r=lscroll.getBoundingClientRect();
         const midY=((e.touches[0].clientY+e.touches[1].clientY)/2)-r.top;
-        lscroll.scrollTop=originY*newScale-midY;
+        // absOriginY*newScale = позиция origin после масштаба
+        // midY = где должна быть эта точка на экране
+        lscroll.scrollTop=absOriginY*newScale-midY;
       }
     }
   },{passive:false});
@@ -1754,17 +1765,23 @@ function initPinchZoom(){
   el.addEventListener('touchend',function(e){
     if(pinchActive&&e.touches.length<2){
       pinchActive=false;
-      const wrap=document.getElementById('lyricsScaleWrap');
-      if(wrap) wrap.style.transformOrigin='top left';
-      if(lzScale<1.08){applyZoom(1.0,true);clearTimeout(zoomBadgeTimer);document.getElementById('zoomResetBtn').classList.remove('visible');try{localStorage.setItem('sb_zoom','1');}catch{}}
-      else{scheduleHideBadge();try{localStorage.setItem('sb_zoom',lzScale);}catch{};}
+      if(lzScale<1.08){
+        // При сбросе — восстанавливаем origin
+        const wrap=document.getElementById('lyricsScaleWrap');
+        if(wrap) wrap.style.transformOrigin='top left';
+        applyZoom(1.0,true);
+        clearTimeout(zoomBadgeTimer);
+        document.getElementById('zoomResetBtn').classList.remove('visible');
+        try{localStorage.setItem('sb_zoom','1');}catch{}
+      } else {
+        scheduleHideBadge();
+        try{localStorage.setItem('sb_zoom',lzScale);}catch{}
+      }
       setTimeout(updateChordsOverlays, 50);
     }
   });
   el.addEventListener('touchcancel',function(){
     pinchActive=false;
-    const wrap=document.getElementById('lyricsScaleWrap');
-    if(wrap) wrap.style.transformOrigin='top left';
     scheduleHideBadge();
   });
   el.addEventListener('wheel',function(e){
