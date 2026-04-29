@@ -327,7 +327,7 @@
     <div class="sbar"><span style="color:var(--text3)">🔍</span><input id="plSrch" type="search" placeholder="Поиск" oninput="filterPL()" autocomplete="off"/></div>
   </div>
   <div class="scroll-body">
-    <div class="pl-list" id="plList"></div>
+    <div class="pl-list" id="plList" data-drag-list data-drag-type="pl"></div>
     <div id="looseSongsSection" style="display:none">
       <div class="loose-section">Песни без плейлиста</div>
       <div class="song-list" id="looseSongList" style="padding-bottom:8px;"></div>
@@ -346,7 +346,7 @@
     </div>
     <div class="sbar"><span style="color:var(--text3)">🔍</span><input id="repSrch" type="search" placeholder="Поиск" oninput="filterRep()" autocomplete="off"/></div>
   </div>
-  <div class="scroll-body"><div class="song-list" id="repList"></div></div>
+  <div class="scroll-body"><div class="song-list" id="repList" data-drag-list data-drag-type="rep"></div></div>
 </div>
 
 <!-- ── ПЕСНИ плейлиста ── -->
@@ -358,7 +358,7 @@
     </div>
     <div class="sbar"><span style="color:var(--text3)">🔍</span><input id="songSrch" type="search" placeholder="Поиск" oninput="filterSong()" autocomplete="off"/></div>
   </div>
-  <div class="scroll-body"><div class="song-list" id="songList"></div></div>
+  <div class="scroll-body"><div class="song-list" id="songList" data-drag-list data-drag-type="songs"></div></div>
 </div>
 
 <!-- ── ИНТЕРНЕТ ── -->
@@ -715,7 +715,7 @@ function renderPL(list){
   else {
     el.innerHTML=list.map(pl=>{
       const cnt=songs.filter(s=>(s.playlist||'')===pl.name).length;
-      return `<div class="pl-item"
+      return `<div class="pl-item" data-drag-id="${pl.id}"
         ontouchstart="plLpStart(event,'${pl.id}')"
         ontouchend="plLpEnd()"
         ontouchmove="plLpEnd()"
@@ -775,7 +775,7 @@ function sCover(s){
 function sCard(s, showDel=false){
   const _oid=s.id.startsWith('__fav__')?s.id.slice(7):s.id;
   const fv=favs.has(_oid)?' ♥':'';
-  return `<div class="s-item" id="si-${s.id}"
+  return `<div class="s-item" data-drag-id="${s.id}" id="si-${s.id}"
     onclick="openSong('${s.id}')"
     ontouchstart="lpStart(event,'${s.id}')"
     ontouchend="lpEnd()"
@@ -793,7 +793,11 @@ function sCard(s, showDel=false){
     <div class="arr" style="margin-left:0;">›</div>
   </div>`;
 }
-function renderSongs(list){const el=document.getElementById('songList');el.innerHTML=list.length?list.map(s=>sCard(s)).join(''):'<div class="empty"><span class="empty-icon">🎵</span>Нет песен. Нажмите Add!</div>';}
+function renderSongs(list){
+  const el=document.getElementById('songList');
+  el.dataset.dragFilter=filterPl||'';
+  el.innerHTML=list.length?list.map(s=>sCard(s)).join(''):'<div class="empty"><span class="empty-icon">🎵</span>Нет песен. Нажмите Add!</div>';
+}
 function renderRep(list){list=list||(songs.filter(s=>!s.id.startsWith('__fav__')));const el=document.getElementById('repList');el.innerHTML=list.length?list.map(s=>sCard(s)).join(''):'<div class="empty"><span class="empty-icon">🎵</span>Нет песен</div>';}
 function filterRep(){const q=document.getElementById('repSrch').value.toLowerCase().trim();const base=songs.filter(s=>!s.id.startsWith('__fav__'));renderRep(q?base.filter(s=>s.title.toLowerCase().includes(q)||s.artist.toLowerCase().includes(q)):base);}
 function filterSong(){const q=document.getElementById('songSrch').value.toLowerCase().trim();const base=filterPl?songs.filter(s=>(s.playlist||'')===filterPl):songs;renderSongs(q?base.filter(s=>s.title.toLowerCase().includes(q)||s.artist.toLowerCase().includes(q)):base);}
@@ -1959,7 +1963,137 @@ function loadBgSettings(){
   }, {passive:true});
 })();
 
-// ── INIT ──
+// ── DRAG & DROP SORT ──
+(function(){
+  let dragging=null, ghost=null, listEl=null, items=[], startIdx=-1, overIdx=-1, longPressTimer=null;
+  const LONG_PRESS=400;
+
+  function getItems(el){return Array.from(el.querySelectorAll('[data-drag-id]'));}
+
+  function createGhost(item){
+    const r=item.getBoundingClientRect();
+    const g=item.cloneNode(true);
+    g.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;
+      opacity:0.85;pointer-events:none;z-index:9999;box-shadow:0 8px 32px rgba(0,0,0,.5);
+      border-radius:12px;transform:scale(1.03);transition:transform .1s;background:var(--bg2);`;
+    document.body.appendChild(g);
+    return g;
+  }
+
+  function findClosest(y){
+    let best=-1, bestD=Infinity;
+    items.forEach((el,i)=>{
+      if(el===dragging) return;
+      const r=el.getBoundingClientRect();
+      const mid=r.top+r.height/2;
+      const d=Math.abs(y-mid);
+      if(d<bestD){bestD=d;best=i;}
+    });
+    return best;
+  }
+
+  function applyPlaceholder(){
+    items.forEach((el,i)=>{
+      el.style.transform='';
+      el.style.transition='transform .18s';
+    });
+    if(overIdx<0||dragging===null) return;
+    const dIdx=items.indexOf(dragging);
+    items.forEach((el,i)=>{
+      if(el===dragging) return;
+      const r=dragging.getBoundingClientRect();
+      if(dIdx<overIdx&&i>dIdx&&i<=overIdx) el.style.transform=`translateY(${-r.height-8}px)`;
+      else if(dIdx>overIdx&&i>=overIdx&&i<dIdx) el.style.transform=`translateY(${r.height+8}px)`;
+    });
+  }
+
+  function commitSort(){
+    if(startIdx<0||overIdx<0||startIdx===overIdx) return;
+    const type=listEl.dataset.dragType;
+    if(type==='pl'){
+      const item=pls.splice(startIdx,1)[0];
+      pls.splice(overIdx,0,item);
+      sv(PK,pls); renderPL();
+    } else {
+      // songs
+      const base=listEl.dataset.dragFilter
+        ?songs.filter(s=>(s.playlist||'')===listEl.dataset.dragFilter)
+        :songs.filter(s=>!s.id.startsWith('__fav__'));
+      const moved=base[startIdx];
+      const target=base[overIdx];
+      const mi=songs.indexOf(moved), ti=songs.indexOf(target);
+      songs.splice(mi,1); songs.splice(ti,0,moved);
+      sv(SK,songs);
+      if(listEl.dataset.dragFilter) renderSongs(songs.filter(s=>(s.playlist||'')===listEl.dataset.dragFilter));
+      else renderRep();
+    }
+  }
+
+  function cleanup(){
+    if(ghost){ghost.remove();ghost=null;}
+    items.forEach(el=>{el.style.transform='';el.style.transition='';el.style.opacity='';});
+    dragging=null; listEl=null; items=[]; startIdx=-1; overIdx=-1;
+  }
+
+  function startDrag(e, itemEl, list){
+    dragging=itemEl;
+    listEl=list;
+    items=getItems(list);
+    startIdx=items.indexOf(itemEl);
+    overIdx=startIdx;
+    ghost=createGhost(itemEl);
+    itemEl.style.opacity='0.3';
+    navigator.vibrate&&navigator.vibrate(30);
+  }
+
+  document.addEventListener('touchstart',e=>{
+    const itemEl=e.target.closest('[data-drag-id]');
+    if(!itemEl) return;
+    const list=itemEl.closest('[data-drag-list]');
+    if(!list) return;
+    const touch=e.touches[0];
+    let startX=touch.clientX, startY=touch.clientY;
+    let moved=false, dragStarted=false;
+
+    // После LONG_PRESS и только если палец начал двигаться — drag
+    longPressTimer=setTimeout(()=>{
+      if(moved) startDrag(e, itemEl, list);
+    }, LONG_PRESS);
+
+    function onMove(ev){
+      const t=ev.touches[0];
+      const dx=Math.abs(t.clientX-startX);
+      const dy2=Math.abs(t.clientY-startY);
+      if(dx>6||dy2>6) moved=true;
+
+      // Если drag начался — отменяем lpTimer чтобы не открылся assign
+      if(dragging&&!dragStarted){
+        dragStarted=true;
+        // Отменяем openAssign
+        if(window.lpTimer){clearTimeout(window.lpTimer);window.lpTimer=null;}
+        document.querySelectorAll('.s-item.pressing').forEach(el=>el.classList.remove('pressing'));
+      }
+
+      if(!dragging||!ghost) return;
+      const dy=t.clientY-startY;
+      const r=itemEl.getBoundingClientRect();
+      ghost.style.top=(r.top+dy)+'px';
+      const newOver=findClosest(t.clientY);
+      if(newOver>=0&&newOver!==overIdx){overIdx=newOver;applyPlaceholder();}
+    }
+    function onEnd(){
+      clearTimeout(longPressTimer); longPressTimer=null;
+      document.removeEventListener('touchmove',onMove);
+      document.removeEventListener('touchend',onEnd);
+      if(dragging) commitSort();
+      cleanup();
+    }
+    document.addEventListener('touchmove',onMove,{passive:true});
+    document.addEventListener('touchend',onEnd);
+  },{passive:true});
+})();
+
+
 document.getElementById("tabbar").classList.remove("in-detail");
 initPinchZoom();
 initChordsBarGestures();
