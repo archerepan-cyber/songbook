@@ -1720,7 +1720,9 @@ function initPinchZoom(){
       pinchScale0=lzScale;
       const scroll=document.getElementById('lscroll');
       const r=scroll.getBoundingClientRect();
-      pinchMidY=((e.touches[0].clientY+e.touches[1].clientY)/2)-r.top+scroll.scrollTop;
+      // Позиция центра пинча в "нативных" координатах контента (до масштаба)
+      const midVP=((e.touches[0].clientY+e.touches[1].clientY)/2)-r.top;
+      pinchMidY=(scroll.scrollTop+midVP)/lzScale;
       e.preventDefault();
     }
   },{passive:false});
@@ -1734,7 +1736,8 @@ function initPinchZoom(){
       const scroll=document.getElementById('lscroll');
       const r=scroll.getBoundingClientRect();
       const midVP=((e.touches[0].clientY+e.touches[1].clientY)/2)-r.top;
-      scroll.scrollTop=pinchMidY*newScale/pinchScale0-midVP;
+      // pinchMidY в нативных координатах → умножаем на новый scale → вычитаем позицию на экране
+      scroll.scrollTop=pinchMidY*newScale-midVP;
     }
   },{passive:false});
   el.addEventListener('touchend',function(e){
