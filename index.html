@@ -181,7 +181,7 @@
   .mtitle{font-size:18px;font-weight:700;padding:0 20px 16px;}
   .fg{padding:0 20px 14px;}
   .fl{font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;}
-  .fi{width:100%;background:var(--bg3);border:none;border-radius:12px;padding:12px 14px;font-size:15px;color:var(--text);outline:none;font-family:inherit;}
+  .fi{width:100%;background:var(--bg3);border:none;border-radius:12px;padding:12px 14px;font-size:16px;color:var(--text);outline:none;font-family:inherit;}
   .fi:focus{background:var(--bg4);}
   textarea.fi{min-height:130px;resize:vertical;line-height:1.6;}
   .fr2{display:flex;gap:10px;padding:0 20px 14px;}
@@ -269,7 +269,7 @@
   .edit-lyrics-btn:active{color:var(--accent);}
   .edit-lyrics-btn.active{color:var(--accent);}
   .lyrics-edit-wrap{flex:1;display:none;flex-direction:column;}
-  .lyrics-textarea{flex:1;background:var(--bg3);border:none;color:var(--text);font-size:15px;font-family:-apple-system,system-ui,sans-serif;line-height:1.7;padding:16px 18px;resize:none;outline:none;min-height:300px;}
+  .lyrics-textarea{flex:1;background:var(--bg3);border:none;color:var(--text);font-size:16px;font-family:-apple-system,system-ui,sans-serif;line-height:1.7;padding:16px 18px;resize:none;outline:none;min-height:300px;}
   .lyrics-edit-actions{display:flex;gap:10px;padding:12px 18px calc(var(--safe-bot) + 14px);background:var(--bg2);border-top:.5px solid var(--sep);}
   .le-cancel{flex:1;padding:13px;border-radius:14px;background:var(--bg3);border:none;font-size:15px;font-weight:600;color:var(--text2);cursor:pointer;font-family:inherit;}
   .le-save{flex:2;padding:13px;border-radius:14px;background:var(--accent);border:none;font-size:15px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit;}
@@ -486,7 +486,7 @@
       <div id="bgOverlayWrap" style="margin-top:20px;">
         <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-bottom:10px;">Затемнение</div>
         <input type="range" id="bgOverlay" min="50" max="90" value="50" oninput="updateOverlay(this.value)"
-          style="width:100%;accent-color:var(--accent);"/>
+          style="width:100%;accent-color:var(--accent);height:36px;cursor:pointer;"/>
         <div style="font-size:13px;color:var(--text3);margin-top:4px;" id="bgOverlayVal">0</div>
       </div>
     </div>
@@ -1099,7 +1099,14 @@ function openModal(mode, forcedPl){
   }
   document.getElementById('modal').classList.add('open');
 }
-function closeModal(){document.getElementById('modal').classList.remove('open');}
+function closeModal(){
+  document.getElementById('modal').classList.remove('open');
+  // Сбрасываем iOS zoom после закрытия модалки
+  const mv=document.querySelector('meta[name="viewport"]');
+  if(mv){
+    mv.setAttribute('content','width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content');
+  }
+}
 function closeMBg(e){if(e.target===document.getElementById('modal'))closeModal();}
 function saveItem(){
   if(mMode==='song'){
@@ -1688,7 +1695,7 @@ function applyZoom(scale, animate){
   }
   // Карандашик
   const pencil=document.querySelector('.cb-edit');
-  if(pencil) pencil.style.display=scale>=1.7?'none':'inline';
+  if(pencil) pencil.style.display=scale>=1.2?'none':'inline';
 
   if(!pinchActive) updateChordsOverlays();
 }
@@ -1838,7 +1845,11 @@ function updateOverlay(val){
 function handleBgImg(e){
   const file=e.target.files[0];if(!file)return;
   const reader=new FileReader();
-  reader.onload=ev=>setBg('image',ev.target.result);
+  reader.onload=ev=>{
+    setBg('image',ev.target.result);
+    // Сбрасываем input чтобы можно было выбрать то же фото снова
+    e.target.value='';
+  };
   reader.readAsDataURL(file);
 }
 
