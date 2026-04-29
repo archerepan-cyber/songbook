@@ -1702,6 +1702,8 @@ function applyZoom(scale, animate){
   const metaPanel=document.getElementById('metaEditPanel');
   if(metaPanel&&metaPanel.classList.contains('open')&&scale>1.01){
     saveMetaEdit();
+    metaPanel.classList.remove('open');
+    showChordsBar();
   }
 
   if(!pinchActive) updateChordsOverlays();
