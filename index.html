@@ -1679,8 +1679,9 @@ function applyZoom(scale, animate){
     chordsWrap.style.transform=`scale(${scale})`;
     chordsWrap.style.transformOrigin='top left';
     chordsWrap.style.width=(100/scale)+'%';
-    // Сдвигаем lscroll вниз на добавленную высоту панели
-    const extra=chordsBarHidden?0:chordsWrap.scrollHeight*(scale-1);
+    // Используем offsetHeight — высота до трансформа
+    const naturalH=chordsWrap.querySelector('.chords-bar')?.offsetHeight||44;
+    const extra=chordsBarHidden?0:naturalH*(scale-1);
     document.getElementById('lscroll').style.marginTop=extra+'px';
   }
 
@@ -1693,9 +1694,15 @@ function applyZoom(scale, animate){
     if(scale>=1.5){fb.dataset.hiddenByZoom='1';fb.style.display='none';}
     else if(fb.dataset.hiddenByZoom==='1'){fb.dataset.hiddenByZoom='';fb.style.display=fb.dataset.favHidden==='1'?'none':'block';}
   }
-  // Карандашик
+  // Карандашик — исчезает при любом увеличении
   const pencil=document.querySelector('.cb-edit');
-  if(pencil) pencil.style.display=scale>=1.2?'none':'inline';
+  if(pencil) pencil.style.display=scale>1.01?'none':'inline';
+
+  // Панель редакции — автосохраняем и закрываем при увеличении
+  const metaPanel=document.getElementById('metaEditPanel');
+  if(metaPanel&&metaPanel.classList.contains('open')&&scale>1.01){
+    saveMetaEdit();
+  }
 
   if(!pinchActive) updateChordsOverlays();
 }
