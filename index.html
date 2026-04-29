@@ -670,14 +670,13 @@ function goBack(){
   closeMetaEdit();
   let dest;
   if(curScr==='detail'){
-    // Если открыли превью из поиска — возвращаемся на поиск
     if(curSong&&curSong.id==='__preview__'){
-      // Удаляем временную песню из репертуара
       const idx2=songs.findIndex(s=>s.id==='__preview__');
       if(idx2>=0) songs.splice(idx2,1);
       dest='inet';
     } else {
-      dest='songs';
+      // Возвращаемся туда откуда пришли
+      dest=prevScr||'rep';
     }
   } else if(curScr==='songs' && filterPl){
     dest='pl';
@@ -687,6 +686,7 @@ function goBack(){
   }
   curScr=dest; show(dest);
   if(dest==='pl') renderPL();
+  if(dest==='rep') renderRep();
   const tm={pl:'pl',rep:'rep',songs:'songs',inet:'inet',settings:'settings'};
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   if(tm[dest]) document.getElementById('tab-'+tm[dest])?.classList.add('active');
@@ -1225,7 +1225,10 @@ function showSearchHistory(){
   const filtered=q?h.filter(i=>i.toLowerCase().includes(q.toLowerCase())):h;
   if(!filtered.length){el.innerHTML='';return;}
   el.innerHTML=`<div class="ihistory">
-    <div class="ihistory-title">История поиска</div>
+    <div class="ihistory-title" style="display:flex;justify-content:space-between;align-items:center;">
+      <span>История поиска</span>
+      ${h.length>3?`<button onclick="clearAllHistory()" style="background:none;border:none;color:var(--text3);font-size:13px;cursor:pointer;padding:0;">🗑 Очистить всё</button>`:''}
+    </div>
     ${filtered.map(item=>`
       <div class="ihistory-item" onclick="selectHistory('${x(item).replace(/'/g,"\\'")}')">
         <span class="ihistory-icon"></span>
@@ -1238,6 +1241,11 @@ function selectHistory(q){
   document.getElementById('inetQ').value=q;
   document.getElementById('inetHistory').innerHTML='';
   inetSearch();
+}
+
+function clearAllHistory(){
+  try{localStorage.removeItem('sb_inet_history');}catch{}
+  document.getElementById('inetHistory').innerHTML='';
 }
 
 function clearInetSearch(){
