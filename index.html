@@ -448,7 +448,7 @@
         style="display:flex;align-items:center;gap:10px;background:var(--bg3);border:none;border-radius:14px;padding:14px 16px;font-size:15px;color:var(--accent);cursor:pointer;width:100%;font-family:inherit;margin-bottom:10px;">
         🖼 Выбрать из галереи
       </button>
-      <input type="file" id="bgImgInput" accept="image/*" style="display:none" onchange="handleBgImg(event)"/>
+      <input type="file" id="bgImgInput" accept="image/*" style="display:none;position:fixed;top:-100px;" onchange="handleBgImg(event)"/>
       <button onclick="setBg('none','')"
         style="display:flex;align-items:center;gap:10px;background:var(--bg3);border:none;border-radius:14px;padding:14px 16px;font-size:15px;color:var(--red);cursor:pointer;width:100%;font-family:inherit;">
         ✕ Сбросить фон
@@ -1715,7 +1715,11 @@ function updateOverlay(val){
 function handleBgImg(e){
   const file=e.target.files[0];if(!file)return;
   const reader=new FileReader();
-  reader.onload=ev=>setBg('image',ev.target.result);
+  reader.onload=ev=>{
+    setBg('image',ev.target.result);
+    // Сбрасываем input — предотвращает скачок при повторном выборе
+    e.target.value='';
+  };
   reader.readAsDataURL(file);
 }
 
@@ -1811,46 +1815,68 @@ renderPL();renderRep();renderSongs(songs);
 // ── DRAG & DROP SORT ──
 (function(){
   let dragEl=null, ghost=null, scrollEl=null;
-  let ghostOffY=0, rafId=null, touchY=0;
+  let ghostOffY=0, rafId=null, touchY=0, touchX=0;
   let listType=null, listFilter=null;
+  let isDragging=false;
 
   function makeGhost(el, clientY){
     const r=el.getBoundingClientRect();
     ghost=el.cloneNode(true);
-    ghost.style.cssText='position:fixed;z-index:9999;pointer-events:none;left:'+r.left+'px;width:'+r.width+'px;height:'+r.height+'px;opacity:0.9;box-shadow:0 8px 24px rgba(0,0,0,0.5);border-radius:12px;background:var(--bg2);';
+    ghost.style.cssText=[
+      'position:fixed','z-index:9999','pointer-events:none',
+      'left:'+r.left+'px','width:'+r.width+'px','height:'+r.height+'px',
+      'opacity:0.92','box-shadow:0 8px 24px rgba(0,0,0,0.5)',
+      'border-radius:12px','background:var(--bg2)','will-change:transform'
+    ].join(';');
     ghostOffY=clientY-r.top;
     ghost.style.top=(clientY-ghostOffY)+'px';
     document.body.appendChild(ghost);
-    el.style.opacity='0.25';
+    el.style.opacity='0.2';
   }
 
   function findScrollParent(el){
     let p=el.parentElement;
     while(p&&p!==document.body){
-      if(p.scrollHeight>p.clientHeight+2) return p;
+      if(p.scrollHeight>p.clientHeight+4) return p;
       p=p.parentElement;
     }
     return null;
   }
 
   function reorder(y){
-    if(!dragEl) return;
-    const siblings=[...dragEl.parentElement.children].filter(el=>el!==dragEl&&el.dataset&&el.dataset.di);
+    if(!dragEl||!dragEl.parentElement) return;
+    const siblings=[...dragEl.parentElement.children].filter(
+      el=>el!==dragEl&&el.dataset&&el.dataset.di
+    );
     for(const sib of siblings){
       const r=sib.getBoundingClientRect();
-      if(y<r.top+r.height/2){dragEl.parentElement.insertBefore(dragEl,sib);return;}
+      if(y<r.top+r.height/2){
+        dragEl.parentElement.insertBefore(dragEl,sib);
+        return;
+      }
     }
     dragEl.parentElement.appendChild(dragEl);
   }
 
   function tick(){
-    if(!ghost||!scrollEl) return;
+    if(!isDragging||!scrollEl) return;
     const r=scrollEl.getBoundingClientRect();
-    const ZONE=100,SPEED=14;
+    const ZONE=90, MAX_SPEED=20;
+
     const distTop=touchY-r.top;
     const distBot=r.bottom-touchY;
-    if(distTop<ZONE&&distTop>0) scrollEl.scrollTop-=SPEED*(1-distTop/ZONE);
-    else if(distBot<ZONE&&distBot>0) scrollEl.scrollTop+=SPEED*(1-distBot/ZONE);
+
+    if(distTop<ZONE&&distTop>0){
+      const speed=MAX_SPEED*(1-distTop/ZONE);
+      scrollEl.scrollTop-=speed;
+      // Сдвигаем ghost вместе со скроллом
+      if(ghost) ghost.style.top=(touchY-ghostOffY)+'px';
+    } else if(distBot<ZONE&&distBot>0){
+      const speed=MAX_SPEED*(1-distBot/ZONE);
+      scrollEl.scrollTop+=speed;
+      if(ghost) ghost.style.top=(touchY-ghostOffY)+'px';
+    }
+
     reorder(touchY);
     rafId=requestAnimationFrame(tick);
   }
@@ -1862,7 +1888,9 @@ renderPL();renderRep();renderSongs(songs);
       const newPls=ids.map(id=>pls.find(p=>p.id===id)).filter(Boolean);
       pls.length=0;pls.push(...newPls);sv(PK,pls);
     } else {
-      const base=listFilter?songs.filter(s=>(s.playlist||'')===listFilter):songs.filter(s=>!s.id.startsWith('__fav__'));
+      const base=listFilter
+        ?songs.filter(s=>(s.playlist||'')===listFilter)
+        :songs.filter(s=>!s.id.startsWith('__fav__'));
       const newBase=ids.map(id=>base.find(s=>s.id===id)).filter(Boolean);
       const others=songs.filter(s=>!newBase.find(b=>b.id===s.id));
       songs.length=0;songs.push(...others,...newBase);sv(SK,songs);
@@ -1870,10 +1898,12 @@ renderPL();renderRep();renderSongs(songs);
   }
 
   function cleanup(){
+    isDragging=false;
     if(ghost){ghost.remove();ghost=null;}
     if(rafId){cancelAnimationFrame(rafId);rafId=null;}
     if(dragEl){dragEl.style.opacity='';dragEl=null;}
-    scrollEl=null;
+    // Восстанавливаем скролл
+    if(scrollEl){scrollEl.style.touchAction='';scrollEl=null;}
   }
 
   document.addEventListener('touchstart',e=>{
@@ -1882,36 +1912,53 @@ renderPL();renderRep();renderSongs(songs);
     const list=item.closest('[data-dl]');
     if(!list) return;
     const t0=e.touches[0];
-    let startY=t0.clientY,startX=t0.clientX,moved=false,timer=null;
+    let startY=t0.clientY, startX=t0.clientX, moved=false, timer=null;
+
     timer=setTimeout(()=>{
       if(moved) return;
+      isDragging=true;
       navigator.vibrate&&navigator.vibrate(40);
-      dragEl=item;listType=list.dataset.dl;listFilter=list.dataset.dlf||'';
+      dragEl=item;
+      listType=list.dataset.dl;
+      listFilter=list.dataset.dlf||'';
       scrollEl=findScrollParent(item);
-      makeGhost(item,t0.clientY);
+      // Блокируем нативный скролл контейнера
+      if(scrollEl) scrollEl.style.touchAction='none';
+      makeGhost(item, t0.clientY);
       touchY=t0.clientY;
+      touchX=t0.clientX;
       if(window.lpTimer){clearTimeout(window.lpTimer);window.lpTimer=null;}
       document.querySelectorAll('.s-item.pressing').forEach(el=>el.classList.remove('pressing'));
       rafId=requestAnimationFrame(tick);
-    },500);
+    }, 500);
+
     function onMove(ev){
       const t=ev.touches[0];
-      if(Math.abs(t.clientY-startY)>8||Math.abs(t.clientX-startX)>8) moved=true;
-      if(!ghost) return;
+      if(!isDragging){
+        if(Math.abs(t.clientY-startY)>8||Math.abs(t.clientX-startX)>8) moved=true;
+        return;
+      }
+      // Во время drag блокируем скролл страницы
+      ev.preventDefault();
       touchY=t.clientY;
-      ghost.style.top=(t.clientY-ghostOffY)+'px';
+      touchX=t.clientX;
+      // Ghost следует за пальцем
+      if(ghost) ghost.style.top=(t.clientY-ghostOffY)+'px';
     }
+
     function onEnd(){
       clearTimeout(timer);
       document.removeEventListener('touchmove',onMove);
       document.removeEventListener('touchend',onEnd);
-      if(dragEl) commit();
+      if(isDragging) commit();
       cleanup();
     }
-    document.addEventListener('touchmove',onMove,{passive:true});
+
+    document.addEventListener('touchmove',onMove,{passive:false});
     document.addEventListener('touchend',onEnd);
   },{passive:true});
 })();
+
 </script>
 </body>
 </html>
