@@ -2038,13 +2038,33 @@ function loadBgSettings(){
 
   function cleanup(){
     if(ghost){ghost.remove();ghost=null;}
+    if(autoScrollRAF){cancelAnimationFrame(autoScrollRAF);autoScrollRAF=null;}
+    scrollContainer=null;
     items.forEach(el=>{el.style.transform='';el.style.transition='';el.style.opacity='';});
-    // Восстанавливаем скролл
-    document.querySelectorAll('.scroll-body').forEach(el=>el.style.overflow='');
     dragging=null; listEl=null; items=[]; startIdx=-1; overIdx=-1;
   }
 
   let ghostOffsetX=0, ghostOffsetY=0;
+
+  let autoScrollRAF=null, scrollContainer=null, currentTouchY=0;
+
+  function autoScroll(){
+    if(!dragging||!scrollContainer) return;
+    const r=scrollContainer.getBoundingClientRect();
+    const zone=80; // зона у краёв в px
+    const speed=12;
+    const distTop=currentTouchY-r.top;
+    const distBot=r.bottom-currentTouchY;
+    if(distTop<zone&&distTop>0){
+      scrollContainer.scrollTop-=speed*(1-distTop/zone);
+    } else if(distBot<zone&&distBot>0){
+      scrollContainer.scrollTop+=speed*(1-distBot/zone);
+    }
+    // Обновляем позиции после скролла
+    const newOver=findClosest(currentTouchY);
+    if(newOver>=0&&newOver!==overIdx){overIdx=newOver;applyPlaceholder();}
+    autoScrollRAF=requestAnimationFrame(autoScroll);
+  }
 
   function startDrag(e, itemEl, list){
     dragging=itemEl;
@@ -2057,13 +2077,14 @@ function loadBgSettings(){
     const t=e.touches[0];
     ghostOffsetX=t.clientX-r.left;
     ghostOffsetY=t.clientY-r.top;
+    currentTouchY=t.clientY;
     ghost.style.left=(t.clientX-ghostOffsetX)+'px';
     ghost.style.top=(t.clientY-ghostOffsetY)+'px';
     itemEl.style.opacity='0.3';
-    // Блокируем скролл на родительском scroll-body
-    const scrollEl=list.closest('.scroll-body');
-    if(scrollEl) scrollEl.style.overflow='hidden';
+    // Не блокируем overflow — скролл нужен для auto-scroll
+    scrollContainer=list.closest('.scroll-body');
     navigator.vibrate&&navigator.vibrate(30);
+    autoScrollRAF=requestAnimationFrame(autoScroll);
   }
 
   document.addEventListener('touchstart',e=>{
@@ -2096,6 +2117,7 @@ function loadBgSettings(){
       }
 
       if(!dragging||!ghost) return;
+      currentTouchY=t.clientY;
       ghost.style.top=(t.clientY - ghostOffsetY)+'px';
       ghost.style.left=(t.clientX - ghostOffsetX)+'px';
       const newOver=findClosest(t.clientY);
