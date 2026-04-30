@@ -444,11 +444,11 @@
 
       <!-- Картинка -->
       <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-bottom:12px;">Картинка на фон</div>
-      <button onclick="openBgImgPicker()"
+      <button onclick="document.getElementById('bgImgInput').click()"
         style="display:flex;align-items:center;gap:10px;background:var(--bg3);border:none;border-radius:14px;padding:14px 16px;font-size:15px;color:var(--accent);cursor:pointer;width:100%;font-family:inherit;margin-bottom:10px;">
         🖼 Выбрать из галереи
       </button>
-      <input type="file" id="bgImgInput" accept="image/*" style="display:none;position:fixed;top:-100px;" onchange="handleBgImg(event)"/>
+      <input type="file" id="bgImgInput" accept="image/*" style="display:none" onchange="handleBgImg(event)"/>
       <button onclick="setBg('none','')"
         style="display:flex;align-items:center;gap:10px;background:var(--bg3);border:none;border-radius:14px;padding:14px 16px;font-size:15px;color:var(--red);cursor:pointer;width:100%;font-family:inherit;">
         ✕ Сбросить фон
@@ -1710,12 +1710,6 @@ function updateOverlay(val){
     saved.overlay=parseInt(val);
     localStorage.setItem('sb_bg',JSON.stringify(saved));
   }catch{}
-}
-
-function openBgImgPicker(){
-  setTimeout(()=>{
-    document.getElementById('bgImgInput').click();
-  }, 50);
 }
 
 function handleBgImg(e){
