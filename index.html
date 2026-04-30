@@ -1970,4 +1970,120 @@ function loadBgSettings(){
   }, {passive:true});
 })();
 
+// ── DRAG & DROP SORT ──
+(function(){
+  let dragEl=null, ghost=null, scrollEl=null;
+  let ghostOffY=0, rafId=null, touchY=0;
+  let listType=null, listFilter=null;
 
+  function makeGhost(el, clientY){
+    const r=el.getBoundingClientRect();
+    ghost=el.cloneNode(true);
+    ghost.style.cssText='position:fixed;z-index:9999;pointer-events:none;left:'+r.left+'px;width:'+r.width+'px;height:'+r.height+'px;opacity:0.9;box-shadow:0 8px 24px rgba(0,0,0,0.5);border-radius:12px;background:var(--bg2);';
+    ghostOffY=clientY-r.top;
+    ghost.style.top=(clientY-ghostOffY)+'px';
+    document.body.appendChild(ghost);
+    el.style.opacity='0.25';
+  }
+
+  function findScrollParent(el){
+    let p=el.parentElement;
+    while(p&&p!==document.body){
+      if(p.scrollHeight>p.clientHeight+2) return p;
+      p=p.parentElement;
+    }
+    return null;
+  }
+
+  function reorder(y){
+    if(!dragEl) return;
+    const siblings=[...dragEl.parentElement.children].filter(el=>el!==dragEl&&el.dataset&&el.dataset.di);
+    for(const sib of siblings){
+      const r=sib.getBoundingClientRect();
+      if(y<r.top+r.height/2){
+        dragEl.parentElement.insertBefore(dragEl,sib);
+        return;
+      }
+    }
+    dragEl.parentElement.appendChild(dragEl);
+  }
+
+  function tick(){
+    if(!ghost||!scrollEl) return;
+    const r=scrollEl.getBoundingClientRect();
+    const ZONE=100, SPEED=14;
+    const distTop=touchY-r.top;
+    const distBot=r.bottom-touchY;
+    if(distTop<ZONE&&distTop>0) scrollEl.scrollTop-=SPEED*(1-distTop/ZONE);
+    else if(distBot<ZONE&&distBot>0) scrollEl.scrollTop+=SPEED*(1-distBot/ZONE);
+    reorder(touchY);
+    rafId=requestAnimationFrame(tick);
+  }
+
+  function commit(){
+    if(!dragEl||!dragEl.parentElement) return;
+    const ids=[...dragEl.parentElement.querySelectorAll('[data-di]')].map(el=>el.dataset.di);
+    if(listType==='pl'){
+      const newPls=ids.map(id=>pls.find(p=>p.id===id)).filter(Boolean);
+      pls.length=0; pls.push(...newPls); sv(PK,pls);
+    } else {
+      const base=listFilter
+        ?songs.filter(s=>(s.playlist||'')===listFilter)
+        :songs.filter(s=>!s.id.startsWith('__fav__'));
+      const newBase=ids.map(id=>base.find(s=>s.id===id)).filter(Boolean);
+      const others=songs.filter(s=>!newBase.find(b=>b.id===s.id));
+      songs.length=0; songs.push(...others,...newBase); sv(SK,songs);
+    }
+  }
+
+  function cleanup(){
+    if(ghost){ghost.remove();ghost=null;}
+    if(rafId){cancelAnimationFrame(rafId);rafId=null;}
+    if(dragEl){dragEl.style.opacity='';dragEl=null;}
+    scrollEl=null;
+  }
+
+  document.addEventListener('touchstart',e=>{
+    const item=e.target.closest('[data-di]');
+    if(!item) return;
+    const list=item.closest('[data-dl]');
+    if(!list) return;
+    const t0=e.touches[0];
+    let startY=t0.clientY, startX=t0.clientX, moved=false, timer=null;
+
+    timer=setTimeout(()=>{
+      if(moved) return;
+      navigator.vibrate&&navigator.vibrate(40);
+      dragEl=item;
+      listType=list.dataset.dl;
+      listFilter=list.dataset.dlf||'';
+      scrollEl=findScrollParent(item);
+      makeGhost(item,t0.clientY);
+      touchY=t0.clientY;
+      if(window.lpTimer){clearTimeout(window.lpTimer);window.lpTimer=null;}
+      document.querySelectorAll('.s-item.pressing').forEach(el=>el.classList.remove('pressing'));
+      rafId=requestAnimationFrame(tick);
+    },500);
+
+    function onMove(ev){
+      const t=ev.touches[0];
+      if(Math.abs(t.clientY-startY)>8||Math.abs(t.clientX-startX)>8) moved=true;
+      if(!ghost) return;
+      touchY=t.clientY;
+      ghost.style.top=(t.clientY-ghostOffY)+'px';
+    }
+    function onEnd(){
+      clearTimeout(timer);
+      document.removeEventListener('touchmove',onMove);
+      document.removeEventListener('touchend',onEnd);
+      if(dragEl) commit();
+      cleanup();
+    }
+    document.addEventListener('touchmove',onMove,{passive:true});
+    document.addEventListener('touchend',onEnd);
+  },{passive:true});
+})();
+
+</script>
+</body>
+</html>
