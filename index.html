@@ -1712,10 +1712,24 @@ function updateOverlay(val){
   }catch{}
 }
 
+function openBgImgPicker(){
+  // Фиксируем текущую позицию скролла чтобы не было прыжка
+  const scrollY=window.scrollY||0;
+  document.body.style.position='fixed';
+  document.body.style.top=-scrollY+'px';
+  document.body.style.width='100%';
+  document.getElementById('bgImgInput').click();
+}
+
 function handleBgImg(e){
-  const file=e.target.files[0];
-  // Восстанавливаем position:fixed после закрытия picker
+  // Восстанавливаем скролл
+  const scrollY=parseFloat(document.body.style.top||'0')*-1;
+  document.body.style.position='';
+  document.body.style.top='';
+  document.body.style.width='';
+  window.scrollTo(0,scrollY);
   document.getElementById('app').style.position='fixed';
+  const file=e.target.files[0];
   if(!file){return;}
   const reader=new FileReader();
   reader.onload=ev=>{
@@ -1723,12 +1737,6 @@ function handleBgImg(e){
     e.target.value='';
   };
   reader.readAsDataURL(file);
-}
-
-function openBgImgPicker(){
-  // Временно снимаем position:fixed чтобы picker мог скроллиться
-  document.getElementById('app').style.position='';
-  document.getElementById('bgImgInput').click();
 }
 
 function updateBgPresetActive(val){
