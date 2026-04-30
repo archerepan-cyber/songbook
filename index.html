@@ -25,26 +25,15 @@
   #app{display:flex;flex-direction:column;height:100dvh;position:fixed;top:0;left:0;right:0;bottom:0;overflow:hidden;}
   .screen{display:none;flex-direction:column;flex:1;min-height:0;position:relative;}
   .screen.active{display:flex;}
-  .screen.slide-in-right{animation:slideInRight .28s cubic-bezier(.25,.46,.45,.94) both;}
-  .screen.slide-in-left{animation:slideInLeft .28s cubic-bezier(.25,.46,.45,.94) both;}
-  .screen.slide-out-right{animation:slideOutRight .28s cubic-bezier(.25,.46,.45,.94) both;}
-  .screen.slide-out-left{animation:slideOutLeft .28s cubic-bezier(.25,.46,.45,.94) both;}
-  @keyframes slideInRight{from{transform:translateX(100%);opacity:.6}to{transform:translateX(0);opacity:1}}
-  @keyframes slideInLeft{from{transform:translateX(-100%);opacity:.6}to{transform:translateX(0);opacity:1}}
-  @keyframes slideOutRight{from{transform:translateX(0);opacity:1}to{transform:translateX(100%);opacity:.6}}
-  @keyframes slideOutLeft{from{transform:translateX(0);opacity:1}to{transform:translateX(-100%);opacity:.6}}
-  .screen.active{display:flex;}
   .scroll-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;}
 
   /* HEADER */
-  .ph{padding:calc(var(--safe-top) + 14px) 20px 12px;background:transparent;flex-shrink:0;position:relative;z-index:1;}
-  .ph-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;min-height:36px;}
+  .ph{padding:calc(var(--safe-top) + 14px) 20px 10px;background:transparent;flex-shrink:0;position:relative;z-index:1;}
+  .ph-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
   .ph-title{font-size:clamp(18px,6vw,34px);font-weight:700;letter-spacing:-.5px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:10px;}
   .add-btn{background:var(--accent);border:none;border-radius:20px;padding:8px 16px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;flex-shrink:0;white-space:nowrap;}
   .add-btn:active{opacity:.75;}
-  .sbar{display:flex;align-items:center;gap:8px;background:var(--bg3);border-radius:12px;padding:9px 13px;margin-top:10px;}
-  .ph .irow{margin-top:10px;margin-bottom:0;}
-  .ph .irow input{background:var(--bg3);border:none;border-radius:12px;padding:9px 13px;font-size:16px;color:var(--text);outline:none;flex:1;}
+  .sbar{display:flex;align-items:center;gap:8px;background:var(--bg3);border-radius:12px;padding:9px 13px;}
   .sbar input{background:none;border:none;color:var(--text);font-size:15px;width:100%;outline:none;}
   .sbar input::placeholder{color:var(--text3);}
 
@@ -70,6 +59,8 @@
   .s-item:active{background:rgba(255,255,255,.06);}
   .s-item+.s-item{border-top:.5px solid var(--sep);}
   .s-item.long-press{background:rgba(10,132,255,.12);}
+  .s-item.pressing{transform:scale(0.96);transition:transform .1s ease;background:rgba(255,255,255,.06);}
+  .s-item{transition:transform .2s ease,background .2s;}
   .s-item.pressing{transform:scale(0.96);transition:transform .1s ease;background:rgba(255,255,255,.06);}
   .s-item{transition:transform .2s ease,background .2s;}
   .s-cover{width:52px;height:52px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:24px;object-fit:cover;}
@@ -217,16 +208,9 @@
 
   /* INTERNET */
   .iwrap{padding:16px 20px calc(var(--safe-bot) + var(--tab-h) + 16px);}
-  .ihistory{margin-bottom:12px;}
-  .ihistory-title{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);margin-bottom:8px;}
-  .ihistory-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:.5px solid var(--sep);cursor:pointer;}
-  .ihistory-item:active{opacity:.6;}
-  .ihistory-icon{font-size:16px;color:var(--text3);}
-  .ihistory-text{flex:1;font-size:15px;color:var(--text2);}
-  .ihistory-del{font-size:18px;color:var(--text3);padding:4px 8px;background:none;border:none;cursor:pointer;font-family:inherit;}
   .ihead{font-size:13px;color:var(--text3);margin-bottom:14px;line-height:1.5;}
   .irow{display:flex;gap:8px;margin-bottom:16px;}
-  .irow input{flex:1;background:var(--bg3);border:none;border-radius:12px;padding:12px 14px;font-size:16px;color:var(--text);outline:none;}
+  .irow input{flex:1;background:var(--bg3);border:none;border-radius:12px;padding:12px 14px;font-size:15px;color:var(--text);outline:none;}
   .irow input:focus{background:var(--bg4);}
   .igo{background:var(--accent);border:none;border-radius:12px;padding:12px 18px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;white-space:nowrap;}
   .igo:active{opacity:.8;}
@@ -242,8 +226,7 @@
   .ifound-header{padding:16px 16px 12px;}
   .ifound-title{font-size:18px;font-weight:700;}
   .ifound-artist{font-size:14px;color:var(--text3);margin-top:2px;}
-  .ifound-lyrics{padding:0 16px 12px;font-size:14px;color:var(--text2);line-height:1.7;max-height:200px;overflow-y:auto;-webkit-overflow-scrolling:touch;cursor:pointer;}
-  .ifound-lyrics:active{opacity:.7;}
+  .ifound-lyrics{padding:0 16px 12px;font-size:14px;color:var(--text2);line-height:1.7;max-height:200px;overflow:hidden;mask-image:linear-gradient(to bottom,#000 60%,transparent 100%);-webkit-mask-image:linear-gradient(to bottom,#000 60%,transparent 100%);}
   .ifound-actions{padding:12px 16px 16px;display:flex;flex-direction:column;gap:8px;border-top:.5px solid var(--sep);}
   .ifound-add{background:var(--accent);border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;color:#fff;cursor:pointer;width:100%;font-family:inherit;}
   .ifound-add:active{opacity:.8;}
@@ -269,7 +252,7 @@
   .edit-lyrics-btn:active{color:var(--accent);}
   .edit-lyrics-btn.active{color:var(--accent);}
   .lyrics-edit-wrap{flex:1;display:none;flex-direction:column;}
-  .lyrics-textarea{flex:1;background:var(--bg3);border:none;color:var(--text);font-size:16px;font-family:-apple-system,system-ui,sans-serif;line-height:1.7;padding:16px 18px;resize:none;outline:none;min-height:300px;}
+  .lyrics-textarea{flex:1;background:var(--bg3);border:none;color:var(--text);font-size:15px;font-family:-apple-system,system-ui,sans-serif;line-height:1.7;padding:16px 18px;resize:none;outline:none;min-height:300px;}
   .lyrics-edit-actions{display:flex;gap:10px;padding:12px 18px calc(var(--safe-bot) + 14px);background:var(--bg2);border-top:.5px solid var(--sep);}
   .le-cancel{flex:1;padding:13px;border-radius:14px;background:var(--bg3);border:none;font-size:15px;font-weight:600;color:var(--text2);cursor:pointer;font-family:inherit;}
   .le-save{flex:2;padding:13px;border-radius:14px;background:var(--accent);border:none;font-size:15px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit;}
@@ -363,24 +346,13 @@
 
 <!-- ── ИНТЕРНЕТ ── -->
 <div class="screen" id="scr-inet">
-  <div class="ph">
-    <div class="ph-row"><div class="ph-title">Поиск песен</div></div>
-    <div style="display:flex;gap:8px;align-items:center;margin-top:10px;">
-      <div class="sbar" style="flex:1;margin-top:0;">
-        <span style="color:var(--text3)">🔍</span>
-        <input id="inetQ" type="search" placeholder="Исполнитель, название..." autocomplete="off"
-          onkeydown="if(event.key==='Enter')inetSearch()"
-          oninput="showSearchHistory();updateInetClear()"
-          onfocus="showSearchHistory();updateInetClear();"
-          style="font-size:16px;"/>
-        <button id="inetClearBtn" onclick="clearInetSearch()" style="visibility:hidden;background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;padding:0 4px;line-height:1;">✕</button>
-      </div>
-      <button class="igo" onclick="inetSearch()" style="height:100%;padding:9px 16px;">Найти</button>
-    </div>
-  </div>
+  <div class="ph"><div class="ph-row"><div class="ph-title">Поиск песен</div></div></div>
   <div class="scroll-body">
-    <div class="iwrap" style="padding-top:8px;">
-      <div id="inetHistory"></div>
+    <div class="iwrap">
+      <div class="irow">
+        <input id="inetQ" type="search" placeholder="Исполнитель, название..." autocomplete="off" onkeydown="if(event.key==='Enter')inetSearch()"/>
+        <button class="igo" onclick="inetSearch()">Найти</button>
+      </div>
       <div id="inetRes"></div>
     </div>
   </div>
@@ -409,21 +381,21 @@
     </div>
     </div><!-- /chordsBarWrap -->
     <div class="chords-edit-wrap" id="chordsEditWrap">
-      <input class="chords-input" style="font-size:16px;" id="chordsInput" placeholder="Am - G - Em - C"/>
+      <input class="chords-input" id="chordsInput" placeholder="Am - G - Em - C"/>
       <button class="chords-save" onclick="saveChords()">OK</button>
     </div>
     <div class="meta-edit-panel" id="metaEditPanel">
       <div class="mep-row">
         <label class="mep-lbl">Название</label>
-        <input class="mep-input" style="font-size:16px;" id="titleInput" placeholder="Название песни"/>
+        <input class="mep-input" id="titleInput" placeholder="Название песни"/>
       </div>
       <div class="mep-row">
         <label class="mep-lbl">Исполнитель</label>
-        <input class="mep-input" style="font-size:16px;" id="artistInput" placeholder="Исполнитель"/>
+        <input class="mep-input" id="artistInput" placeholder="Исполнитель"/>
       </div>
       <div class="mep-row">
         <label class="mep-lbl">Текст песни</label>
-        <textarea class="mep-textarea" style="font-size:16px;" id="lyricsTextarea" placeholder="Вставьте текст..."></textarea>
+        <textarea class="mep-textarea" id="lyricsTextarea" placeholder="Вставьте текст..."></textarea>
       </div>
       <div class="mep-actions">
         <button class="mep-cancel" onclick="closeMetaEdit()">Отмена</button>
@@ -486,7 +458,7 @@
       <div id="bgOverlayWrap" style="margin-top:20px;">
         <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-bottom:10px;">Затемнение</div>
         <input type="range" id="bgOverlay" min="50" max="90" value="50" oninput="updateOverlay(this.value)"
-          style="width:100%;accent-color:var(--accent);height:36px;cursor:pointer;"/>
+          style="width:100%;accent-color:var(--accent);"/>
         <div style="font-size:13px;color:var(--text3);margin-top:4px;" id="bgOverlayVal">0</div>
       </div>
     </div>
@@ -634,20 +606,6 @@ function show(id, dir){
   });
   next.style.display='flex';
   next.classList.add('active');
-  if(dir&&prev&&prev!==next){
-    prev.style.display='flex';
-    if(dir==='left'){
-      next.classList.add('slide-in-right');
-      prev.classList.add('slide-out-left');
-    } else {
-      next.classList.add('slide-in-left');
-      prev.classList.add('slide-out-right');
-    }
-    setTimeout(()=>{
-      prev.style.display='none';
-      prev.classList.remove('slide-out-left','slide-out-right');
-    },280);
-  }
   const tb=document.getElementById('tabbar');
   tb.style.display='flex';
   if(id==='detail'){tb.classList.add('in-detail');}
@@ -675,7 +633,6 @@ function goBack(){
       if(idx2>=0) songs.splice(idx2,1);
       dest='inet';
     } else {
-      // Возвращаемся туда откуда пришли
       dest=prevScr||'rep';
     }
   } else if(curScr==='songs' && filterPl){
@@ -883,7 +840,7 @@ function openSong(id){
     // Устанавливаем marginTop сразу при открытии
     const chordsWrap=document.getElementById('chordsBarWrap');
     if(chordsWrap){
-      const extra=chordsBarHidden?0:chordsWrap.scrollHeight*(lzScale-1);
+      const extra=chordsWrap.scrollHeight*(lzScale-1);
       document.getElementById('lscroll').style.marginTop=extra+'px';
     }
   });
@@ -1102,7 +1059,6 @@ function openModal(mode, forcedPl){
     const p=document.getElementById('imgPreview');p.src='';p.classList.remove('show');
   }
   document.getElementById('modal').classList.add('open');
-  // Фокус на первое поле чтобы появилась клавиатура
   setTimeout(()=>{
     const firstInput=mMode==='pl'
       ?document.getElementById('fPlName')
@@ -1112,11 +1068,8 @@ function openModal(mode, forcedPl){
 }
 function closeModal(){
   document.getElementById('modal').classList.remove('open');
-  // Сбрасываем iOS zoom после закрытия модалки
   const mv=document.querySelector('meta[name="viewport"]');
-  if(mv){
-    mv.setAttribute('content','width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content');
-  }
+  if(mv) mv.setAttribute('content','width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content');
 }
 function closeMBg(e){if(e.target===document.getElementById('modal'))closeModal();}
 function saveItem(){
@@ -1141,11 +1094,6 @@ function saveItem(){
     if(!name){toast('Введите название!');return;}
     pls.push({id:'p'+Date.now(),name,desc:document.getElementById('fPlDesc').value.trim(),emoji:'🎵',color:'#636366',img:pendingImg});
     sv(PK,pls);closeModal();renderPL();toast('Плейлист создан: '+name);
-    // Если вызвано из поиска — добавляем найденную песню в новый плейлист
-    if(window._inetPendingAdd&&inetFoundSong){
-      window._inetPendingAdd=false;
-      inetAddSong(name);
-    }
   }
 }
 
@@ -1207,77 +1155,11 @@ function autoFormatLyrics(raw){
   return result.join('\n').replace(/\n{3,}/g,'\n\n').trim();
 }
 
-// ── ИСТОРИЯ ПОИСКА ──
-const HISTORY_KEY='sb_search_history';
-const HISTORY_MAX=10;
-
-function getHistory(){
-  try{return JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]');}catch{return[];}
-}
-function saveToHistory(q){
-  let h=getHistory().filter(i=>i!==q);
-  h.unshift(q);
-  h=h.slice(0,HISTORY_MAX);
-  try{localStorage.setItem(HISTORY_KEY,JSON.stringify(h));}catch{}
-}
-function deleteFromHistory(q){
-  const h=getHistory().filter(i=>i!==q);
-  try{localStorage.setItem(HISTORY_KEY,JSON.stringify(h));}catch{}
-  showSearchHistory();
-}
-function showSearchHistory(){
-  const el=document.getElementById('inetHistory');
-  const q=document.getElementById('inetQ').value.trim();
-  const h=getHistory();
-  // Если есть результат поиска — не показываем историю
-  const res=document.getElementById('inetRes');
-  if(res&&res.innerHTML.trim()) {el.innerHTML='';return;}
-  if(!h.length){el.innerHTML='';return;}
-  const filtered=q?h.filter(i=>i.toLowerCase().includes(q.toLowerCase())):h;
-  if(!filtered.length){el.innerHTML='';return;}
-  el.innerHTML=`<div class="ihistory">
-    <div class="ihistory-title" style="display:flex;justify-content:space-between;align-items:center;">
-      <span>История поиска</span>
-      ${h.length>3?`<button onclick="clearAllHistory()" style="background:none;border:none;color:var(--text3);font-size:13px;cursor:pointer;padding:0;">🗑 Очистить всё</button>`:''}
-    </div>
-    ${filtered.map(item=>`
-      <div class="ihistory-item" onclick="selectHistory('${x(item).replace(/'/g,"\\'")}')">
-        <span class="ihistory-icon"></span>
-        <span class="ihistory-text">${x(item)}</span>
-        <button class="ihistory-del" onclick="event.stopPropagation();deleteFromHistory('${x(item).replace(/'/g,"\\'")}')">✕</button>
-      </div>`).join('')}
-  </div>`;
-}
-function selectHistory(q){
-  document.getElementById('inetQ').value=q;
-  document.getElementById('inetHistory').innerHTML='';
-  inetSearch();
-}
-
-function clearAllHistory(){
-  try{localStorage.removeItem('sb_inet_history');}catch{}
-  document.getElementById('inetHistory').innerHTML='';
-}
-
-function clearInetSearch(){
-  document.getElementById('inetQ').value='';
-  document.getElementById('inetRes').innerHTML='';
-  document.getElementById('inetHistory').innerHTML='';
-  inetFoundSong=null;
-  document.getElementById('inetQ').focus();
-}
-function updateInetClear(){
-  const q=document.getElementById('inetQ').value;
-  document.getElementById('inetClearBtn').style.visibility=q?'visible':'hidden';
-}
-
 async function inetSearch(){
   const q=document.getElementById('inetQ').value.trim();
   if(!q)return;
   const el=document.getElementById('inetRes');
   el.innerHTML=`<div class="ildr">🔍 Ищем «${x(q)}»...</div>`;
-  saveToHistory(q);
-  document.getElementById('inetHistory').innerHTML='';
   try{
     const r=await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(q)}`);
     if(!r.ok) throw new Error('Сервис недоступен');
@@ -1317,9 +1199,8 @@ function renderFoundSong(el){
       <div class="ifound-title">${x(s.title)}</div>
       <div class="ifound-artist">${x(s.artist)}</div>
     </div>
-    <div class="ifound-lyrics" onclick="inetPreviewSong()">${x(s.lyrics).replace(/\n/g,'<br>')}</div>
+    <div class="ifound-lyrics">${x(s.lyrics).replace(/\n/g,'<br>')}</div>
     <div class="ifound-actions">
-      <button class="ifound-nopl" onclick="inetCreateAndAdd()" style="color:var(--accent);text-decoration:none;font-weight:600;padding:10px 0;display:flex;align-items:center;gap:6px;margin-bottom:8px;">＋ Создать плейлист</button>
       <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);margin-bottom:4px;">Добавить в плейлист</div>
       <div class="ifound-pl-list">
         ${plBtns}
@@ -1329,46 +1210,10 @@ function renderFoundSong(el){
   </div>`;
 }
 
-function inetPreviewSong(){
-  if(!inetFoundSong) return;
-  const temp={
-    id:'__preview__',
-    title:inetFoundSong.title,
-    artist:inetFoundSong.artist,
-    key:inetFoundSong.key||'',
-    lyrics:inetFoundSong.lyrics,
-    cover:'',
-    instr:'Guitar'
-  };
-  // Добавляем временно в songs чтобы openSong нашёл
-  const existing=songs.findIndex(s=>s.id==='__preview__');
-  if(existing>=0) songs.splice(existing,1);
-  songs.unshift(temp);
-  prevPrevScr=prevScr; prevScr=curScr; curScr='detail';
-  curSong=temp;
-  closeMetaEdit();
-  document.getElementById('chordsVal').textContent=temp.key||'—';
-  document.getElementById('favBtn').style.display='none';
-  showChordsBar();
-  renderLyrics(); stopScroll();
-  applyZoom(lzScale, false);
-  show('detail');
-  requestAnimationFrame(()=>{
-    document.getElementById('lscroll').scrollTop=0;
-    updateChordsOverlays();
-    const chordsWrap=document.getElementById('chordsBarWrap');
-    if(chordsWrap){
-      const extra=chordsBarHidden?0:chordsWrap.scrollHeight*(lzScale-1);
-      document.getElementById('lscroll').style.marginTop=extra+'px';
-    }
-  });
-}
-
-function inetCreateAndAdd(){  // Запоминаем что после создания плейлиста нужно добавить найденную песню
+function inetCreateAndAdd(){
   window._inetPendingAdd=true;
   openModal('pl');
 }
-
 function inetAddSong(plName){
   if(!inetFoundSong)return;
   const s={
@@ -1518,7 +1363,6 @@ function toggleMetaEdit(){
   const isOpen=panel.classList.contains('open');
   if(isOpen){closeMetaEdit();return;}
   panel.classList.add('open');
-  // Скрываем панель аккордов чтобы не наслаивалась
   if(!chordsBarHidden) hideChordsBar();
   document.getElementById('titleInput').value=curSong?curSong.title:'';
   document.getElementById('artistInput').value=curSong?curSong.artist:'';
@@ -1527,7 +1371,6 @@ function toggleMetaEdit(){
 }
 function closeMetaEdit(){
   document.getElementById('metaEditPanel').classList.remove('open');
-  // Восстанавливаем панель аккордов
   if(chordsBarHidden) showChordsBar();
 }
 function saveMetaEdit(){
@@ -1684,6 +1527,7 @@ function applyZoom(scale, animate){
   lyricWrap.style.transform=`scale(${scale})`;
   lyricWrap.style.width=(100/scale)+'%';
   lyricWrap.style.paddingBottom=(10*scale)+'px';
+  lyricWrap.style.paddingBottom=(10*scale)+'px';
 
   // font-weight
   const t=(scale-1)/(ZOOM_MAX-1);
@@ -1698,7 +1542,7 @@ function applyZoom(scale, animate){
     chordsWrap.style.transform=`scale(${scale})`;
     chordsWrap.style.transformOrigin='top left';
     chordsWrap.style.width=(100/scale)+'%';
-    // Используем offsetHeight — высота до трансформа
+    // Сдвигаем lscroll вниз на добавленную высоту панели
     const naturalH=chordsWrap.querySelector('.chords-bar')?.offsetHeight||44;
     const extra=chordsBarHidden?0:naturalH*(scale-1);
     document.getElementById('lscroll').style.marginTop=extra+'px';
@@ -1713,24 +1557,15 @@ function applyZoom(scale, animate){
     if(scale>=1.5){fb.dataset.hiddenByZoom='1';fb.style.display='none';}
     else if(fb.dataset.hiddenByZoom==='1'){fb.dataset.hiddenByZoom='';fb.style.display=fb.dataset.favHidden==='1'?'none':'block';}
   }
-  // Карандашик и панель аккордов — исчезают при любом увеличении
+  // Карандашик и панели — исчезают при любом увеличении
   const pencil=document.querySelector('.cb-edit');
   if(pencil) pencil.style.display=scale>1.01?'none':'inline';
 
-  // Панель редакции аккордов — закрываем при увеличении
   if(scale>1.01){
     const chordsEdit=document.getElementById('chordsEditWrap');
-    if(chordsEdit&&chordsEdit.classList.contains('open')){
-      saveChords();
-      chordsEdit.classList.remove('open');
-    }
-    // Панель редакции метаданных — тоже закрываем
+    if(chordsEdit&&chordsEdit.classList.contains('open')){saveChords();chordsEdit.classList.remove('open');}
     const metaPanel=document.getElementById('metaEditPanel');
-    if(metaPanel&&metaPanel.classList.contains('open')){
-      saveMetaEdit();
-      metaPanel.classList.remove('open');
-      showChordsBar();
-    }
+    if(metaPanel&&metaPanel.classList.contains('open')){saveMetaEdit();metaPanel.classList.remove('open');showChordsBar();}
   }
 
   if(!pinchActive) updateChordsOverlays();
@@ -1770,9 +1605,8 @@ function initPinchZoom(){
       pinchScale0=lzScale;
       const scroll=document.getElementById('lscroll');
       const r=scroll.getBoundingClientRect();
-      // Позиция центра пинча в "нативных" координатах контента (до масштаба)
-      const midVP=((e.touches[0].clientY+e.touches[1].clientY)/2)-r.top;
-      pinchMidY=(scroll.scrollTop+midVP)/lzScale;
+      const midVP0=((e.touches[0].clientY+e.touches[1].clientY)/2)-r.top;
+      pinchMidY=(scroll.scrollTop+midVP0)/lzScale;
       e.preventDefault();
     }
   },{passive:false});
@@ -1786,7 +1620,6 @@ function initPinchZoom(){
       const scroll=document.getElementById('lscroll');
       const r=scroll.getBoundingClientRect();
       const midVP=((e.touches[0].clientY+e.touches[1].clientY)/2)-r.top;
-      // pinchMidY в нативных координатах → умножаем на новый scale → вычитаем позицию на экране
       scroll.scrollTop=pinchMidY*newScale-midVP;
     }
   },{passive:false});
@@ -1795,6 +1628,7 @@ function initPinchZoom(){
       pinchActive=false;
       if(lzScale<1.08){applyZoom(1.0,true);clearTimeout(zoomBadgeTimer);document.getElementById('zoomResetBtn').classList.remove('visible');try{localStorage.setItem('sb_zoom','1');}catch{}}
       else{scheduleHideBadge();try{localStorage.setItem('sb_zoom',lzScale);}catch{};}
+      // обновить оверлей после окончания pinch
       setTimeout(updateChordsOverlays, 50);
     }
   });
@@ -1881,11 +1715,7 @@ function updateOverlay(val){
 function handleBgImg(e){
   const file=e.target.files[0];if(!file)return;
   const reader=new FileReader();
-  reader.onload=ev=>{
-    setBg('image',ev.target.result);
-    // Сбрасываем input чтобы можно было выбрать то же фото снова
-    e.target.value='';
-  };
+  reader.onload=ev=>setBg('image',ev.target.result);
   reader.readAsDataURL(file);
 }
 
@@ -1915,6 +1745,15 @@ function loadBgSettings(){
   }catch{}
 }
 
+// ── INIT ──
+document.getElementById("tabbar").classList.remove("in-detail");
+initPinchZoom();
+initChordsBarGestures();
+loadBgSettings();
+// восстановить сохранённый zoom
+try{const z=parseFloat(localStorage.getItem('sb_zoom'));if(z&&z>1.05){lzScale=z;}}catch{}
+renderPL();renderRep();renderSongs(songs);
+
 // ── SWIPE NAVIGATION ──
 (function(){
   let sx=0, sy=0, dragging=false, axis=null;
@@ -1922,14 +1761,14 @@ function loadBgSettings(){
   function getScr(id){ return document.getElementById('scr-'+id); }
   function canSwipeBack(){ return curScr==='detail'||(curScr==='songs'&&filterPl); }
 
-  document.addEventListener('touchstart', e=>{
+  document.addEventListener('touchstart',e=>{
     if(e.target.closest('input[type=range]')||e.touches.length>1||pinchActive){dragging=false;axis=null;return;}
     sx=e.touches[0].clientX;
     sy=e.touches[0].clientY;
     dragging=false; axis=null;
-  }, {passive:true});
+  },{passive:true});
 
-  document.addEventListener('touchmove', e=>{
+  document.addEventListener('touchmove',e=>{
     if(e.target.closest('input[type=range]')||pinchActive||e.touches.length>1){dragging=false;return;}
     const dx=e.touches[0].clientX-sx;
     const dy=e.touches[0].clientY-sy;
@@ -1944,9 +1783,9 @@ function loadBgSettings(){
       if(dx>0&&(canSwipeBack()||idx>0)) dragging=true;
       if(dx<0&&idx<tabs.length-1&&!canSwipeBack()) dragging=true;
     }
-  }, {passive:true});
+  },{passive:true});
 
-  document.addEventListener('touchend', e=>{
+  document.addEventListener('touchend',e=>{
     if(e.target.closest('input[type=range]')) return;
     if(!dragging){axis=null;return;}
     dragging=false; axis=null;
@@ -1957,7 +1796,6 @@ function loadBgSettings(){
     const cur=getScr(curScr);
     const fade=()=>{if(cur){cur.style.transition='opacity .2s ease';cur.style.opacity='0';}};
     const reset=()=>{if(cur){cur.style.opacity='';cur.style.transition='';}};
-
     if(dx>50){
       if(canSwipeBack()){
         fade();setTimeout(()=>{reset();goBack();},200);
@@ -1967,7 +1805,7 @@ function loadBgSettings(){
     } else if(dx<-50&&idx<tabs.length-1&&!canSwipeBack()){
       fade();setTimeout(()=>{reset();swTab(tabs[idx+1]);},200);
     }
-  }, {passive:true});
+  },{passive:true});
 })();
 
 // ── DRAG & DROP SORT ──
@@ -2000,10 +1838,7 @@ function loadBgSettings(){
     const siblings=[...dragEl.parentElement.children].filter(el=>el!==dragEl&&el.dataset&&el.dataset.di);
     for(const sib of siblings){
       const r=sib.getBoundingClientRect();
-      if(y<r.top+r.height/2){
-        dragEl.parentElement.insertBefore(dragEl,sib);
-        return;
-      }
+      if(y<r.top+r.height/2){dragEl.parentElement.insertBefore(dragEl,sib);return;}
     }
     dragEl.parentElement.appendChild(dragEl);
   }
@@ -2011,7 +1846,7 @@ function loadBgSettings(){
   function tick(){
     if(!ghost||!scrollEl) return;
     const r=scrollEl.getBoundingClientRect();
-    const ZONE=100, SPEED=14;
+    const ZONE=100,SPEED=14;
     const distTop=touchY-r.top;
     const distBot=r.bottom-touchY;
     if(distTop<ZONE&&distTop>0) scrollEl.scrollTop-=SPEED*(1-distTop/ZONE);
@@ -2025,14 +1860,12 @@ function loadBgSettings(){
     const ids=[...dragEl.parentElement.querySelectorAll('[data-di]')].map(el=>el.dataset.di);
     if(listType==='pl'){
       const newPls=ids.map(id=>pls.find(p=>p.id===id)).filter(Boolean);
-      pls.length=0; pls.push(...newPls); sv(PK,pls);
+      pls.length=0;pls.push(...newPls);sv(PK,pls);
     } else {
-      const base=listFilter
-        ?songs.filter(s=>(s.playlist||'')===listFilter)
-        :songs.filter(s=>!s.id.startsWith('__fav__'));
+      const base=listFilter?songs.filter(s=>(s.playlist||'')===listFilter):songs.filter(s=>!s.id.startsWith('__fav__'));
       const newBase=ids.map(id=>base.find(s=>s.id===id)).filter(Boolean);
       const others=songs.filter(s=>!newBase.find(b=>b.id===s.id));
-      songs.length=0; songs.push(...others,...newBase); sv(SK,songs);
+      songs.length=0;songs.push(...others,...newBase);sv(SK,songs);
     }
   }
 
@@ -2049,14 +1882,11 @@ function loadBgSettings(){
     const list=item.closest('[data-dl]');
     if(!list) return;
     const t0=e.touches[0];
-    let startY=t0.clientY, startX=t0.clientX, moved=false, timer=null;
-
+    let startY=t0.clientY,startX=t0.clientX,moved=false,timer=null;
     timer=setTimeout(()=>{
       if(moved) return;
       navigator.vibrate&&navigator.vibrate(40);
-      dragEl=item;
-      listType=list.dataset.dl;
-      listFilter=list.dataset.dlf||'';
+      dragEl=item;listType=list.dataset.dl;listFilter=list.dataset.dlf||'';
       scrollEl=findScrollParent(item);
       makeGhost(item,t0.clientY);
       touchY=t0.clientY;
@@ -2064,7 +1894,6 @@ function loadBgSettings(){
       document.querySelectorAll('.s-item.pressing').forEach(el=>el.classList.remove('pressing'));
       rafId=requestAnimationFrame(tick);
     },500);
-
     function onMove(ev){
       const t=ev.touches[0];
       if(Math.abs(t.clientY-startY)>8||Math.abs(t.clientX-startX)>8) moved=true;
@@ -2083,7 +1912,6 @@ function loadBgSettings(){
     document.addEventListener('touchend',onEnd);
   },{passive:true});
 })();
-
 </script>
 </body>
 </html>
