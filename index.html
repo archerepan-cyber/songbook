@@ -2051,8 +2051,8 @@ function loadBgSettings(){
   function autoScroll(){
     if(!dragging||!scrollContainer) return;
     const r=scrollContainer.getBoundingClientRect();
-    const zone=80; // зона у краёв в px
-    const speed=12;
+    const zone=120; // зона у краёв в px
+    const speed=18;
     const distTop=currentTouchY-r.top;
     const distBot=r.bottom-currentTouchY;
     if(distTop<zone&&distTop>0){
@@ -2081,8 +2081,12 @@ function loadBgSettings(){
     ghost.style.left=(t.clientX-ghostOffsetX)+'px';
     ghost.style.top=(t.clientY-ghostOffsetY)+'px';
     itemEl.style.opacity='0.3';
-    // Не блокируем overflow — скролл нужен для auto-scroll
-    scrollContainer=list.closest('.scroll-body');
+    // Находим скроллящийся контейнер
+    scrollContainer=list.closest('.scroll-body')||list.parentElement;
+    while(scrollContainer&&scrollContainer!==document.body){
+      if(scrollContainer.scrollHeight>scrollContainer.clientHeight) break;
+      scrollContainer=scrollContainer.parentElement;
+    }
     navigator.vibrate&&navigator.vibrate(30);
     autoScrollRAF=requestAnimationFrame(autoScroll);
   }
@@ -2106,9 +2110,6 @@ function loadBgSettings(){
       const dx=Math.abs(t.clientX-startX);
       const dy2=Math.abs(t.clientY-startY);
       if(dx>6||dy2>6) moved=true;
-
-      // Блокируем скролл всегда во время активного drag
-      if(dragging) ev.preventDefault();
 
       if(dragging&&!dragStarted){
         dragStarted=true;
