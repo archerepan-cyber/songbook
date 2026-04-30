@@ -2090,7 +2090,7 @@ function loadBgSettings(){
       }
 
       if(!dragging||!ghost) return;
-      // Ghost следует точно за пальцем
+      ev.preventDefault(); // блокируем скролл во время drag
       ghost.style.top=(t.clientY - ghostOffsetY)+'px';
       ghost.style.left=(t.clientX - ghostOffsetX)+'px';
       const newOver=findClosest(t.clientY);
@@ -2103,7 +2103,7 @@ function loadBgSettings(){
       if(dragging) commitSort();
       cleanup();
     }
-    document.addEventListener('touchmove',onMove,{passive:true});
+    document.addEventListener('touchmove',onMove,{passive:false});
     document.addEventListener('touchend',onEnd);
   },{passive:true});
 })();
