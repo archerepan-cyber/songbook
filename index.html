@@ -1102,6 +1102,13 @@ function openModal(mode, forcedPl){
     const p=document.getElementById('imgPreview');p.src='';p.classList.remove('show');
   }
   document.getElementById('modal').classList.add('open');
+  // Фокус на первое поле чтобы появилась клавиатура
+  setTimeout(()=>{
+    const firstInput=mMode==='pl'
+      ?document.getElementById('fPlName')
+      :document.getElementById('fTitle');
+    if(firstInput) firstInput.focus();
+  }, 150);
 }
 function closeModal(){
   document.getElementById('modal').classList.remove('open');
@@ -2035,6 +2042,8 @@ function loadBgSettings(){
     dragging=null; listEl=null; items=[]; startIdx=-1; overIdx=-1;
   }
 
+  let ghostOffsetX=0, ghostOffsetY=0;
+
   function startDrag(e, itemEl, list){
     dragging=itemEl;
     listEl=list;
@@ -2042,6 +2051,14 @@ function loadBgSettings(){
     startIdx=items.indexOf(itemEl);
     overIdx=startIdx;
     ghost=createGhost(itemEl);
+    // Запоминаем где палец относительно элемента
+    const r=itemEl.getBoundingClientRect();
+    const t=e.touches[0];
+    ghostOffsetX=t.clientX-r.left;
+    ghostOffsetY=t.clientY-r.top;
+    // Сразу ставим ghost под палец
+    ghost.style.left=(t.clientX-ghostOffsetX)+'px';
+    ghost.style.top=(t.clientY-ghostOffsetY)+'px';
     itemEl.style.opacity='0.3';
     navigator.vibrate&&navigator.vibrate(30);
   }
@@ -2066,18 +2083,16 @@ function loadBgSettings(){
       const dy2=Math.abs(t.clientY-startY);
       if(dx>6||dy2>6) moved=true;
 
-      // Если drag начался — отменяем lpTimer чтобы не открылся assign
       if(dragging&&!dragStarted){
         dragStarted=true;
-        // Отменяем openAssign
         if(window.lpTimer){clearTimeout(window.lpTimer);window.lpTimer=null;}
         document.querySelectorAll('.s-item.pressing').forEach(el=>el.classList.remove('pressing'));
       }
 
       if(!dragging||!ghost) return;
-      const dy=t.clientY-startY;
-      const r=itemEl.getBoundingClientRect();
-      ghost.style.top=(r.top+dy)+'px';
+      // Ghost следует точно за пальцем
+      ghost.style.top=(t.clientY - ghostOffsetY)+'px';
+      ghost.style.left=(t.clientX - ghostOffsetX)+'px';
       const newOver=findClosest(t.clientY);
       if(newOver>=0&&newOver!==overIdx){overIdx=newOver;applyPlaceholder();}
     }
