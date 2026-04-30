@@ -444,7 +444,7 @@
 
       <!-- Картинка -->
       <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-bottom:12px;">Картинка на фон</div>
-      <button onclick="document.getElementById('bgImgInput').click()"
+      <button onclick="openBgImgPicker()"
         style="display:flex;align-items:center;gap:10px;background:var(--bg3);border:none;border-radius:14px;padding:14px 16px;font-size:15px;color:var(--accent);cursor:pointer;width:100%;font-family:inherit;margin-bottom:10px;">
         🖼 Выбрать из галереи
       </button>
@@ -1713,14 +1713,22 @@ function updateOverlay(val){
 }
 
 function handleBgImg(e){
-  const file=e.target.files[0];if(!file)return;
+  const file=e.target.files[0];
+  // Восстанавливаем position:fixed после закрытия picker
+  document.getElementById('app').style.position='fixed';
+  if(!file){return;}
   const reader=new FileReader();
   reader.onload=ev=>{
     setBg('image',ev.target.result);
-    // Сбрасываем input — предотвращает скачок при повторном выборе
     e.target.value='';
   };
   reader.readAsDataURL(file);
+}
+
+function openBgImgPicker(){
+  // Временно снимаем position:fixed чтобы picker мог скроллиться
+  document.getElementById('app').style.position='';
+  document.getElementById('bgImgInput').click();
 }
 
 function updateBgPresetActive(val){
