@@ -575,7 +575,7 @@
       <div class="fg" id="coverPreviewWrap" style="display:none;"><label class="fl">Обложка альбома</label><div style="display:flex;align-items:center;gap:12px;"><img id="songCoverPreview" style="width:64px;height:64px;border-radius:10px;object-fit:cover;" src=""/><span id="songCoverInfo" style="font-size:13px;color:var(--text3);"></span></div></div>
       <div class="fg"><label class="fl">Тональность / Аккорды</label><input class="fi" id="fKey" placeholder="Am, G, F#m... или Am-G-Em-C"/></div>
 
-      <div class="fg" id="fPlaylistWrap"><label class="fl">Плейлист</label><input class="fi" id="fPlaylist" placeholder="Рок, Бар, Концертные..."/></div>
+      <div class="fg" id="fPlaylistWrap"><label class="fl">Плейлист</label><select class="fi" id="fPlaylist" style="font-size:16px;"><option value="">— Без плейлиста —</option></select></div>
       <div class="fg"><label class="fl">Текст</label><textarea class="fi" id="fLyrics" placeholder="[Куплет]&#10;Am    G&#10;Текст строки..."></textarea></div>
     </div>
     <!-- Playlist form -->
@@ -602,7 +602,11 @@
 <div class="modal-bg" id="assignModal" onclick="closeAssignModal(event)">
   <div class="msheet">
     <div class="mdrag"></div>
-    <div class="mtitle">Добавить в плейлист</div>
+    <div class="mtitle" id="assignModalTitle">Добавить в плейлист</div>
+    <div style="display:flex;gap:8px;padding:0 20px 12px;">
+      <button onclick="editSongFromAssign()" style="flex:1;background:var(--bg3);border:none;border-radius:12px;padding:12px;color:var(--text);font-size:15px;cursor:pointer;">✎ Редактировать</button>
+      <button onclick="deleteSongFromAssign()" style="flex:1;background:rgba(255,59,48,.15);border:none;border-radius:12px;padding:12px;color:#ff3b30;font-size:15px;cursor:pointer;">🗑 Удалить</button>
+    </div>
     <div class="assign-list" id="assignList"></div>
     <div class="choice-cancel"><button onclick="document.getElementById('assignModal').classList.remove('open')">Отмена</button></div>
   </div>
@@ -838,6 +842,23 @@ function lpStart(e,id){
 function lpEnd(){
   clearTimeout(lpTimer);lpTimer=null;
   document.querySelectorAll('.s-item.pressing').forEach(el=>el.classList.remove('pressing'));
+}
+
+function editSongFromAssign(){
+  document.getElementById('assignModal').classList.remove('open');
+  const s=songs.find(s=>s.id===assignSongId);
+  if(!s) return;
+  // Открываем песню и сразу редактирование
+  openSong(s.id);
+  setTimeout(()=>toggleMetaEdit(),300);
+}
+function deleteSongFromAssign(){
+  document.getElementById('assignModal').classList.remove('open');
+  if(!assignSongId) return;
+  songs=songs.filter(s=>s.id!==assignSongId);
+  sv(SK,songs); renderRep(); renderPL();
+  if(filterPl) renderSongs(songs.filter(s=>(s.playlist||'')===filterPl));
+  toast('Песня удалена');
 }
 
 function openAssign(id){
@@ -1099,7 +1120,11 @@ function openModal(mode, forcedPl){
       plWrap.style.display='none';
     } else {
       plWrap.style.display='block';
-      document.getElementById('fPlaylist').value='';
+      // Заполняем select плейлистами
+      const sel=document.getElementById('fPlaylist');
+      sel.innerHTML='<option value="">— Без плейлиста —</option>'+
+        pls.map(p=>`<option value="${x(p.name)}">${x(p.name)}</option>`).join('');
+      sel.value='';
     }
   } else {
     document.getElementById('fPlName').value='';
@@ -1285,8 +1310,18 @@ async function inetSearch(){
       title:hit.trackName||q,
       artist:hit.artistName||'',
       key:'',
+      cover:'',
       lyrics:autoFormatLyrics(hit.plainLyrics.replace(/\r\n/g,'\n').replace(/\r/g,'\n').replace(/\n{3,}/g,'\n\n').trim())
     };
+    // Подгружаем обложку через iTunes
+    try{
+      const iq=encodeURIComponent(`${hit.artistName||''} ${hit.trackName||q}`);
+      const ir=await fetch(`https://itunes.apple.com/search?term=${iq}&limit=1&entity=song`);
+      const id=await ir.json();
+      if(id.results&&id.results[0]&&id.results[0].artworkUrl100){
+        inetFoundSong.cover=id.results[0].artworkUrl100.replace('100x100','600x600');
+      }
+    }catch(e){}
     renderFoundSong(el);
   }catch(e){
     el.innerHTML=`<div class="ildr">⚠️ ${x(e.message||'Ошибка поиска')}</div>`;
@@ -1307,9 +1342,12 @@ function renderFoundSong(el){
 
   el.innerHTML=`
   <div class="ifound">
-    <div class="ifound-header">
-      <div class="ifound-title">${x(s.title)}</div>
-      <div class="ifound-artist">${x(s.artist)}</div>
+    <div class="ifound-header" style="display:flex;align-items:center;gap:12px;padding:12px 16px;">
+      ${s.cover?`<img src="${s.cover}" style="width:56px;height:56px;border-radius:8px;object-fit:cover;flex-shrink:0;"/>`:'' }
+      <div>
+        <div class="ifound-title">${x(s.title)}</div>
+        <div class="ifound-artist">${x(s.artist)}</div>
+      </div>
     </div>
     <div class="ifound-lyrics" onclick="inetPreviewSong()" style="cursor:pointer;">${x(s.lyrics).replace(/\n/g,'<br>')}</div>
     <div class="ifound-actions">
@@ -1400,6 +1438,10 @@ async function startBatchImport(){
   }
   if(!batchImportActive) return;
   sv(SK,songs); renderRep(); renderPL();
+  // Если открыт плейлист куда добавляли — обновляем список
+  if(plName&&filterPl===plName){
+    renderSongs(songs.filter(s=>(s.playlist||'')===plName));
+  }
   document.getElementById('batchProgressText').textContent='Готово!';
   document.getElementById('batchProgressBar').style.width='100%';
   const res=document.getElementById('batchResult');
@@ -1455,7 +1497,7 @@ function inetAddSong(plName){
     instr:'Guitar',
     playlist:plName||'',
     lyrics:inetFoundSong.lyrics,
-    cover:''
+    cover:inetFoundSong.cover||''
   };
   songs.unshift(s);
   sv(SK,songs);
