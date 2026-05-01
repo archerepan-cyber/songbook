@@ -571,8 +571,8 @@
     <div class="mtitle" id="mtitle">Добавить</div>
     <!-- Song form -->
     <div id="songForm">
-      <div class="fg"><label class="fl">Название *</label><input class="fi" id="fTitle" placeholder="Название песни" oninput="fetchCoverArt()"/></div>
-      <div class="fg"><label class="fl">Исполнитель</label><input class="fi" id="fArtist" placeholder="Исполнитель" oninput="fetchCoverArt()"/></div>
+      <div class="fg"><label class="fl">Название *</label><input class="fi" id="fTitle" placeholder="Название песни"/></div>
+      <div class="fg"><label class="fl">Исполнитель</label><input class="fi" id="fArtist" placeholder="Исполнитель"/></div>
 
       <div class="fg"><label class="fl">Тональность / Аккорды</label><input class="fi" id="fKey" placeholder="Am, G, F#m... или Am-G-Em-C"/></div>
 
@@ -1113,7 +1113,7 @@ function openModal(mode, forcedPl){
   document.getElementById('plForm').style.display=mode==='pl'?'block':'none';
   document.getElementById('mtitle').textContent=mode==='song'?'Добавить песню':'Новый плейлист';
   if(mode==='song'){
-    ['fTitle','fArtist','fKey','fLyrics'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';}); window._pendingSongCover='';window._pendingSongCoverLocal='';document.getElementById('coverPreviewWrap').style.display='none';
+    ['fTitle','fArtist','fKey','fLyrics'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';}); window._pendingSongCover='';window._pendingSongCoverLocal='';const _cpw=document.getElementById('coverPreviewWrap');if(_cpw)_cpw.style.display='none';
     
     // If opened from inside a playlist, hide playlist field and prefill it
     const plWrap=document.getElementById('fPlaylistWrap');
@@ -1158,7 +1158,7 @@ function saveItem(){
       instr:'Guitar',
       playlist:pl,
       lyrics:autoFormatLyrics(document.getElementById('fLyrics').value),
-      cover:window._pendingSongCoverLocal||window._pendingSongCover||''};
+      cover:''}  // обложка берётся автоматически из плейлиста;
     songs.unshift(s);sv(SK,songs);
     if(pl&&!pls.find(p=>p.name===pl)){pls.push({id:'p'+Date.now(),name:pl,desc:'',emoji:'🎵',color:'#636366',img:''});sv(PK,pls);}
     closeModal();renderRep();renderPL();
@@ -1598,11 +1598,8 @@ function fetchCoverArt(){
       if(d.results&&d.results.length){
         const item=d.results[0];
         const img=item.artworkUrl100.replace('100x100','300x300');
-        document.getElementById('songCoverPreview').src=img;
-        document.getElementById('songCoverInfo').textContent=item.trackName+' — '+item.artistName;
-        document.getElementById('coverPreviewWrap').style.display='block';
-        // store for saving
-        window._pendingSongCover=img;
+        // store for saving (cover auto from playlist)
+        window._pendingSongCover='';
         window._pendingSongCoverLocal='';
         // preload as base64 for offline storage
         fetch(img).then(r=>r.blob()).then(b=>{
