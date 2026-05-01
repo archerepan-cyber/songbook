@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Мой репертуар">
@@ -646,8 +646,12 @@ function show(id, dir){
   next.classList.add('active');
   const tb=document.getElementById('tabbar');
   tb.style.display='flex';
-  if(id==='detail'){tb.classList.add('in-detail');}
-  else{tb.classList.remove('in-detail');}
+  if(id==='detail'){tb.classList.add('in-detail');
+    document.querySelector('meta[name=viewport]').setAttribute('content','width=device-width,initial-scale=1.0,viewport-fit=cover,interactive-widget=resizes-content');
+  } else {
+    document.querySelector('meta[name=viewport]').setAttribute('content','width=device-width,initial-scale=1.0,maximum-scale=1.0,viewport-fit=cover,interactive-widget=resizes-content');
+  }
+  if(id!=='detail') tb.classList.remove('in-detail');
 }
 function swTab(id, dir){
   prevPrevScr=prevScr; prevScr=curScr; curScr="detail"; curScr=id;
@@ -1315,7 +1319,7 @@ async function startBatchImport(){
         const newId='s'+Date.now()+'_'+Math.random().toString(36).slice(2);
         songs.push({
           id:newId,title:s.trackName||title,artist:s.artistName||artist,
-          key:'',lyrics:(s.plainLyrics||s.syncedLyrics||'').replace(/<[^>]*>/g,''),
+          key:'',lyrics:autoFormatLyrics((s.plainLyrics||s.syncedLyrics||'').replace(/<[^>]*>/g,'')),
           playlist:plName||'',cover:'',instr:'Guitar'
         });
         batchAddedIds.push(newId);
