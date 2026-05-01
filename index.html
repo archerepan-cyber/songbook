@@ -355,11 +355,11 @@
           onkeydown="if(event.key==='Enter')inetSearch()"
           oninput="showSearchHistory();updateInetClear()"
           onfocus="showSearchHistory();updateInetClear();document.querySelector('meta[name=viewport]').setAttribute('content','width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover');" onblur="document.querySelector('meta[name=viewport]').setAttribute('content','width=device-width,initial-scale=1.0,viewport-fit=cover,interactive-widget=resizes-content');"
-          style="font-size:14px;"/>
-        <button id="inetClearBtn" onclick="clearInetSearch()" style="visibility:hidden;background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;padding:0 4px;line-height:1;">✕</button>
+          style="font-size:13px;"/>
+        <button id="inetClearBtn" onclick="clearInetSearch()" style="visibility:hidden;background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;padding:0 4px;line-height:1;">✕</button>
       </div>
-      <button class="igo" onclick="inetSearch()" style="padding:9px 16px;">Найти</button>
-      <button class="igo" onclick="openBatchImport()" style="padding:9px 16px;background:var(--bg3);color:var(--text2);">Список</button>
+      <button class="igo" onclick="inetSearch()" style="padding:9px 12px;font-size:18px;line-height:1;">🔍</button>
+      <button class="igo" onclick="openBatchImport()" style="padding:9px 12px;font-size:18px;line-height:1;background:var(--bg3);color:var(--text2);">☰</button>
     </div>
   </div>
   <div class="scroll-body">
