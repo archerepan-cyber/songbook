@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Мой репертуар">
@@ -354,13 +354,12 @@
         <input id="inetQ" type="search" placeholder="Исполнитель, название..." autocomplete="off"
           onkeydown="if(event.key==='Enter')inetSearch()"
           oninput="showSearchHistory();updateInetClear()"
-          onfocus="showSearchHistory();updateInetClear();document.querySelector('meta[name=viewport]').setAttribute('content','width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover');"
-          onblur="document.querySelector('meta[name=viewport]').setAttribute('content','width=device-width,initial-scale=1.0,viewport-fit=cover,interactive-widget=resizes-content');"
-          style="font-size:13px;"/>
+          onfocus="showSearchHistory();updateInetClear();"
+          style="font-size:14px;"/>
         <button id="inetClearBtn" onclick="clearInetSearch()" style="visibility:hidden;background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;padding:0 4px;line-height:1;">✕</button>
       </div>
-      <button class="igo" onclick="inetSearch()" style="padding:9px 14px;font-size:18px;line-height:1;">🔍</button>
-      <button class="igo" onclick="openBatchImport()" style="padding:9px 14px;font-size:18px;line-height:1;background:var(--bg3);color:var(--text2);">☰</button>
+      <button class="igo" onclick="inetSearch()" style="padding:9px 16px;">Найти</button>
+      <button class="igo" onclick="openBatchImport()" style="padding:9px 16px;background:var(--bg3);color:var(--text2);">Список</button>
     </div>
   </div>
   <div class="scroll-body">
@@ -1133,11 +1132,6 @@ function saveItem(){
     if(!name){toast('Введите название!');return;}
     pls.push({id:'p'+Date.now(),name,desc:document.getElementById('fPlDesc').value.trim(),emoji:'🎵',color:'#636366',img:pendingImg});
     sv(PK,pls);closeModal();renderPL();toast('Плейлист создан: '+name);
-    // Если вызвано из поиска — добавляем найденную песню
-    if(window._inetPendingAdd&&inetFoundSong){
-      window._inetPendingAdd=false;
-      inetAddSong(name);
-    }
   }
 }
 
@@ -1243,7 +1237,7 @@ function renderFoundSong(el){
       <div class="ifound-title">${x(s.title)}</div>
       <div class="ifound-artist">${x(s.artist)}</div>
     </div>
-    <div class="ifound-lyrics" onclick="inetPreviewSong()" style="cursor:pointer;">${x(s.lyrics).replace(/\n/g,'<br>')}</div>
+    <div class="ifound-lyrics">${x(s.lyrics).replace(/\n/g,'<br>')}</div>
     <div class="ifound-actions">
       <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);margin-bottom:4px;">Добавить в плейлист</div>
       <div class="ifound-pl-list">
@@ -1254,40 +1248,6 @@ function renderFoundSong(el){
   </div>`;
 }
 
-function inetPreviewSong(){
-  if(!inetFoundSong) return;
-  const temp={
-    id:'__preview__',
-    title:inetFoundSong.title,
-    artist:inetFoundSong.artist,
-    key:inetFoundSong.key||'',
-    lyrics:inetFoundSong.lyrics,
-    cover:'',instr:'Guitar'
-  };
-  const existing=songs.findIndex(s=>s.id==='__preview__');
-  if(existing>=0) songs.splice(existing,1);
-  songs.unshift(temp);
-  prevPrevScr=prevScr; prevScr=curScr; curScr='detail';
-  curSong=temp;
-  closeMetaEdit();
-  document.getElementById('chordsVal').textContent=temp.key||'—';
-  document.getElementById('favBtn').style.display='none';
-  showChordsBar();
-  renderLyrics(); stopScroll();
-  applyZoom(lzScale, false);
-  show('detail');
-  requestAnimationFrame(()=>{
-    document.getElementById('lscroll').scrollTop=0;
-    updateChordsOverlays();
-    const chordsWrap=document.getElementById('chordsBarWrap');
-    if(chordsWrap){
-      const naturalH=chordsWrap.querySelector('.chords-bar')?.offsetHeight||44;
-      const extra=chordsBarHidden?0:naturalH*(lzScale-1);
-      document.getElementById('lscroll').style.marginTop=extra+'px';
-    }
-  });
-}
-
 let batchImportActive=false;
 let batchAddedIds=[];
 
@@ -1295,16 +1255,12 @@ function openBatchImport(){
   const sel=document.getElementById('batchPlaylist');
   sel.innerHTML='<option value="">— Без плейлиста —</option>'+
     pls.map(p=>`<option value="${x(p.name)}">${x(p.name)}</option>`).join('');
+  document.getElementById('batchInput').value='';
   document.getElementById('batchProgress').style.display='none';
   document.getElementById('batchResult').style.display='none';
-  const btn=document.getElementById('batchStartBtn');
-  btn.disabled=false;
-  btn.style.display='';
-  btn.textContent='Найти и добавить';
-  btn.onclick=null;
-  const cancelBtn=document.getElementById('batchCancelBtn');
-  cancelBtn.style.display='';
-  cancelBtn.textContent='Отмена';
+  document.getElementById('batchStartBtn').disabled=false;
+  document.getElementById('batchStartBtn').textContent='Найти и добавить';
+  document.getElementById('batchCancelBtn').textContent='Отмена';
   batchAddedIds=[];
   batchImportActive=false;
   document.getElementById('batchModal').style.display='flex';
@@ -1359,7 +1315,7 @@ async function startBatchImport(){
         const newId='s'+Date.now()+'_'+Math.random().toString(36).slice(2);
         songs.push({
           id:newId,title:s.trackName||title,artist:s.artistName||artist,
-          key:'',lyrics:formatImportedLyrics(s.plainLyrics||s.syncedLyrics||''),
+          key:'',lyrics:(s.plainLyrics||s.syncedLyrics||'').replace(/<[^>]*>/g,''),
           playlist:plName||'',cover:'',instr:'Guitar'
         });
         batchAddedIds.push(newId);
@@ -1382,9 +1338,6 @@ async function startBatchImport(){
   btn.onclick=closeBatchImport;
   cancelBtn.style.display='none';
   batchImportActive=false;
-  // Сбрасываем iOS zoom
-  const mv=document.querySelector('meta[name="viewport"]');
-  if(mv) mv.setAttribute('content','width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content');
   if(added) toast(`Добавлено ${added} песен`+(plName?` в "${plName}"`:''));
   // Сбрасываем iOS zoom
   const mv=document.querySelector('meta[name="viewport"]');
@@ -1424,15 +1377,6 @@ function inetAddSong(plName){
   },1000);
   document.getElementById('inetQ').value='';
   toast('Добавлено: '+s.title);
-}
-
-function formatImportedLyrics(raw){
-  // Убираем теги, сохраняем пустые строки как разделители куплетов
-  return raw
-    .replace(/<[^>]*>/g,'')
-    .replace(/\r\n/g,'\n')
-    .replace(/\r/g,'\n')
-    .trim();
 }
 
 function quickImp(t){document.getElementById('fTitle').value=t;openModal('song','');}
