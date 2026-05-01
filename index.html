@@ -448,6 +448,7 @@
               📁 Своя обложка
               <input type="file" accept="image/*" style="display:none" onchange="mepLoadCover(event)"/>
             </label>
+            <button onclick="mepRestoreOrigCover()" style="background:var(--bg3);border:none;border-radius:10px;padding:8px 12px;color:var(--text2);font-size:13px;cursor:pointer;text-align:left;">🎵 Оригинальная обложка</button>
             <button onclick="mepClearCover()" style="background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;text-align:left;padding:4px 0;">✕ Убрать обложку</button>
           </div>
         </div>
@@ -1194,15 +1195,28 @@ let inetFoundSong=null;
 // ── AUTO FORMAT LYRICS ──
 function autoFormatLyrics(raw){
   if(!raw||!raw.trim()) return raw;
-  // Если уже есть разметка — не трогаем
-  if(/\[.+\]/.test(raw)) return raw;
+  const normalized=raw.replace(/\r\n/g,'\n').replace(/\r/g,'\n');
 
-  const lines=raw.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');
-  
-  // Разбиваем на блоки по пустым строкам
+  // Если уже есть правильная разметка [Куплет] — не трогаем
+  if(/\[.+\]/.test(normalized)) return normalized;
+
+  // Распознаём текстовые метки без скобок (Куплет 1, Припев, Chorus и т.д.)
+  const labelRe=/^(куплет\s*\d*|verse\s*\d*|припев|chorus|бридж|bridge|intro|outro|pre-?chorus|интро|аутро)\s*$/i;
+  const lines=normalized.split('\n');
+  const converted=lines.map(line=>{
+    const t=line.trim();
+    if(labelRe.test(t)) return `[${t}]`;
+    return line;
+  }).join('\n');
+
+  // Если после конвертации появились метки — возвращаем
+  if(/\[.+\]/.test(converted)) return converted.replace(/\n{3,}/g,'\n\n').trim();
+
+  // Иначе автоматически разбиваем по пустым строкам
+  const linesArr=converted.split('\n');
   const blocks=[];
   let current=[];
-  for(const line of lines){
+  for(const line of linesArr){
     if(line.trim()===''){
       if(current.length>0){blocks.push(current);current=[];}
     } else {
@@ -1212,29 +1226,23 @@ function autoFormatLyrics(raw){
   if(current.length>0) blocks.push(current);
   if(blocks.length===0) return raw;
 
-  // Определяем повторяющиеся блоки (припев)
   const blockTexts=blocks.map(b=>b.join('\n').toLowerCase().trim());
   const freq={};
   blockTexts.forEach(t=>{freq[t]=(freq[t]||0)+1;});
   
-  let verseNum=0, chorusLabel='';
+  let verseNum=0, chorusLabel='', bridgeLabel='';
   const result=[];
-  const usedLabels={};
 
   for(let i=0;i<blocks.length;i++){
     const btext=blockTexts[i];
     const isRepeat=freq[btext]>1;
-    
     if(isRepeat){
       if(!chorusLabel) chorusLabel=btext;
-      if(btext===chorusLabel){
-        result.push('[Припев]');
-      } else {
-        result.push('[Бридж]');
-      }
+      if(btext===chorusLabel){result.push('[Припев]');}
+      else{if(!bridgeLabel) bridgeLabel=btext; result.push('[Бридж]');}
     } else {
       verseNum++;
-      result.push(verseNum===1?'[Куплет 1]':`[Куплет ${verseNum}]`);
+      result.push(`[Куплет ${verseNum}]`);
     }
     result.push(...blocks[i]);
     result.push('');
@@ -1685,6 +1693,24 @@ function mepLoadCover(e){
 }
 function mepClearCover(){mepPendingCover='';mepUpdateCoverPreview('');}
 
+async function mepRestoreOrigCover(){
+  if(!curSong) return;
+  toast('Ищем обложку...');
+  try{
+    const q=encodeURIComponent(`${curSong.artist||''} ${curSong.title||''}`);
+    const r=await fetch(`https://itunes.apple.com/search?term=${q}&limit=1&entity=song`);
+    const d=await r.json();
+    if(d.results&&d.results[0]&&d.results[0].artworkUrl100){
+      const cover=d.results[0].artworkUrl100.replace('100x100','600x600');
+      mepPendingCover=cover;
+      mepUpdateCoverPreview(cover);
+      toast('Обложка найдена!');
+    } else {
+      toast('Обложка не найдена');
+    }
+  }catch(e){toast('Ошибка поиска обложки');}
+}
+
 function toggleMetaEdit(){
   const panel=document.getElementById('metaEditPanel');
   const isOpen=panel.classList.contains('open');
@@ -2098,6 +2124,10 @@ renderPL();renderRep();renderSongs(songs);
   const tabs=['pl','rep','inet','settings'];
   function getScr(id){ return document.getElementById('scr-'+id); }
   function canSwipeBack(){ return curScr==='detail'||(curScr==='songs'&&filterPl); }
+  function isEditing(){
+    const mp=document.getElementById('metaEditPanel');
+    return mp&&mp.classList.contains('open');
+  }
 
   document.addEventListener('touchstart',e=>{
     if(e.target.closest('input[type=range]')||e.touches.length>1||pinchActive){dragging=false;axis=null;return;}
@@ -2126,6 +2156,7 @@ renderPL();renderRep();renderSongs(songs);
   document.addEventListener('touchend',e=>{
     if(e.target.closest('input[type=range]')) return;
     if(!dragging){axis=null;return;}
+    if(isEditing()){axis=null;dragging=false;return;}
     dragging=false; axis=null;
     const dx=e.changedTouches[0].clientX-sx;
     const dy=e.changedTouches[0].clientY-sy;
