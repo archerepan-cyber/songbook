@@ -1197,9 +1197,72 @@ function autoFormatLyrics(raw){
   return result.join('\n').replace(/\n{3,}/g,'\n\n').trim();
 }
 
+// ── INET SEARCH HISTORY ──
+const HIST_KEY='sb_inet_history';
+function getHistory(){try{return JSON.parse(localStorage.getItem(HIST_KEY)||'[]');}catch{return[];}}
+function saveHistory(h){try{localStorage.setItem(HIST_KEY,JSON.stringify(h));}catch{}}
+
+function showSearchHistory(){
+  const el=document.getElementById('inetHistory');
+  const q=document.getElementById('inetQ').value.trim();
+  if(q){el.innerHTML='';return;}
+  const h=getHistory();
+  if(!h.length){el.innerHTML='';return;}
+  el.innerHTML=`<div class="ihistory">
+    <div class="ihistory-title" style="display:flex;justify-content:space-between;align-items:center;">
+      <span>История поиска</span>
+      ${h.length>3?`<button onclick="clearAllHistory()" style="background:none;border:none;color:var(--text3);font-size:13px;cursor:pointer;padding:0;">🗑 Очистить всё</button>`:''}
+    </div>
+    ${h.map(item=>`
+      <div class="ihistory-item" onclick="selectHistory('${x(item).replace(/'/g,"\\'")}')">
+        <span class="ihistory-icon"></span>
+        <span class="ihistory-text">${x(item)}</span>
+        <button class="ihistory-del" onclick="event.stopPropagation();deleteFromHistory('${x(item).replace(/'/g,"\\'")}')">✕</button>
+      </div>`).join('')}
+  </div>`;
+}
+
+function selectHistory(q){
+  document.getElementById('inetQ').value=q;
+  document.getElementById('inetHistory').innerHTML='';
+  updateInetClear();
+  inetSearch();
+}
+
+function deleteFromHistory(q){
+  const h=getHistory().filter(i=>i!==q);
+  saveHistory(h);
+  showSearchHistory();
+}
+
+function clearAllHistory(){
+  saveHistory([]);
+  document.getElementById('inetHistory').innerHTML='';
+}
+
+function updateInetClear(){
+  const q=document.getElementById('inetQ').value;
+  const btn=document.getElementById('inetClearBtn');
+  if(btn) btn.style.visibility=q?'visible':'hidden';
+}
+
+function clearInetSearch(){
+  document.getElementById('inetQ').value='';
+  document.getElementById('inetRes').innerHTML='';
+  document.getElementById('inetHistory').innerHTML='';
+  inetFoundSong=null;
+  updateInetClear();
+  showSearchHistory();
+  document.getElementById('inetQ').focus();
+}
+
 async function inetSearch(){
   const q=document.getElementById('inetQ').value.trim();
   if(!q)return;
+  // Сохраняем в историю
+  const h=getHistory().filter(i=>i!==q);
+  h.unshift(q);
+  saveHistory(h.slice(0,10));
   const el=document.getElementById('inetRes');
   el.innerHTML=`<div class="ildr">🔍 Ищем «${x(q)}»...</div>`;
   try{
