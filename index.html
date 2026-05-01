@@ -438,21 +438,7 @@
         <label class="mep-lbl">Исполнитель</label>
         <input class="mep-input" id="artistInput" placeholder="Исполнитель"/>
       </div>
-      <div class="mep-row">
-        <label class="mep-lbl">Обложка</label>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-          <img id="mepCoverPreview" style="width:52px;height:52px;border-radius:8px;object-fit:cover;display:none;"/>
-          <div style="display:flex;flex-direction:column;gap:6px;flex:1;">
-            <button onclick="mepUsePlCover()" style="background:var(--bg3);border:none;border-radius:10px;padding:8px 12px;color:var(--text2);font-size:13px;cursor:pointer;text-align:left;">🎵 Обложка плейлиста</button>
-            <label style="background:var(--bg3);border:none;border-radius:10px;padding:8px 12px;color:var(--text2);font-size:13px;cursor:pointer;display:block;">
-              📁 Своя обложка
-              <input type="file" accept="image/*" style="display:none" onchange="mepLoadCover(event)"/>
-            </label>
-            <button onclick="mepRestoreOrigCover()" style="background:var(--bg3);border:none;border-radius:10px;padding:8px 12px;color:var(--text2);font-size:13px;cursor:pointer;text-align:left;">🎵 Оригинальная обложка</button>
-            <button onclick="mepClearCover()" style="background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;text-align:left;padding:4px 0;">✕ Убрать обложку</button>
-          </div>
-        </div>
-      </div>
+
       <div class="mep-row">
         <label class="mep-lbl">Текст песни</label>
         <textarea class="mep-textarea" id="lyricsTextarea" placeholder="Вставьте текст..."></textarea>
@@ -587,7 +573,7 @@
     <div id="songForm">
       <div class="fg"><label class="fl">Название *</label><input class="fi" id="fTitle" placeholder="Название песни" oninput="fetchCoverArt()"/></div>
       <div class="fg"><label class="fl">Исполнитель</label><input class="fi" id="fArtist" placeholder="Исполнитель" oninput="fetchCoverArt()"/></div>
-      <div class="fg" id="coverPreviewWrap" style="display:none;"><label class="fl">Обложка альбома</label><div style="display:flex;align-items:center;gap:12px;"><img id="songCoverPreview" style="width:64px;height:64px;border-radius:10px;object-fit:cover;" src=""/><span id="songCoverInfo" style="font-size:13px;color:var(--text3);"></span></div></div>
+
       <div class="fg"><label class="fl">Тональность / Аккорды</label><input class="fi" id="fKey" placeholder="Am, G, F#m... или Am-G-Em-C"/></div>
 
       <div class="fg" id="fPlaylistWrap"><label class="fl">Плейлист</label><select class="fi" id="fPlaylist" style="font-size:16px;"><option value="">— Без плейлиста —</option></select></div>
@@ -1373,15 +1359,7 @@ function renderFoundSong(el){
     </div>
     <div class="ifound-lyrics" onclick="inetPreviewSong()" style="cursor:pointer;">${x(s.lyrics).replace(/\n/g,'<br>')}</div>
     <div class="ifound-actions">
-      ${s.cover?`<div style="margin-bottom:8px;">
-        <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);margin-bottom:6px;">Обложка</div>
-        <div style="display:flex;gap:8px;">
-          <button id="inetCoverOrig" onclick="window._inetUseCover=true;document.getElementById('inetCoverOrig').style.outline='2px solid var(--accent)';document.getElementById('inetCoverPl').style.outline='none';" style="display:flex;align-items:center;gap:6px;background:var(--bg3);border:none;border-radius:10px;padding:6px 10px;color:var(--text2);font-size:13px;cursor:pointer;outline:2px solid var(--accent);">
-            <img src="${s.cover}" style="width:24px;height:24px;border-radius:4px;object-fit:cover;"/> Оригинал
-          </button>
-          <button id="inetCoverPl" onclick="window._inetUseCover=false;document.getElementById('inetCoverPl').style.outline='2px solid var(--accent)';document.getElementById('inetCoverOrig').style.outline='none';" style="background:var(--bg3);border:none;border-radius:10px;padding:6px 10px;color:var(--text2);font-size:13px;cursor:pointer;">🎵 Плейлиста</button>
-        </div>
-      </div>`:''}
+
       <button class="ifound-nopl" onclick="inetCreateAndAdd()" style="color:var(--accent);text-decoration:none;font-weight:600;padding:8px 0;display:flex;align-items:center;gap:6px;">＋ Создать плейлист</button>
       <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);margin-bottom:4px;">Добавить в плейлист</div>
       <div class="ifound-pl-list">
@@ -1521,14 +1499,9 @@ function inetCreateAndAdd(){
 }
 function inetAddSong(plName){
   if(!inetFoundSong)return;
-  // Определяем обложку
-  let cover=inetFoundSong.cover||'';
-  if(window._inetUseCover===false){
-    // Берём обложку плейлиста
-    const pl=pls.find(p=>p.name===plName);
-    cover=pl&&pl.img?pl.img:'';
-  }
-  window._inetUseCover=true; // сброс
+  // Обложка не сохраняется — берётся автоматически из плейлиста
+  const cover='';
+  
   const s={
     id:'s'+Date.now(),
     title:inetFoundSong.title,
@@ -1738,7 +1711,7 @@ function saveMetaEdit(){
   if(mepPendingCover!==null) curSong.cover=mepPendingCover;
   const idx=songs.findIndex(s=>s.id===curSong.id);
   if(idx>=0){
-    songs[idx].title=title;songs[idx].artist=artist;songs[idx].lyrics=lyrics;
+    songs[idx].title=title;songs[idx].artist=artist;songs[idx].lyrics=autoFormatLyrics(lyrics);
     if(mepPendingCover!==null) songs[idx].cover=mepPendingCover;
     sv(SK,songs);
   }
