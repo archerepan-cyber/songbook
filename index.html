@@ -1,2299 +1,981 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black">
-<meta name="apple-mobile-web-app-title" content="Мой репертуар">
-<meta name="theme-color" content="#000000">
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
-<title>Мой репертуар</title>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<title>Freelancer Calendar</title>
+<link rel="manifest" href="manifest.json"/>
 <style>
-  :root {
-    --bg:#121212; --bg2:#1c1c1e; --bg3:#2c2c2e; --bg4:#3a3a3c;
-    --text:#fff; --text2:rgba(235,235,245,.8); --text3:rgba(235,235,245,.6);
-    --accent:#0a84ff; --accent2:#30d158; --red:#ff453a;
-    --sep:rgba(255,255,255,.1);
-    --safe-top:env(safe-area-inset-top); --safe-bot:env(safe-area-inset-bottom);
-    --tab-h:50px;
-  }
-  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;user-select:none;-webkit-user-select:none;}
-  input,textarea{user-select:text;-webkit-user-select:text;}
-  html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,'SF Pro Text',system-ui,sans-serif;overflow:hidden;}
-  #app{display:flex;flex-direction:column;height:100dvh;}
-  .screen{display:none;flex-direction:column;flex:1;min-height:0;position:relative;}
-  .screen.active{display:flex;}
-  .scroll-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;}
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
 
-  /* HEADER */
-  .ph{padding:calc(var(--safe-top) + 14px) 20px 10px;background:transparent;flex-shrink:0;position:relative;z-index:1;}
-  .ph-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
-  .ph-title{font-size:clamp(18px,6vw,34px);font-weight:700;letter-spacing:-.5px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:10px;}
-  .add-btn{background:var(--accent);border:none;border-radius:20px;padding:8px 16px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;flex-shrink:0;white-space:nowrap;}
-  .add-btn:active{opacity:.75;}
-  .sbar{display:flex;align-items:center;gap:8px;background:var(--bg3);border-radius:12px;padding:9px 13px;}
-  .sbar input{background:none;border:none;color:var(--text);font-size:15px;width:100%;outline:none;}
-  .sbar input::placeholder{color:var(--text3);}
+:root {
+  --bg: #f5f0e8;
+  --bg2: rgba(255,255,255,0.7);
+  --text: #1a1a1a;
+  --text2: #555;
+  --text3: #999;
+  --accent: #D0391B;
+  --accent2: #324E44;
+  --dot-past: #1a1a1a;
+  --dot-future: rgba(0,0,0,0.12);
+  --dot-today: #D0391B;
+  --dot-work: #324E44;
+  --sep: rgba(0,0,0,0.08);
+  --safe-top: env(safe-area-inset-top);
+  --safe-bot: env(safe-area-inset-bottom);
+  --overlay-alpha: 0.45;
+}
 
-  /* PLAYLIST LIST */
-  .pl-list{padding:8px 0 calc(var(--safe-bot) + var(--tab-h) + 20px);}
-  .pl-item{display:flex;align-items:center;gap:14px;padding:10px 20px;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;transition:transform .1s ease,opacity .1s ease;cursor:pointer;}
-  .pl-item:active{transform:scale(0.97);opacity:0.8;}
-  .pl-item+.pl-item{border-top:.5px solid var(--sep);}
-  .pl-cover{width:62px;height:62px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:28px;object-fit:cover;cursor:pointer;}
-  .pl-info{flex:1;min-width:0;cursor:pointer;}
-  .pl-name{font-size:16px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .pl-desc{font-size:13px;color:var(--text3);margin-top:3px;line-height:1.35;}
-  .arr{color:var(--text3);font-size:18px;font-weight:300;flex-shrink:0;cursor:pointer;}
-  .pl-del-btn{background:none;border:none;color:var(--red);font-size:20px;cursor:pointer;padding:6px 2px 6px 8px;flex-shrink:0;opacity:.75;line-height:1;}
-  .pl-del-btn:active{opacity:1;transform:scale(1.15);}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;user-select:none;-webkit-user-select:none;}
+input,textarea,select{user-select:text;-webkit-user-select:text;}
 
-  /* LOOSE SONGS (under playlists) */
-  .loose-section{padding:16px 20px 8px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);}
+html,body{height:100%;overflow:hidden;}
 
-  /* SONG LIST */
-  .song-list{padding:0 0 calc(var(--safe-bot) + var(--tab-h) + 70px);}
-  .s-item{display:flex;align-items:center;gap:14px;padding:10px 20px;cursor:pointer;position:relative;}
-  .s-item:active{background:rgba(255,255,255,.06);}
-  .s-item+.s-item{border-top:.5px solid var(--sep);}
-  .s-item.long-press{background:rgba(10,132,255,.12);}
-  .s-item.pressing{transform:scale(0.96);transition:transform .1s ease;background:rgba(255,255,255,.06);}
-  .s-item{transition:transform .2s ease,background .2s;}
-  .s-item.pressing{transform:scale(0.96);transition:transform .1s ease;background:rgba(255,255,255,.06);}
-  .s-item{transition:transform .2s ease,background .2s;}
-  .s-cover{width:52px;height:52px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:24px;object-fit:cover;}
-  .s-info{flex:1;min-width:0;}
-  .s-name{font-size:16px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .s-artist{font-size:13px;color:var(--text3);margin-top:2px;}
-  .s-tags{display:flex;gap:5px;margin-top:5px;flex-wrap:wrap;}
-  .tag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;}
-  .tk{background:rgba(255,159,10,.18);color:#ff9f0a;}
-  .tg{background:rgba(100,210,255,.15);color:#64d2ff;}
-  .tp{background:rgba(191,90,242,.18);color:#bf5af2;}
-  .s-del-btn{background:none;border:none;color:var(--red);font-size:20px;cursor:pointer;padding:6px 2px 6px 8px;flex-shrink:0;opacity:.75;line-height:1;}
-  .s-del-btn:active{opacity:1;}
+body{
+  font-family:'DM Sans',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+}
 
-  /* NAV/DETAIL TAB TOGGLE */
-  .nav-tab{display:flex !important;}
-  .detail-tab{display:none !important;}
-  .tabbar.in-detail .nav-tab{display:none !important;}
-  .tabbar.in-detail .detail-tab{display:flex !important;}
-  /* TAB BAR — Spotify/Apple Music style */
-  .tabbar{display:flex;background:rgba(12,12,12,.97);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:none;padding-bottom:var(--safe-bot);flex-shrink:0;z-index:50;min-height:calc(var(--tab-h) + var(--safe-bot));}
-  .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 4px 5px;cursor:pointer;gap:3px;color:rgba(255,255,255,.4);font-size:10px;font-weight:500;letter-spacing:.2px;transition:color .2s;-webkit-user-select:none;position:relative;background:none;border:none;font-family:inherit;}
-  .tab.active{color:#fff;}
-  .tab.playing{color:#1db954;}
-  .tab.active .t-icon{transform:scale(1.08);transition:transform .2s;}
-  .t-icon{width:24px;height:24px;transition:transform .2s;display:block;}
+/* Background image */
+#bg-layer{
+  position:fixed;inset:0;z-index:0;
+  background-size:cover;background-position:center;
+  transition:opacity .4s;
+}
+#bg-overlay{
+  position:fixed;inset:0;z-index:1;
+  background:rgba(0,0,0,var(--overlay-alpha));
+  pointer-events:none;
+}
 
-  /* DETAIL */
-  .dh{padding:calc(var(--safe-top) + 10px) 16px 10px;display:flex;align-items:center;gap:8px;background:var(--bg);flex-shrink:0;border-bottom:.5px solid var(--sep);}
-  /* META EDIT BUTTON + PANEL */
+#app{
+  position:fixed;inset:0;z-index:2;
+  display:flex;flex-direction:column;
+  overflow:hidden;
+}
 
-  .meta-edit-panel{display:none;background:var(--bg2);border-bottom:.5px solid var(--sep);padding:14px 16px;flex-shrink:0;flex-direction:column;gap:12px;}
-  .meta-edit-panel.open{display:flex;}
-  .mep-row{display:flex;flex-direction:column;gap:6px;}
-  .mep-lbl{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);font-weight:600;}
-  .mep-input{background:var(--bg3);border:none;border-radius:12px;padding:13px 14px;font-size:16px;color:var(--text);outline:none;font-family:inherit;width:100%;}
-  .mep-input:focus{background:var(--bg4);}
-  .mep-actions{display:flex;gap:10px;}
-  .mep-cancel{flex:1;padding:13px;border-radius:12px;background:var(--bg3);border:none;font-size:15px;font-weight:600;color:var(--text2);cursor:pointer;font-family:inherit;}
-  .mep-save{flex:2;padding:13px;border-radius:12px;background:var(--accent);border:none;font-size:15px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit;}
-  .mep-save:active{opacity:.8;}
-  .mep-textarea{background:var(--bg3);border:none;border-radius:12px;padding:13px 14px;font-size:16px;color:var(--text);outline:none;font-family:inherit;width:100%;min-height:200px;resize:vertical;line-height:1.7;}
-  /* META BARS (title / artist edit) */
-  .meta-bar{background:var(--bg2);border-bottom:.5px solid var(--sep);flex-shrink:0;padding:12px 18px;display:flex;align-items:center;gap:10px;cursor:pointer;}
-  .meta-bar:active{background:var(--bg3);}
-  .meta-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);white-space:nowrap;min-width:80px;}
-  .meta-val{flex:1;font-size:16px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .meta-pencil{font-size:14px;color:var(--text3);flex-shrink:0;}
-  .meta-edit-wrap{background:var(--bg2);border-bottom:.5px solid var(--sep);flex-shrink:0;padding:10px 14px;display:none;align-items:center;gap:8px;}
-  .meta-edit-wrap.open{display:flex;}
-  .meta-input{flex:1;background:var(--bg3);border:none;border-radius:10px;padding:11px 14px;font-size:16px;color:var(--text);outline:none;font-family:inherit;}
-  .meta-input:focus{background:var(--bg4);}
-  .meta-ok{background:var(--accent);border:none;border-radius:10px;padding:11px 16px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;white-space:nowrap;}
-  .meta-ok:active{opacity:.8;}
-  .meta-cancel{background:var(--bg3);border:none;border-radius:10px;padding:11px 12px;color:var(--text3);font-size:15px;cursor:pointer;}
-  .meta-cancel:active{opacity:.7;}
-  .back-btn{background:none;border:none;color:var(--accent);font-size:17px;cursor:pointer;padding:4px 0;white-space:nowrap;flex-shrink:0;}
-  .back-btn:active{opacity:.6;}
-  .dh-title{flex:1;text-align:center;font-size:17px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .fav-btn{background:none;border:none;font-size:22px;cursor:pointer;flex-shrink:0;}
-  .fav-btn:active{transform:scale(1.3);}
+/* ── MAIN SCREEN ── */
+#main{
+  flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;
+  padding:calc(var(--safe-top) + 16px) 24px calc(var(--safe-bot) + 80px);
+}
 
-  /* CHORDS BAR (replaces istrip, single item, tappable) */
-  /* chords bar wrapper — clips the slide animation */
-  .chords-bar-wrap{flex-shrink:0;overflow:hidden;transition:height .32s cubic-bezier(.4,0,.2,1);}
-  .chords-bar{background:var(--bg2);border-bottom:.5px solid var(--sep);padding:10px 18px;display:flex;align-items:center;gap:10px;will-change:transform;transition:transform .32s cubic-bezier(.4,0,.2,1);-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;}
-  .chords-bar-wrap.hidden-up{height:0 !important;}
-  .chords-bar-wrap.hidden-up .chords-bar{transform:translateY(-100%);}
-  .cb-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);white-space:nowrap;}
-  .cb-val{font-size:15px;font-weight:700;color:var(--accent);}  
-  .cb-edit{font-size:20px;color:var(--text3);}
+/* Big date */
+.big-date{
+  margin-bottom:4px;
+}
+.big-day{
+  font-family:'DM Serif Display',serif;
+  font-size:clamp(96px,26vw,140px);
+  line-height:.9;
+  color:var(--text);
+  letter-spacing:-4px;
+}
+.big-meta{
+  display:flex;justify-content:space-between;align-items:baseline;
+  margin-top:8px;margin-bottom:28px;
+}
+.big-month{
+  font-size:18px;font-weight:600;letter-spacing:2px;text-transform:uppercase;
+  color:var(--text);
+}
+.big-year{
+  font-size:14px;color:var(--text3);font-weight:400;margin-left:8px;
+}
+.big-dow{
+  font-size:18px;font-weight:300;color:var(--text2);font-style:italic;
+  font-family:'DM Serif Display',serif;
+}
 
-  /* CHORDS EDIT INPUT */
-  .chords-edit-wrap{background:var(--bg2);border-bottom:.5px solid var(--sep);flex-shrink:0;padding:10px 18px;display:none;align-items:center;gap:8px;}
-  .chords-edit-wrap.open{display:flex;}
-  .chords-input{background:var(--bg3);border:none;border-radius:10px;padding:9px 13px;font-size:15px;color:var(--text);font-family:inherit;outline:none;flex:1;}
-  .chords-save{background:var(--accent);border:none;border-radius:10px;padding:9px 16px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;}
-  .chords-save:active{opacity:.8;}
+/* Calendar */
+.cal-wrap{margin-bottom:32px;}
+.cal-header{
+  display:grid;grid-template-columns:repeat(7,1fr);
+  margin-bottom:10px;
+}
+.cal-header span{
+  text-align:center;font-size:11px;font-weight:600;
+  letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);
+}
+.cal-grid{
+  display:grid;grid-template-columns:repeat(7,1fr);
+  gap:6px;
+}
+.day-dot{
+  aspect-ratio:1;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:500;
+  cursor:pointer;
+  transition:transform .15s,box-shadow .15s;
+  position:relative;
+  background:var(--dot-future);
+  color:transparent;
+}
+.day-dot.past{background:var(--dot-past);color:transparent;}
+.day-dot.today{background:var(--dot-today);}
+.day-dot.future{background:var(--dot-future);}
+.day-dot.work{background:var(--dot-work);}
+.day-dot.pressing{transform:scale(0.88);}
+.day-dot.selected-day{box-shadow:0 0 0 2.5px var(--accent),0 0 0 4px transparent;}
+.day-dot.empty{background:transparent;cursor:default;}
 
-  .lscroll{flex:1;overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:18px 18px 12px;}
-  /* zoom-reset button — fixed overlay inside detail screen */
-  .zoom-reset-btn{position:fixed;top:calc(var(--safe-top) + 54px);right:14px;background:rgba(10,132,255,.22);border:none;border-radius:20px;padding:6px 14px;font-size:12px;font-weight:600;color:#0a84ff;cursor:pointer;opacity:0;pointer-events:none;transition:opacity .15s;z-index:100;white-space:nowrap;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}
-  .zoom-reset-btn.visible{opacity:1;pointer-events:auto;}
-  /* detail zoom wrapper — this whole block scales */
-  #detailZoomWrap{flex:1;display:flex;flex-direction:column;min-height:0;transform:translateZ(0);}
-  #lyricsScaleWrap{transform-origin:top left;will-change:transform;}
-  #lyricsScaleWrap.snapping{transition:transform .2s cubic-bezier(.25,.46,.45,.94);}
-  .lscroll{flex:1;overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:18px 18px 12px;}
-  /* ── Shazam-style lyrics ── */
-  .lb{font-size:22px;line-height:1.0;white-space:normal;}
-  .vl{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.8px;color:#ff9f0a;margin:32px 0 14px;backface-visibility:hidden;-webkit-backface-visibility:hidden;}
-  .cl{display:block;font-family:'SF Mono',Menlo,monospace;font-size:15px;font-weight:700;color:#64d2ff;line-height:1.4;margin-bottom:6px;backface-visibility:hidden;-webkit-backface-visibility:hidden;}
-  .ll{display:block;font-size:22px;font-weight:400;line-height:1.25;color:var(--text);margin-bottom:18px;letter-spacing:-.2px;backface-visibility:hidden;-webkit-backface-visibility:hidden;word-break:break-word;overflow-wrap:break-word;white-space:normal;}
-  .ll-gap{display:block;height:10px;}
-  .inline-pencil{background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;padding:0 0 0 14px;line-height:1;vertical-align:middle;}
+/* Work dot indicator */
+.day-dot .work-ind{
+  position:absolute;bottom:3px;left:50%;transform:translateX(-50%);
+  width:4px;height:4px;border-radius:50%;
+  background:var(--dot-today);
+  display:none;
+}
+.day-dot.has-data .work-ind{display:block;}
 
-  .sc2{display:flex;align-items:center;gap:10px;}
-  .spd-ctrl{display:flex;align-items:center;gap:0;}
-  .spd-btn{background:none;border:none;color:rgba(255,255,255,.7);font-size:26px;cursor:pointer;padding:0 8px;line-height:1;border-radius:12px;font-weight:300;}
-  .spd-btn:active{color:#fff;}
-  .spd-num{font-size:16px;font-weight:600;color:#fff;min-width:24px;text-align:center;}
+/* ── ENTRIES LIST ── */
+.entries-section{margin-bottom:24px;}
+.entries-title{
+  font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;
+  color:var(--text3);margin-bottom:12px;
+}
+.entry-row{
+  background:var(--bg2);backdrop-filter:blur(12px);
+  border-radius:16px;padding:14px 16px;
+  margin-bottom:8px;
+  border:.5px solid var(--sep);
+}
+.entry-row-top{
+  display:flex;align-items:center;gap:10px;
+  margin-bottom:6px;
+}
+.entry-num{
+  font-family:'DM Serif Display',serif;
+  font-size:22px;color:var(--accent);
+  min-width:28px;
+}
+.entry-date{font-size:13px;color:var(--text3);}
+.entry-label{font-size:15px;font-weight:500;color:var(--text);flex:1;}
+.entry-details{
+  display:flex;gap:16px;flex-wrap:wrap;
+  font-size:13px;color:var(--text2);
+}
+.entry-detail{display:flex;align-items:center;gap:4px;}
 
+/* ── TOTALS ── */
+.totals-section{
+  background:var(--bg2);backdrop-filter:blur(12px);
+  border-radius:20px;padding:20px;
+  border:.5px solid var(--sep);
+  margin-bottom:24px;
+}
+.expense-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:6px 0;
+  border-bottom:.5px solid var(--sep);
+  font-size:14px;color:var(--text2);
+}
+.expense-row:last-child{border-bottom:none;}
+.total-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding-top:14px;margin-top:4px;
+}
+.total-label{
+  font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+  color:var(--text3);
+}
+.total-amount{
+  font-family:'DM Serif Display',serif;
+  font-size:36px;color:var(--text);letter-spacing:-1px;
+}
 
-  /* MODAL */
-  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:200;display:none;align-items:flex-end;}
-  .modal-bg.open{display:flex;}
-  .msheet{background:var(--bg2);border-radius:20px 20px 0 0;padding:6px 0 0;width:100%;max-height:92dvh;overflow-y:auto;}
-  .mdrag{width:36px;height:4px;border-radius:2px;background:var(--bg4);margin:10px auto 16px;}
-  .mtitle{font-size:18px;font-weight:700;padding:0 20px 16px;}
-  .fg{padding:0 20px 14px;}
-  .fl{font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;}
-  .fi{width:100%;background:var(--bg3);border:none;border-radius:12px;padding:12px 14px;font-size:16px;color:var(--text);outline:none;font-family:inherit;}
-  .fi:focus{background:var(--bg4);}
-  textarea.fi{min-height:130px;resize:vertical;line-height:1.6;}
-  .fr2{display:flex;gap:10px;padding:0 20px 14px;}
-  .fr2 .fg{flex:1;padding:0;}
-  .mactions{display:flex;gap:10px;padding:8px 20px calc(var(--safe-bot) + 20px);}
-  .btn-c{flex:1;padding:14px;border-radius:14px;background:var(--bg3);border:none;font-size:15px;font-weight:600;color:var(--text2);cursor:pointer;}
-  .btn-s{flex:2;padding:14px;border-radius:14px;background:var(--accent);border:none;font-size:15px;font-weight:700;color:#fff;cursor:pointer;}
-  .btn-s:active{opacity:.8;}
+/* ── BOTTOM BAR ── */
+#tabbar{
+  position:fixed;bottom:0;left:0;right:0;z-index:10;
+  height:calc(50px + var(--safe-bot));
+  padding-bottom:var(--safe-bot);
+  display:flex;align-items:center;justify-content:center;gap:32px;
+  background:var(--bg2);backdrop-filter:blur(20px);
+  border-top:.5px solid var(--sep);
+}
+.tab-btn{
+  background:none;border:none;
+  font-size:22px;cursor:pointer;
+  padding:8px;border-radius:12px;
+  transition:opacity .2s;
+  opacity:.5;
+}
+.tab-btn.active{opacity:1;}
 
-  /* ADD CHOICE SHEET */
-  .choice-sheet{background:var(--bg2);border-radius:20px 20px 0 0;padding:6px 0 0;width:100%;overflow:hidden;}
-  .choice-title{font-size:13px;color:var(--text3);text-align:center;padding:8px 20px 14px;border-bottom:.5px solid var(--sep);}
-  .choice-btn{display:flex;align-items:center;gap:14px;padding:16px 20px;font-size:17px;font-weight:500;color:var(--text);background:none;border:none;width:100%;cursor:pointer;font-family:inherit;}
-  .choice-btn:active{background:rgba(255,255,255,.06);}
-  .choice-btn+.choice-btn{border-top:.5px solid var(--sep);}
-  .choice-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
-  .choice-cancel{padding:14px 20px calc(var(--safe-bot) + 16px);border-top:.5px solid var(--sep);margin-top:4px;}
-  .choice-cancel button{width:100%;padding:14px;background:var(--bg3);border:none;border-radius:14px;font-size:16px;font-weight:600;color:var(--text2);cursor:pointer;font-family:inherit;}
+/* ── MODAL ── */
+.modal-bg{
+  position:fixed;inset:0;z-index:100;
+  background:rgba(0,0,0,.5);
+  display:none;align-items:flex-end;
+}
+.modal-bg.open{display:flex;}
+.modal-sheet{
+  width:100%;background:var(--bg);
+  border-radius:24px 24px 0 0;
+  padding:20px 24px calc(var(--safe-bot) + 24px);
+  max-height:90vh;overflow-y:auto;
+}
+.modal-drag{
+  width:40px;height:4px;border-radius:2px;
+  background:rgba(0,0,0,.15);
+  margin:0 auto 20px;
+}
+.modal-title{
+  font-family:'DM Serif Display',serif;
+  font-size:24px;margin-bottom:20px;
+  color:var(--text);
+}
+.field-group{margin-bottom:16px;}
+.field-label{
+  font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;
+  color:var(--text3);margin-bottom:6px;
+}
+.field-input{
+  width:100%;background:rgba(0,0,0,.06);border:none;
+  border-radius:12px;padding:12px 14px;
+  font-size:16px;color:var(--text);
+  font-family:'DM Sans',sans-serif;outline:none;
+}
+.field-row{display:flex;gap:10px;}
+.field-row .field-group{flex:1;}
+.expense-entry{
+  display:flex;gap:8px;align-items:center;margin-bottom:8px;
+}
+.expense-entry input{flex:1;}
+.btn-add-exp{
+  background:none;border:1.5px dashed var(--text3);
+  border-radius:10px;padding:10px;
+  font-size:13px;color:var(--text3);cursor:pointer;
+  width:100%;margin-bottom:16px;
+}
+.color-picker-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+.color-dot{
+  width:32px;height:32px;border-radius:50%;cursor:pointer;
+  border:2.5px solid transparent;
+  transition:transform .15s;
+}
+.color-dot.selected{border-color:var(--text);transform:scale(1.15);}
+.modal-actions{display:flex;gap:10px;margin-top:20px;}
+.btn-cancel{
+  flex:1;padding:14px;border-radius:14px;
+  background:rgba(0,0,0,.06);border:none;
+  font-size:15px;font-weight:600;color:var(--text2);cursor:pointer;
+  font-family:'DM Sans',sans-serif;
+}
+.btn-save{
+  flex:2;padding:14px;border-radius:14px;
+  background:var(--accent);border:none;
+  font-size:15px;font-weight:600;color:#fff;cursor:pointer;
+  font-family:'DM Sans',sans-serif;
+}
 
-  /* ASSIGN PLAYLIST SHEET */
-  .assign-list{max-height:50dvh;overflow-y:auto;}
-  .assign-item{display:flex;align-items:center;gap:14px;padding:12px 20px;cursor:pointer;background:none;border:none;width:100%;color:var(--text);font-family:inherit;font-size:16px;}
-  .assign-item:active{background:rgba(255,255,255,.06);}
-  .assign-item+.assign-item{border-top:.5px solid var(--sep);}
-  .assign-cover{width:40px;height:40px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;}
+/* ── SETTINGS ── */
+#settings-screen{
+  flex:1;overflow-y:auto;padding:calc(var(--safe-top) + 16px) 24px calc(var(--safe-bot) + 80px);
+  display:none;
+}
+.settings-title{
+  font-family:'DM Serif Display',serif;
+  font-size:32px;margin-bottom:24px;
+}
+.settings-section{margin-bottom:28px;}
+.settings-label{
+  font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;
+  color:var(--text3);margin-bottom:12px;
+}
+.theme-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+.theme-card{
+  border-radius:16px;padding:16px 12px;cursor:pointer;
+  border:2px solid transparent;
+  transition:transform .15s,border-color .15s;
+  min-height:80px;display:flex;flex-direction:column;justify-content:flex-end;
+}
+.theme-card.selected{border-color:var(--text);}
+.theme-card:active{transform:scale(0.95);}
+.theme-card-name{font-size:12px;font-weight:600;color:var(--text);}
+.theme-card-sub{font-size:10px;color:var(--text2);}
 
-  /* IMAGE UPLOAD */
-  .img-up-wrap{padding:0 20px 14px;}
-  .img-preview{width:80px;height:80px;border-radius:12px;object-fit:cover;display:none;margin-bottom:10px;border:.5px solid var(--sep);}
-  .img-preview.show{display:block;}
-  .img-up-btn{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--bg3);border:none;border-radius:12px;padding:12px 14px;font-size:15px;color:var(--accent);cursor:pointer;width:100%;font-family:inherit;}
-  .img-up-btn:active{opacity:.7;}
+.preset-colors{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+.preset-color{
+  width:40px;height:40px;border-radius:50%;cursor:pointer;
+  border:2.5px solid transparent;
+  transition:transform .15s;
+}
+.preset-color.selected{border-color:var(--text);transform:scale(1.1);}
 
-  /* INTERNET */
-  .iwrap{padding:16px 20px calc(var(--safe-bot) + var(--tab-h) + 16px);}
-  .ihead{font-size:13px;color:var(--text3);margin-bottom:14px;line-height:1.5;}
-  .irow{display:flex;gap:8px;margin-bottom:16px;}
-  .irow input{flex:1;background:var(--bg3);border:none;border-radius:12px;padding:12px 14px;font-size:15px;color:var(--text);outline:none;}
-  .irow input:focus{background:var(--bg4);}
-  .igo{background:var(--accent);border:none;border-radius:12px;padding:12px 18px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;white-space:nowrap;}
-  .igo:active{opacity:.8;}
-  .icard{background:var(--bg2);border-radius:14px;border:.5px solid var(--sep);padding:14px;margin-bottom:12px;}
-  .ict{font-size:15px;font-weight:600;}
-  .icm{font-size:13px;color:var(--text3);margin-top:3px;}
-  .ilinks{display:flex;flex-direction:column;gap:8px;margin-top:12px;}
-  .ilink{display:block;padding:11px 14px;background:var(--bg3);border-radius:10px;font-size:13px;font-weight:600;color:var(--accent);text-decoration:none;}
-  .iimp{padding:11px 14px;background:rgba(48,209,88,.14);border:none;border-radius:10px;font-size:13px;font-weight:700;color:var(--accent2);cursor:pointer;width:100%;text-align:left;}
-  .ildr{text-align:center;color:var(--text3);font-size:15px;padding:36px;}
-  /* found song card */
-  .ifound{background:var(--bg2);border-radius:16px;border:.5px solid var(--sep);overflow:hidden;margin-bottom:12px;}
-  .ihistory{margin-bottom:12px;}
-  .ihistory-title{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);margin-bottom:6px;}
-  .ihistory-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:.5px solid var(--sep);cursor:pointer;}
-  .ihistory-item:last-child{border-bottom:none;}
-  .ihistory-icon{width:16px;color:var(--text3);font-size:14px;flex-shrink:0;}
-  .ihistory-text{flex:1;font-size:15px;color:var(--text2);}
-  .ihistory-del{background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;padding:0 4px;}
-  .ifound-header{padding:16px 16px 12px;}
-  .ifound-title{font-size:18px;font-weight:700;}
-  .ifound-artist{font-size:14px;color:var(--text3);margin-top:2px;}
-  .ifound-lyrics{padding:0 16px 12px;font-size:14px;color:var(--text2);line-height:1.7;max-height:200px;overflow-y:auto;-webkit-overflow-scrolling:touch;}
-  .ifound-actions{padding:12px 16px 16px;display:flex;flex-direction:column;gap:8px;border-top:.5px solid var(--sep);}
-  .ifound-add{background:var(--accent);border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;color:#fff;cursor:pointer;width:100%;font-family:inherit;}
-  .ifound-add:active{opacity:.8;}
-  .ifound-pl-list{display:flex;flex-direction:column;gap:6px;margin-top:4px;}
-  .ifound-pl-btn{background:var(--bg3);border:none;border-radius:10px;padding:12px 14px;font-size:14px;font-weight:500;color:var(--text);cursor:pointer;text-align:left;font-family:inherit;display:flex;align-items:center;gap:10px;}
-  .ifound-pl-btn:active{background:var(--bg4);}
-  .ifound-nopl{background:none;border:none;color:var(--text3);font-size:13px;cursor:pointer;padding:8px 0;font-family:inherit;text-decoration:underline;}
-  .ifound-nopl:active{opacity:.6;}
+.slider-row{display:flex;align-items:center;gap:12px;}
+.slider-row input[type=range]{
+  flex:1;accent-color:var(--accent);height:4px;cursor:pointer;
+}
 
-  /* TOAST */
-  .toast{position:fixed;bottom:calc(var(--safe-bot) + var(--tab-h) + 16px);left:50%;transform:translateX(-50%) translateY(10px);background:var(--bg4);color:var(--text);padding:11px 22px;border-radius:24px;font-size:14px;font-weight:500;opacity:0;pointer-events:none;z-index:999;transition:opacity .2s,transform .2s;white-space:nowrap;}
-  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.currency-row{display:flex;gap:8px;flex-wrap:wrap;}
+.currency-btn{
+  padding:8px 16px;border-radius:10px;border:.5px solid var(--sep);
+  background:var(--bg2);font-size:14px;cursor:pointer;
+  transition:all .15s;color:var(--text);
+}
+.currency-btn.selected{background:var(--accent);color:#fff;border-color:var(--accent);}
 
-  .edit-text-btn{background:none;border:none;border-bottom:.5px solid var(--sep);width:100%;padding:10px 18px;font-size:14px;font-weight:500;color:var(--text3);cursor:pointer;text-align:left;font-family:inherit;display:flex;align-items:center;gap:8px;flex-shrink:0;}
-  .edit-text-btn:active{background:var(--bg3);}
-  .edit-text-btn.active{color:var(--accent);}
-  .copy-list-btn{background:none;border:none;padding:8px 10px;cursor:pointer;color:var(--text3);display:flex;align-items:center;}
-  .copy-list-btn:active{opacity:.5;}
-  .pl-copy-btn{background:none;border:none;padding:6px 4px;cursor:pointer;color:var(--text3);display:flex;align-items:center;flex-shrink:0;}
-  .pl-copy-btn:active{opacity:.5;}
-  .empty{text-align:center;padding:60px 24px;color:var(--text3);font-size:15px;}
-  .edit-lyrics-btn{background:none;border:none;font-size:18px;color:var(--text3);cursor:pointer;padding:4px 2px;flex-shrink:0;}
-  .edit-lyrics-btn:active{color:var(--accent);}
-  .edit-lyrics-btn.active{color:var(--accent);}
-  .lyrics-edit-wrap{flex:1;display:none;flex-direction:column;}
-  .lyrics-textarea{flex:1;background:var(--bg3);border:none;color:var(--text);font-size:15px;font-family:-apple-system,system-ui,sans-serif;line-height:1.7;padding:16px 18px;resize:none;outline:none;min-height:300px;}
-  .lyrics-edit-actions{display:flex;gap:10px;padding:12px 18px calc(var(--safe-bot) + 14px);background:var(--bg2);border-top:.5px solid var(--sep);}
-  .le-cancel{flex:1;padding:13px;border-radius:14px;background:var(--bg3);border:none;font-size:15px;font-weight:600;color:var(--text2);cursor:pointer;font-family:inherit;}
-  .le-save{flex:2;padding:13px;border-radius:14px;background:var(--accent);border:none;font-size:15px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit;}
-  .le-fmt{flex:2;padding:13px;border-radius:14px;background:#2c2c2e;border:none;font-size:14px;font-weight:600;color:#bf5af2;cursor:pointer;font-family:inherit;}
-  .le-fmt:active{opacity:.7;}
-  .le-fmt:disabled{opacity:.4;}
-  .empty-icon{font-size:52px;display:block;margin-bottom:12px;}
-  .bg-preset{width:44px;height:44px;border-radius:12px;border:2px solid transparent;cursor:pointer;transition:border-color .15s;}
-  .bg-preset:active{transform:scale(.92);}
-  .bg-preset.active{border-color:var(--accent);}
-  /* Instagram-style: картинка на фоне, тёмный слой поверх, контент сверху */
-  body.has-bg-image{background:transparent;}
-  body.has-bg-image #app{background:transparent;}
-  body.has-bg-image #app::before{
-    content:'';
-    position:fixed;
-    inset:0;
-    z-index:0;
-    background:rgba(0,0,0,var(--overlay-alpha,0.55));
-    pointer-events:none;
-  }
-  /* Overlay для цветного фона */
-  body.has-bg-color #app::before{
-    content:'';
-    position:fixed;
-    inset:0;
-    z-index:0;
-    background:rgba(0,0,0,var(--overlay-alpha,0));
-    pointer-events:none;
-  }
-  body.has-bg-image .screen,
-  body.has-bg-image .tabbar{background:transparent !important;position:relative;z-index:1;}
-  body.has-bg-image .modal-bg{background:rgba(0,0,0,.72) !important;}
-  body.has-bg-image .ph{background:transparent !important;}
-  body.has-bg-image .chords-bar{background:rgba(0,0,0,0.35) !important;}
-  body.has-bg-image .tabbar{background:rgba(0,0,0,0.5) !important;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);}
-  body.has-bg-image .s-item{background:transparent;}
-  body.has-bg-image .pl-item{background:transparent;}
-  body.has-bg-image .msheet,.has-bg-image .choice-sheet{background:rgba(20,20,20,0.92) !important;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);}
-  body.has-bg-image .lscroll{background:transparent;}
-  body.has-bg-image .meta-edit-panel{background:rgba(0,0,0,0.5) !important;}
-  body.has-bg-image .ifound{background:rgba(20,20,20,0.85) !important;}
+.upload-bg-btn{
+  width:100%;padding:14px;border-radius:14px;
+  background:rgba(0,0,0,.06);border:1.5px dashed rgba(0,0,0,.2);
+  font-size:15px;color:var(--text2);cursor:pointer;
+  font-family:'DM Sans',sans-serif;
+}
+
+/* Nav month */
+.month-nav{
+  display:flex;align-items:center;gap:12px;margin-bottom:8px;
+}
+.month-nav-btn{
+  background:none;border:none;font-size:20px;cursor:pointer;
+  padding:4px 8px;border-radius:8px;color:var(--text);opacity:.5;
+  transition:opacity .15s;
+}
+.month-nav-btn:active{opacity:1;}
+
+/* ── THEMES ── */
+body.theme-dark{
+  --bg:#1a1a1a;--bg2:rgba(40,40,40,0.8);--text:#f0f0f0;--text2:#aaa;--text3:#666;
+  --dot-past:#f0f0f0;--dot-future:rgba(255,255,255,0.1);--sep:rgba(255,255,255,0.08);
+}
+body.theme-warm{
+  --bg:#EFE8CB;--bg2:rgba(255,252,240,0.8);--text:#2a1f0a;--text2:#6b5035;--text3:#a08060;
+  --dot-past:#2a1f0a;--dot-future:rgba(42,31,10,0.12);--accent:#D0391B;--accent2:#324E44;
+}
+body.theme-ocean{
+  --bg:#E2E4D2;--bg2:rgba(226,228,210,0.85);--text:#1a2a28;--text2:#455957;--text3:#7BA7AF;
+  --dot-past:#1a2a28;--dot-future:rgba(26,42,40,0.12);--accent:#455957;--accent2:#7BA7AF;
+}
+body.theme-retro{
+  --bg:#DCC9A9;--bg2:rgba(220,201,169,0.85);--text:#2a1510;--text2:#8D5631;--text3:#B83A2D;
+  --dot-past:#2a1510;--dot-future:rgba(42,21,16,0.12);--accent:#B83A2D;--accent2:#4E6851;
+}
+body.theme-night{
+  --bg:#0d0d0d;--bg2:rgba(20,20,20,0.9);--text:#e0e0e0;--text2:#888;--text3:#444;
+  --dot-past:#e0e0e0;--dot-future:rgba(255,255,255,0.07);--accent:#FBC359;--accent2:#73A642;
+  --sep:rgba(255,255,255,0.06);
+}
+body.theme-sand{
+  --bg:#f7f2eb;--bg2:rgba(247,242,235,0.9);--text:#2c2417;--text2:#7a6540;--text3:#b8a88a;
+  --dot-past:#2c2417;--dot-future:rgba(44,36,23,0.1);--accent:#9F4125;--accent2:#382020;
+}
 </style>
 </head>
 <body>
+
+<div id="bg-layer"></div>
+<div id="bg-overlay"></div>
+
 <div id="app">
 
-<!-- ── ПЛЕЙЛИСТЫ ── -->
-<div class="screen active" id="scr-pl">
-  <div class="ph">
-    <div class="ph-row">
-      <div class="ph-title">Плейлисты</div>
-      <button class="add-btn" onclick="showAddChoice('pl')">＋ Add</button>
+  <!-- MAIN SCREEN -->
+  <div id="main">
+    <!-- Big date -->
+    <div class="big-date">
+      <div class="big-day" id="bigDay">3</div>
+      <div class="big-meta">
+        <div>
+          <span class="big-month" id="bigMonth">МАЙ</span>
+          <span class="big-year" id="bigYear">2026</span>
+        </div>
+        <div class="big-dow" id="bigDow">Суббота</div>
+      </div>
     </div>
-    <div class="sbar"><span style="color:var(--text3)">🔍</span><input id="plSrch" type="search" placeholder="Поиск" oninput="filterPL()" autocomplete="off"/></div>
+
+    <!-- Calendar -->
+    <div class="cal-wrap">
+      <div class="month-nav">
+        <button class="month-nav-btn" onclick="changeMonth(-1)">‹</button>
+        <span id="calMonthLabel" style="font-size:14px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--text3);flex:1;text-align:center;"></span>
+        <button class="month-nav-btn" onclick="changeMonth(1)">›</button>
+      </div>
+      <div class="cal-header">
+        <span>П</span><span>В</span><span>С</span><span>Ч</span><span>П</span>
+        <span style="color:var(--accent)">С</span><span style="color:var(--accent)">В</span>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+    </div>
+
+    <!-- Entries -->
+    <div class="entries-section" id="entriesSection"></div>
+
+    <!-- Totals -->
+    <div class="totals-section" id="totalsSection" style="display:none;"></div>
   </div>
-  <div class="scroll-body">
-    <div class="pl-list" id="plList" data-dl="pl"></div>
-    <div id="looseSongsSection" style="display:none">
-      <div class="loose-section">Песни без плейлиста</div>
-      <div class="song-list" id="looseSongList" style="padding-bottom:8px;"></div>
-    </div>
-  </div>
-</div>
 
-<!-- ── РЕПЕРТУАР ── -->
-<div class="screen" id="scr-rep">
-  <div class="ph">
-    <div class="ph-row">
-      <div class="ph-title">Весь репертуар</div>
-      <button class="copy-list-btn" onclick="copyRepertoire()" title="Скопировать список">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-      </button>
-    </div>
-    <div class="sbar"><span style="color:var(--text3)">🔍</span><input id="repSrch" type="search" placeholder="Поиск" oninput="filterRep()" autocomplete="off"/></div>
-  </div>
-  <div class="scroll-body"><div class="song-list" id="repList" data-dl="rep"></div></div>
-</div>
+  <!-- SETTINGS SCREEN -->
+  <div id="settings-screen">
+    <div class="settings-title">Настройки</div>
 
-<!-- ── ПЕСНИ плейлиста ── -->
-<div class="screen" id="scr-songs">
-  <div class="ph">
-    <div class="ph-row">
-      <div class="ph-title" id="songsTitle">Песни</div>
-      <button class="add-btn" onclick="openModal('song', filterPl)">＋ Add</button>
-    </div>
-    <div class="sbar"><span style="color:var(--text3)">🔍</span><input id="songSrch" type="search" placeholder="Поиск" oninput="filterSong()" autocomplete="off"/></div>
-  </div>
-  <div class="scroll-body"><div class="song-list" id="songList" data-dl="songs"></div></div>
-</div>
-
-<!-- ── ИНТЕРНЕТ ── -->
-<div class="screen" id="scr-inet">
-  <div class="ph">
-    <div class="ph-row"><div class="ph-title">Поиск песен</div></div>
-    <div style="display:flex;gap:8px;align-items:center;margin-top:10px;">
-      <div class="sbar" style="flex:1;margin-top:0;position:relative;">
-        <span style="color:var(--text3)">🔍</span>
-        <input id="inetQ" type="search" placeholder="Исполнитель, название..." autocomplete="off"
-          onkeydown="if(event.key==='Enter')inetSearch()"
-          oninput="showSearchHistory();updateInetClear()"
-          onfocus="showSearchHistory();updateInetClear();document.querySelector('meta[name=viewport]').setAttribute('content','width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover');" onblur="document.querySelector('meta[name=viewport]').setAttribute('content','width=device-width,initial-scale=1.0,viewport-fit=cover,interactive-widget=resizes-content');"
-          style="font-size:13px;"/>
-        <button id="inetClearBtn" onclick="clearInetSearch()" style="visibility:hidden;background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;padding:0 4px;line-height:1;">✕</button>
-      </div>
-      <button class="igo" onclick="inetSearch()" style="padding:9px 12px;font-size:18px;line-height:1;">🔍</button>
-      <button class="igo" onclick="openBatchImport()" style="padding:9px 12px;font-size:18px;line-height:1;background:var(--bg3);color:var(--text2);">☰</button>
-    </div>
-  </div>
-  <div class="scroll-body">
-    <div class="iwrap" style="padding-top:8px;">
-      <div id="inetHistory"></div>
-      <div id="inetRes"></div>
-    </div>
-  </div>
-</div>
-
-<!-- ── BATCH IMPORT MODAL ── -->
-<div style="position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:200;display:none;align-items:center;justify-content:center;padding:20px;" id="batchModal" onclick="if(event.target===this)cancelBatchImport()">
-  <div class="modal-box" style="max-height:85vh;display:flex;flex-direction:column;width:100%;max-width:480px;border-radius:20px;">
-    <div class="mtitle">Загрузить список песен</div>
-    <div style="font-size:13px;color:var(--text3);margin-bottom:12px;">Формат: Исполнитель - Название (каждая с новой строки)</div>
-    <textarea id="batchInput" class="fi" style="flex:1;min-height:160px;resize:none;font-size:16px;font-family:inherit;" placeholder="Лепс - Рюмка водки&#10;Oasis - Wonderwall&#10;Кино - Группа крови"></textarea>
-    <div style="margin-top:12px;">
-      <div style="font-size:13px;color:var(--text2);margin-bottom:8px;">Добавить в плейлист:</div>
-      <select id="batchPlaylist" class="fi" style="font-size:16px;">
-        <option value="">— Без плейлиста —</option>
-      </select>
-    </div>
-    <div id="batchProgress" style="display:none;margin-top:12px;">
-      <div style="font-size:13px;color:var(--text3);" id="batchProgressText">Поиск...</div>
-      <div style="background:var(--bg3);border-radius:4px;height:6px;margin-top:6px;overflow:hidden;">
-        <div id="batchProgressBar" style="background:var(--accent);height:100%;width:0%;transition:width .3s;border-radius:4px;"></div>
+    <!-- Currency -->
+    <div class="settings-section">
+      <div class="settings-label">Валюта</div>
+      <div class="currency-row" id="currencyRow">
+        <button class="currency-btn selected" onclick="setCurrency('₽','RUB')">₽ Рубль</button>
+        <button class="currency-btn" onclick="setCurrency('$','USD')">$ Доллар</button>
+        <button class="currency-btn" onclick="setCurrency('€','EUR')">€ Евро</button>
+        <button class="currency-btn" onclick="setCurrency('₸','KZT')">₸ Тенге</button>
+        <button class="currency-btn" onclick="setCurrency('₴','UAH')">₴ Гривна</button>
       </div>
     </div>
-    <div id="batchResult" style="margin-top:8px;font-size:13px;color:var(--text2);display:none;"></div>
-    <div style="display:flex;gap:8px;margin-top:16px;">
-      <button class="btn-c" id="batchCancelBtn" onclick="cancelBatchImport()">Отмена</button>
-      <button class="btn-ok" id="batchStartBtn" onclick="startBatchImport()">Найти и добавить</button>
-    </div>
-  </div>
-</div>
 
-<!-- ── ДЕТАЛЬНЫЙ ── -->
-<div class="screen" id="scr-detail">
-  <button class="zoom-reset-btn" id="zoomResetBtn" onclick="resetZoom()">Zoom ×1 ✕</button>
-  <!-- оба оверлея СНАРУЖИ zoom-wrap — не искажаются scale() -->
-  <!-- оверлей для скрытия панели (поверх панели аккордов) -->
-  <div id="chordsHideOverlay" style="position:absolute;left:0;right:0;z-index:20;touch-action:none;display:none;"></div>
-  <!-- оверлей для возврата панели -->
-  <div id="chordsShowOverlay" style="position:absolute;left:0;right:0;z-index:20;touch-action:none;display:none;" onclick="showChordsBar()"></div>
-  <!-- кнопки поверх hide-оверлея -->
-  <div id="chordsPencilOverlay" style="position:absolute;z-index:22;display:none;" onclick="openChordsEdit()"></div>
-  <div id="chordsFavOverlay" style="position:absolute;z-index:22;display:none;" onclick="toggleFav()"></div>
-
-  <div id="detailZoomWrap">
-    <!-- обёртка для плавного скрытия -->
-    <div class="chords-bar-wrap" id="chordsBarWrap">
-    <div class="chords-bar" id="chordsBar">
-      <span class="cb-val" id="chordsVal">—</span>
-      <span class="cb-edit" style="margin-left:6px;padding:6px 8px;">✎</span>
-      <span style="flex:1;"></span>
-      <button class="fav-btn" id="favBtn" style="font-size:20px;pointer-events:none;">♡</button>
-    </div>
-    </div><!-- /chordsBarWrap -->
-    <div class="chords-edit-wrap" id="chordsEditWrap">
-      <input class="chords-input" id="chordsInput" placeholder="Am - G - Em - C"/>
-      <button class="chords-save" onclick="saveChords()">OK</button>
-    </div>
-    <div class="meta-edit-panel" id="metaEditPanel">
-      <div class="mep-row">
-        <label class="mep-lbl">Название</label>
-        <input class="mep-input" id="titleInput" placeholder="Название песни"/>
-      </div>
-      <div class="mep-row">
-        <label class="mep-lbl">Исполнитель</label>
-        <input class="mep-input" id="artistInput" placeholder="Исполнитель"/>
-      </div>
-
-      <div class="mep-row">
-        <label class="mep-lbl">Текст песни</label>
-        <textarea class="mep-textarea" id="lyricsTextarea" placeholder="Вставьте текст..."></textarea>
-      </div>
-      <div class="mep-actions">
-        <button class="mep-cancel" onclick="closeMetaEdit()">Отмена</button>
-        <button class="mep-save" onclick="saveMetaEdit()">Сохранить</button>
+    <!-- Theme -->
+    <div class="settings-section">
+      <div class="settings-label">Тема</div>
+      <div class="theme-grid" id="themeGrid">
+        <div class="theme-card selected" style="background:#f5f0e8;" onclick="setTheme('default','default')">
+          <div class="theme-card-name">Пергамент</div>
+        </div>
+        <div class="theme-card" style="background:#1a1a1a;" onclick="setTheme('dark','theme-dark')">
+          <div class="theme-card-name" style="color:#f0f0f0;">Ночь</div>
+        </div>
+        <div class="theme-card" style="background:#EFE8CB;" onclick="setTheme('warm','theme-warm')">
+          <div class="theme-card-name">Тепло</div>
+        </div>
+        <div class="theme-card" style="background:#E2E4D2;" onclick="setTheme('ocean','theme-ocean')">
+          <div class="theme-card-name">Океан</div>
+        </div>
+        <div class="theme-card" style="background:#DCC9A9;" onclick="setTheme('retro','theme-retro')">
+          <div class="theme-card-name">Ретро</div>
+        </div>
+        <div class="theme-card" style="background:#0d0d0d;" onclick="setTheme('night','theme-night')">
+          <div class="theme-card-name" style="color:#e0e0e0;">Тёмная</div>
+        </div>
       </div>
     </div>
-    <div class="lscroll" id="lscroll">
-      <div id="lyricsScaleWrap">
-        <div class="lb" id="lb"></div>
+
+    <!-- Custom color -->
+    <div class="settings-section">
+      <div class="settings-label">Свой цвет акцента</div>
+      <div class="preset-colors" id="presetColors">
+        <div class="preset-color" style="background:#D0391B;" onclick="setAccent('#D0391B')"></div>
+        <div class="preset-color" style="background:#324E44;" onclick="setAccent('#324E44')"></div>
+        <div class="preset-color" style="background:#FBC359;" onclick="setAccent('#FBC359')"></div>
+        <div class="preset-color" style="background:#7BA7AF;" onclick="setAccent('#7BA7AF')"></div>
+        <div class="preset-color" style="background:#B83A2D;" onclick="setAccent('#B83A2D')"></div>
+        <div class="preset-color" style="background:#73A642;" onclick="setAccent('#73A642')"></div>
+        <div class="preset-color" style="background:#9F4125;" onclick="setAccent('#9F4125')"></div>
+        <div class="preset-color" style="background:#4B848A;" onclick="setAccent('#4B848A')"></div>
       </div>
+      <input type="color" id="customAccentColor" value="#D0391B"
+        style="width:48px;height:48px;border:none;border-radius:50%;cursor:pointer;padding:0;background:none;"
+        oninput="setAccent(this.value)"/>
     </div>
-    <div id="lyricsEditWrap" style="display:none;"></div>
-  </div><!-- /detailZoomWrap -->
-</div>
 
-<!-- ── НАСТРОЙКИ ── -->
-<div class="screen" id="scr-settings">
-  <div class="ph"><div class="ph-row"><div class="ph-title">Настройки</div></div></div>
-  <div class="scroll-body">
-    <div style="padding:16px 20px calc(var(--safe-bot) + var(--tab-h) + 20px);">
-
-      <!-- Фон -->
-      <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-bottom:12px;">Фон приложения</div>
-
-      <!-- Готовые цвета -->
-      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
-        <button onclick="setBg('color','#121212')" class="bg-preset" style="background:#121212;" title="Чёрный"></button>
-        <button onclick="setBg('color','#B8A04B')" class="bg-preset" style="background:#B8A04B;" title="Бежевый"></button>
-        <button onclick="setBg('color','#BA7272')" class="bg-preset" style="background:#BA7272;" title="Розовый"></button>
-        <button onclick="setBg('color','#3d2a1a')" class="bg-preset" style="background:#3d2a1a;" title="Cacao"></button>
-        <button onclick="setBg('color','#5a2e08')" class="bg-preset" style="background:#5a2e08;" title="Pumpkin"></button>
-        <button onclick="setBg('color','#2d3520')" class="bg-preset" style="background:#2d3520;" title="Moss"></button>
-        <button onclick="setBg('color','#3d1010')" class="bg-preset" style="background:#3d1010;" title="Rosehip"></button>
-        <button onclick="setBg('color','#182028')" class="bg-preset" style="background:#182028;" title="Lagoon"></button>
-        <button onclick="setBg('color','#6b5535')" class="bg-preset" style="background:#6b5535;" title="Beige"></button>
-        <button onclick="setBg('color','#5a5830')" class="bg-preset" style="background:#5a5830;" title="Olive"></button>
-        <button onclick="setBg('color','#7a4540')" class="bg-preset" style="background:#7a4540;" title="Rose"></button>
-      </div>
-
-      <!-- Свой цвет -->
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
-        <div style="font-size:15px;color:var(--text2);">Свой цвет</div>
-        <input type="color" id="bgColorPicker" value="#121212" onchange="setBg('color',this.value)"
-          style="width:44px;height:44px;border:none;border-radius:10px;cursor:pointer;background:none;padding:0;"/>
-      </div>
-
-      <!-- Картинка -->
-      <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-bottom:12px;">Картинка на фон</div>
-      <label for="bgImgInput"
-        style="display:flex;align-items:center;gap:10px;background:var(--bg3);border:none;border-radius:14px;padding:14px 16px;font-size:15px;color:var(--accent);cursor:pointer;width:100%;font-family:inherit;margin-bottom:10px;box-sizing:border-box;">
-        🖼 Выбрать из галереи
+    <!-- Background image -->
+    <div class="settings-section">
+      <div class="settings-label">Фон</div>
+      <label class="upload-bg-btn">
+        📷 Выбрать фото из галереи
+        <input type="file" accept="image/*" style="display:none" onchange="loadBgImg(event)"/>
       </label>
-      <input type="file" id="bgImgInput" accept="image/*" style="opacity:0;position:absolute;width:1px;height:1px;" onchange="handleBgImg(event)"/>
-      <button onclick="setBg('none','')"
-        style="display:flex;align-items:center;gap:10px;background:var(--bg3);border:none;border-radius:14px;padding:14px 16px;font-size:15px;color:var(--red);cursor:pointer;width:100%;font-family:inherit;">
-        ✕ Сбросить фон
-      </button>
+      <button class="upload-bg-btn" style="margin-top:8px;" onclick="clearBg()">✕ Убрать фото</button>
+    </div>
 
-      <!-- Прозрачность оверлея — всегда доступен -->
-      <div id="bgOverlayWrap" style="margin-top:20px;">
-        <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-bottom:10px;">Затемнение</div>
-        <input type="range" id="bgOverlay" min="50" max="90" value="50" oninput="updateOverlay(this.value)"
-          style="width:100%;accent-color:var(--accent);"/>
-        <div style="font-size:13px;color:var(--text3);margin-top:4px;" id="bgOverlayVal">0</div>
+    <!-- Overlay -->
+    <div class="settings-section">
+      <div class="settings-label">Затемнение фона</div>
+      <div class="slider-row">
+        <span style="font-size:13px;color:var(--text3);">0%</span>
+        <input type="range" id="overlaySlider" min="0" max="90" value="45" oninput="setOverlay(this.value)"/>
+        <span style="font-size:13px;color:var(--text3);">90%</span>
       </div>
     </div>
   </div>
-</div>
 
-<!-- ── TAB BAR ── -->
-<div class="tabbar" id="tabbar">
-  <!-- Normal tabs (shown outside detail) -->
-  <div class="tab active nav-tab" id="tab-pl" onclick="swTab('pl')">
-    <svg class="t-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-    <span>Плейлисты</span>
-  </div>
-  <div class="tab nav-tab" id="tab-rep" onclick="swTab('rep')">
-    <svg class="t-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-    <span>Репертуар</span>
-  </div>
-  <div class="tab nav-tab" id="tab-inet" onclick="swTab('inet')">
-    <svg class="t-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-    <span>Поиск</span>
-  </div>
-  <div class="tab nav-tab" id="tab-settings" onclick="swTab('settings')">
-    <svg class="t-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-    <span>Настройки</span>
-  </div>
-  <!-- Detail tabs (shown inside song) -->
-  <div class="tab detail-tab" onclick="goBack()">
-    <svg class="t-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-    <span>Плейлист</span>
-  </div>
-  <button class="tab detail-tab" id="scbtn" onclick="toggleScroll()">
-    <svg class="t-icon" id="scPlayIcon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
-    <span class="t-lbl" id="scPlayLbl">Суфлёр</span>
-  </button>
-  <div class="tab detail-tab sctrl-spd-tab">
-    <div class="spd-ctrl">
-      <button class="spd-btn" onclick="changeSpd(-1)">−</button>
-      <span class="spd-num" id="scn">3</span>
-      <button class="spd-btn" onclick="changeSpd(1)">＋</button>
-    </div>
-    <span class="t-lbl">Скорость</span>
-  </div>
-</div>
-</div><!-- #app -->
-
-<!-- ── ADD CHOICE MODAL ── -->
-<div class="modal-bg" id="choiceModal" onclick="closeChoiceModal(event)">
-  <div class="choice-sheet">
-    <div class="choice-title">Что добавить?</div>
-    <button class="choice-btn" onclick="closeChoiceAndOpen('pl')">
-      <div class="choice-icon" style="background:#1c3a5e;">📋</div>Новый плейлист
-    </button>
-    <button class="choice-btn" onclick="closeChoiceAndOpen('song')">
-      <div class="choice-icon" style="background:#1a3a1a;">🎵</div>Новую песню
-    </button>
-    <div class="choice-cancel"><button onclick="document.getElementById('choiceModal').classList.remove('open')">Отмена</button></div>
+  <!-- TAB BAR -->
+  <div id="tabbar">
+    <button class="tab-btn active" id="tab-main" onclick="showTab('main')">📅</button>
+    <button class="tab-btn" id="tab-settings" onclick="showTab('settings')">⚙️</button>
   </div>
 </div>
 
-<!-- ── MAIN MODAL (song / playlist) ── -->
-<div class="modal-bg" id="modal" onclick="closeMBg(event)">
-  <div class="msheet">
-    <div class="mdrag"></div>
-    <div class="mtitle" id="mtitle">Добавить</div>
-    <!-- Song form -->
-    <div id="songForm">
-      <div class="fg"><label class="fl">Название *</label><input class="fi" id="fTitle" placeholder="Название песни"/></div>
-      <div class="fg"><label class="fl">Исполнитель</label><input class="fi" id="fArtist" placeholder="Исполнитель"/></div>
+<!-- DAY EDIT MODAL -->
+<div class="modal-bg" id="editModal">
+  <div class="modal-sheet">
+    <div class="modal-drag"></div>
+    <div class="modal-title" id="editModalTitle">3 мая</div>
 
-      <div class="fg"><label class="fl">Тональность / Аккорды</label><input class="fi" id="fKey" placeholder="Am, G, F#m... или Am-G-Em-C"/></div>
-
-      <div class="fg" id="fPlaylistWrap"><label class="fl">Плейлист</label><select class="fi" id="fPlaylist" style="font-size:16px;"><option value="">— Без плейлиста —</option></select></div>
-      <div class="fg"><label class="fl">Текст</label><textarea class="fi" id="fLyrics" placeholder="[Куплет]&#10;Am    G&#10;Текст строки..."></textarea></div>
-    </div>
-    <!-- Playlist form -->
-    <div id="plForm" style="display:none">
-      <div class="fg"><label class="fl">Название *</label><input class="fi" id="fPlName" placeholder="Рок, Бар, Концертные..."/></div>
-      <div class="fg"><label class="fl">Описание</label><input class="fi" id="fPlDesc" placeholder="Краткое описание..."/></div>
-      <div class="img-up-wrap">
-        <label class="fl">Обложка (фото)</label>
-        <img id="imgPreview" class="img-preview" src="" alt="preview"/>
-        <button type="button" class="img-up-btn" onclick="document.getElementById('imgFile').click()">📷 Выбрать фото из галереи</button>
-        <input type="file" id="imgFile" accept="image/*" style="display:none" onchange="handleImg(event)"/>
+    <!-- Color -->
+    <div class="field-group">
+      <div class="field-label">Цвет дня</div>
+      <div class="color-picker-row" id="dayColorPicker">
+        <div class="color-dot selected" style="background:#324E44;" data-color="#324E44" onclick="selectDayColor(this)"></div>
+        <div class="color-dot" style="background:#D0391B;" data-color="#D0391B" onclick="selectDayColor(this)"></div>
+        <div class="color-dot" style="background:#FBC359;" data-color="#FBC359" onclick="selectDayColor(this)"></div>
+        <div class="color-dot" style="background:#7BA7AF;" data-color="#7BA7AF" onclick="selectDayColor(this)"></div>
+        <div class="color-dot" style="background:#9F4125;" data-color="#9F4125" onclick="selectDayColor(this)"></div>
+        <div class="color-dot" style="background:#73A642;" data-color="#73A642" onclick="selectDayColor(this)"></div>
+        <div class="color-dot" style="background:#4E6851;" data-color="#4E6851" onclick="selectDayColor(this)"></div>
+        <input type="color" style="width:32px;height:32px;border:none;border-radius:50%;cursor:pointer;padding:0;background:none;"
+          oninput="selectDayColorHex(this.value)"/>
       </div>
-      <input type="hidden" id="fPlEmoji" value="🎵"/>
-      <input type="hidden" id="fPlColor" value="#636366"/>
     </div>
-    <div class="mactions">
-      <button class="btn-c" onclick="closeModal()">Отмена</button>
-      <button class="btn-s" onclick="saveItem()">Сохранить</button>
+
+    <!-- Label -->
+    <div class="field-group">
+      <div class="field-label">Название / комментарий</div>
+      <input class="field-input" id="dayLabel" placeholder="Фриланс, Съёмка, Офис..."/>
+    </div>
+
+    <!-- Time -->
+    <div class="field-row">
+      <div class="field-group">
+        <div class="field-label">Начало</div>
+        <input class="field-input" id="dayTimeStart" type="time"/>
+      </div>
+      <div class="field-group">
+        <div class="field-label">Конец</div>
+        <input class="field-input" id="dayTimeEnd" type="time"/>
+      </div>
+    </div>
+
+    <!-- Earned -->
+    <div class="field-group">
+      <div class="field-label">Заработано</div>
+      <input class="field-input" id="dayEarned" type="number" placeholder="0" inputmode="decimal"/>
+    </div>
+
+    <!-- Expenses -->
+    <div class="field-group">
+      <div class="field-label">Затраты</div>
+      <div id="expensesList"></div>
+      <button class="btn-add-exp" onclick="addExpenseField()">+ Добавить затрату</button>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeEditModal()">Отмена</button>
+      <button class="btn-save" onclick="saveDay()">Сохранить</button>
     </div>
   </div>
 </div>
-
-<!-- ── ASSIGN PLAYLIST MODAL ── -->
-<div class="modal-bg" id="assignModal" onclick="closeAssignModal(event)">
-  <div class="msheet">
-    <div class="mdrag"></div>
-    <div class="mtitle" id="assignModalTitle">Добавить в плейлист</div>
-    <div style="display:flex;gap:8px;padding:0 20px 12px;">
-      <button onclick="editSongFromAssign()" style="flex:1;background:var(--bg3);border:none;border-radius:12px;padding:12px;color:var(--text);font-size:15px;cursor:pointer;">✎ Редактировать</button>
-      <button onclick="deleteSongFromAssign()" style="flex:1;background:rgba(255,59,48,.15);border:none;border-radius:12px;padding:12px;color:#ff3b30;font-size:15px;cursor:pointer;">🗑 Удалить</button>
-    </div>
-    <div class="assign-list" id="assignList"></div>
-    <div class="choice-cancel"><button onclick="document.getElementById('assignModal').classList.remove('open')">Отмена</button></div>
-  </div>
-</div>
-
-<div class="toast" id="toast"></div>
 
 <script>
-const SK='sb_s_v6', PK='sb_p_v6', FK='sb_f_v6';
-function ld(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch{return d;}}
-function sv(k,v){try{localStorage.setItem(k,JSON.stringify(v instanceof Set?[...v]:v));}catch{}}
+// ── DATA ──
+const SK = 'ftcal_days_v1';
+const SK2 = 'ftcal_settings_v1';
 
-const defPL=[
-  {id:'p1',name:'Рок',desc:'Список с новыми композициями',emoji:'🎸',color:'#e8375a',img:''},
-  {id:'p2',name:'Популярные',desc:'Список всех музыкантов и исполнителей',emoji:'🎤',color:'#ff6b35',img:''},
-  {id:'p3',name:'Иностранные',desc:'Песня для начинающих музыкантов',emoji:'🌍',color:'#0a84ff',img:''},
-  {id:'p4',name:'Новый Плейлист 1',desc:'Песни, которые часто звучат на каналах',emoji:'🎵',color:'#30d158',img:''},
-  {id:'p5',name:'Новый Плейлист 2',desc:'Музыка для маленьких детей',emoji:'🎀',color:'#bf5af2',img:''},
-  {id:'p6',name:'Лаунж',desc:'Песни, которые часто играются на радио',emoji:'🎹',color:'#ff9f0a',img:''},
-  {id:'p7',name:'Танцевальные',desc:'Список всех музыкантов, играющих на органе',emoji:'💃',color:'#ff375f',img:''},
-];
-const defSongs=[
-  {id:'s1',title:'Wonderwall',artist:'Oasis',key:'Am-G-Em-C',instr:'Guitar',playlist:'Рок',lyrics:`[Куплет 1]\nAm            G\nToday is gonna be the day\nEm                     Am\nThat they're gonna throw it back to you\nBy now you should've somehow\nRealised what you gotta do\n\n[Припев]\nC                G\nAnd all the roads we have to walk are winding\nAm              G\nAnd all the lights that lead us there are blinding\n\n[Финал]\nMaybe, you're gonna be the one that saves me\nAnd after all, you're my Wonderwall`},
-  {id:'s2',title:'Let Her Go',artist:'Passenger',key:'G-D-Em-C',instr:'Guitar',playlist:'Популярные',lyrics:`[Куплет]\nG                    D\nWell, you only need the light\nEm              C\nWhen it's burning low\nOnly miss the sun when it starts to snow\n\n[Припев]\nAnd you let her go`},
-  {id:'s3',title:'Skinny Love',artist:'Bon Iver',key:'Am-C-F-G',instr:'Piano',playlist:'Лаунж',lyrics:`[Куплет]\nCome on skinny love, just last the year\nPour a little salt, we were never here\n\n[Припев]\nMy, my, my, my...\nStaring at the sink of blood`},
-  {id:'s4',title:'The Night We Met',artist:'Lord Huron',key:'Dm-Bb-F-C',instr:'Guitar',playlist:'Иностранные',lyrics:`[Куплет]\nDm              Bb\nI had all and then most of you\nF               C\nTake me back to the night we met\n\n[Припев]\nI don't know what I'm supposed to do\nHaunted by the ghost of you`},
-  {id:'s5',title:'Clair de Lune',artist:'Debussy',key:'Db-Ab-Gb-Bbm',instr:'Piano',playlist:'Лаунж',lyrics:`[Тема A]\nAndante très expressif ♩=60\n\n[Развитие]\nCrescendo — нарастание\nForte — кульминация\n\n[Реприза]\nPianissimo — Morendo`},
-];
-
-let pls=ld(PK,[...defPL]);
-let songs=ld(SK,[...defSongs]);
-let favs=new Set(ld(FK,[]));
-let curScr='pl', prevScr='pl', prevPrevScr='pl', curSong=null, filterPl=null;
-let scTimer=null, isScroll=false, mMode='song', forcedPlaylist='';
-let pendingImg='', assignSongId=null;
-let lpTimer=null; // long-press timer
-
-// ── NAVIGATION ──
-function show(id, dir){
-  const prev=document.querySelector('.screen.active');
-  const next=document.getElementById('scr-'+id);
-  if(!next) return;
-  document.querySelectorAll('.screen').forEach(s=>{
-    s.classList.remove('active','slide-in-right','slide-in-left','slide-out-right','slide-out-left');
-    s.style.display='none';
-  });
-  next.style.display='flex';
-  next.classList.add('active');
-  const tb=document.getElementById('tabbar');
-  tb.style.display='flex';
-  if(id==='detail'){tb.classList.add('in-detail');
-    document.querySelector('meta[name=viewport]').setAttribute('content','width=device-width,initial-scale=1.0,viewport-fit=cover,interactive-widget=resizes-content');
-  } else {
-    document.querySelector('meta[name=viewport]').setAttribute('content','width=device-width,initial-scale=1.0,maximum-scale=1.0,viewport-fit=cover,interactive-widget=resizes-content');
-  }
-  if(id!=='detail') tb.classList.remove('in-detail');
-}
-function swTab(id, dir){
-  prevPrevScr=prevScr; prevScr=curScr; curScr="detail"; curScr=id;
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  document.getElementById('tab-'+id).classList.add('active');
-  if(id==='pl'){show('pl',dir);renderPL();}
-  else if(id==='rep'){show('rep',dir);renderRep();}
-  else if(id==='songs'){filterPl=null;document.getElementById('songsTitle').textContent='Песни';renderSongs(songs);show('songs',dir);}
-  else if(id==='inet'){show('inet',dir);showSearchHistory();updateInetClear();}
-  else if(id==='settings'){show('settings',dir);}
-}
-function goBack(){
-  stopScroll();
-  closeChordsEdit();
-  cancelLyricsEdit();
-  closeMetaEdit();
-  let dest;
-  if(curScr==='detail'){
-    if(curSong&&curSong.id==='__preview__'){
-      const idx2=songs.findIndex(s=>s.id==='__preview__');
-      if(idx2>=0) songs.splice(idx2,1);
-      dest='inet';
-    } else {
-      dest=prevScr||'rep';
-    }
-  } else if(curScr==='songs' && filterPl){
-    dest='pl';
-    filterPl=null;
-  } else {
-    dest=prevScr==='pl'?'pl':prevScr;
-  }
-  curScr=dest; show(dest);
-  if(dest==='pl') renderPL();
-  if(dest==='rep') renderRep();
-  const tm={pl:'pl',rep:'rep',songs:'songs',inet:'inet',settings:'settings'};
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  if(tm[dest]) document.getElementById('tab-'+tm[dest])?.classList.add('active');
-}
-
-// ── ADD CHOICE ──
-function showAddChoice(ctx){
-  // ctx: 'pl' = from playlists screen
-  document.getElementById('choiceModal').classList.add('open');
-}
-function closeChoiceModal(e){if(e.target===document.getElementById('choiceModal'))document.getElementById('choiceModal').classList.remove('open');}
-function closeChoiceAndOpen(mode){
-  document.getElementById('choiceModal').classList.remove('open');
-  setTimeout(()=>openModal(mode,''),200);
-}
-
-// ── PLAYLISTS ──
-function plCover(pl){
-  if(pl.img) return `<img class="pl-cover" src="${pl.img}" style="width:62px;height:62px;border-radius:10px;object-fit:cover;flex-shrink:0;" onclick="openPL('${pl.id}')"/>`;
-  return `<div class="pl-cover" style="background:${pl.color}" onclick="openPL('${pl.id}')">${pl.emoji||'🎵'}</div>`;
-}
-function renderPL(list){
-  list=list||pls;
-  const el=document.getElementById('plList');
-  if(!list.length){el.innerHTML='<div class="empty"><span class="empty-icon">📋</span>Нет плейлистов</div>';}
-  else {
-    el.innerHTML=list.map(pl=>{
-      const cnt=songs.filter(s=>(s.playlist||'')===pl.name).length;
-      return `<div class="pl-item" data-di="${pl.id}"
-        ontouchstart="plLpStart(event,'${pl.id}')"
-        ontouchend="plLpEnd()"
-        ontouchmove="plLpEnd()"
-        onmousedown="plLpStart(event,'${pl.id}')"
-        onmouseup="plLpEnd()"
-        onmouseleave="plLpEnd()">
-        ${plCover(pl)}
-        <div class="pl-info" onclick="openPL('${pl.id}')">
-          <div class="pl-name">${x(pl.name)}</div>
-          <div class="pl-desc">${x(pl.desc||'')}${cnt?' · '+cnt+(cnt===1?' песня':cnt<5?' песни':' песен'):''}</div>
-        </div>
-        <button class="pl-copy-btn" onclick="event.stopPropagation();copyPlaylist('${x(pl.name)}')" title="Скопировать список">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-        </button>
-        <button class="pl-del-btn" onclick="delPL('${pl.id}')">🗑</button>
-        <div class="arr" onclick="openPL('${pl.id}')">›</div>
-      </div>`;
-    }).join('');
-  }
-  // loose songs (no playlist)
-  const loose=songs.filter(s=>!s.playlist||s.playlist==='');
-  const sec=document.getElementById('looseSongsSection');
-  const llist=document.getElementById('looseSongList');
-  if(loose.length){
-    sec.style.display='block';
-    llist.innerHTML=loose.map(s=>sCard(s,true)).join('');
-  } else {
-    sec.style.display='none';
-  }
-}
-function filterPL(){const q=document.getElementById('plSrch').value.toLowerCase();renderPL(q?pls.filter(p=>p.name.toLowerCase().includes(q)||(p.desc||'').toLowerCase().includes(q)):pls);}
-function openPL(id){
-  const pl=pls.find(p=>p.id===id);if(!pl)return;
-  filterPl=pl.name; prevPrevScr=prevScr; prevScr=curScr; curScr='songs';
-  document.getElementById('songsTitle').textContent=pl.name;
-  renderSongs(songs.filter(s=>(s.playlist||'')===pl.name));
-  show('songs');
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  document.getElementById('tab-songs').classList.add('active');
-}
-function delPL(id){
-  const pl=pls.find(p=>p.id===id);if(!pl)return;
-  const cnt=songs.filter(s=>(s.playlist||'')===pl.name).length;
-  if(!confirm(`Удалить плейлист «${pl.name}»?${cnt?` (${cnt} песен останутся в репертуаре)`:''}`)  )return;
-  pls=pls.filter(p=>p.id!==id); sv(PK,pls); renderPL(); toast('Плейлист удалён');
-}
-
-// ── SONGS ──
-function sCover(s){
-  if(s.cover) return `<img class="s-cover" src="${s.cover}" style="width:52px;height:52px;border-radius:8px;object-fit:cover;flex-shrink:0;"/>`;
-  const icon=s.instr==='Piano'?'🎹':s.instr==='Both'?'🎸':'🎸';
-  const pc=pls.find(p=>p.name===(s.playlist||''));
-  if(pc&&pc.img) return `<img class="s-cover" src="${pc.img}" style="width:52px;height:52px;border-radius:8px;object-fit:cover;flex-shrink:0;"/>`;
-  const bg=pc?pc.color:'#3a3a3c';
-  return `<div class="s-cover" style="background:${bg}">${icon}</div>`;
-}
-function sCard(s, showDel=false){
-  const _oid=s.id.startsWith('__fav__')?s.id.slice(7):s.id;
-  const fv=favs.has(_oid)?' ♥':'';
-  return `<div class="s-item" data-di="${s.id}" id="si-${s.id}"
-    onclick="openSong('${s.id}')"
-    ontouchstart="lpStart(event,'${s.id}')"
-    ontouchend="lpEnd()"
-    ontouchmove="lpEnd()"
-    onmousedown="lpStart(event,'${s.id}')"
-    onmouseup="lpEnd()"
-    onmouseleave="lpEnd()">
-    ${sCover(s)}
-    <div class="s-info">
-      <div class="s-name">${x(s.title)}${fv}</div>
-      <div class="s-artist">${x(s.artist)}</div>
-      
-    </div>
-    <button class="s-del-btn" onclick="event.stopPropagation();delSong('${s.id}')">🗑</button>
-    <div class="arr" style="margin-left:0;">›</div>
-  </div>`;
-}
-function renderSongs(list){
-  const el=document.getElementById('songList');
-  el.dataset.dlf=filterPl||'';
-  el.innerHTML=list.length?list.map(s=>sCard(s)).join(''):'<div class="empty"><span class="empty-icon">🎵</span>Нет песен. Нажмите Add!</div>';
-}
-function renderRep(list){list=list||(songs.filter(s=>!s.id.startsWith('__fav__')));const el=document.getElementById('repList');el.innerHTML=list.length?list.map(s=>sCard(s)).join(''):'<div class="empty"><span class="empty-icon">🎵</span>Нет песен</div>';}
-function filterRep(){const q=document.getElementById('repSrch').value.toLowerCase().trim();const base=songs.filter(s=>!s.id.startsWith('__fav__'));renderRep(q?base.filter(s=>s.title.toLowerCase().includes(q)||s.artist.toLowerCase().includes(q)):base);}
-function filterSong(){const q=document.getElementById('songSrch').value.toLowerCase().trim();const base=filterPl?songs.filter(s=>(s.playlist||'')===filterPl):songs;renderSongs(q?base.filter(s=>s.title.toLowerCase().includes(q)||s.artist.toLowerCase().includes(q)):base);}
-function delSong(id){
-  if(!confirm('Удалить эту песню?'))return;
-  // if deleting a fav copy — also remove from favs
-  const FAV_COPY_PREFIX='__fav__';
-  if(id.startsWith(FAV_COPY_PREFIX)){
-    const origId=id.slice(FAV_COPY_PREFIX.length);
-    favs.delete(origId);
-    sv(FK,favs);
-  }
-  songs=songs.filter(s=>s.id!==id);
-  sv(SK,songs);
-  renderRep();renderPL();
-  renderSongs(filterPl?songs.filter(s=>(s.playlist||'')===filterPl):songs);
-  if(curSong&&curSong.id===id)goBack();
-  toast('Песня удалена');
-}
-
-// ── LONG PRESS (assign playlist) ──
-function lpStart(e,id){
-  lpEnd();
-  const el=e.currentTarget||e.target.closest('.s-item');
-  if(el) el.classList.add('pressing');
-  lpTimer=setTimeout(()=>{
-    if(el) el.classList.remove('pressing');
-    lpEnd();
-    openAssign(id);
-  },900);
-}
-function lpEnd(){
-  clearTimeout(lpTimer);lpTimer=null;
-  document.querySelectorAll('.s-item.pressing').forEach(el=>el.classList.remove('pressing'));
-}
-
-function editSongFromAssign(){
-  document.getElementById('assignModal').classList.remove('open');
-  const s=songs.find(s=>s.id===assignSongId);
-  if(!s) return;
-  // Открываем песню и сразу редактирование
-  openSong(s.id);
-  setTimeout(()=>toggleMetaEdit(),300);
-}
-function deleteSongFromAssign(){
-  document.getElementById('assignModal').classList.remove('open');
-  if(!assignSongId) return;
-  songs=songs.filter(s=>s.id!==assignSongId);
-  sv(SK,songs); renderRep(); renderPL();
-  if(filterPl) renderSongs(songs.filter(s=>(s.playlist||'')===filterPl));
-  toast('Песня удалена');
-}
-
-function openAssign(id){
-  assignSongId=id;
-  const el=document.getElementById('assignList');
-  el.innerHTML=pls.map(pl=>{
-    const cover=pl.img
-      ?`<img class="assign-cover" src="${pl.img}" style="width:40px;height:40px;border-radius:8px;object-fit:cover;"/>`
-      :`<div class="assign-cover" style="background:${pl.color}">${pl.emoji||'🎵'}</div>`;
-    return `<button class="assign-item" onclick="assignToPlaylist('${pl.id}')">
-      ${cover}<span>${x(pl.name)}</span>
-    </button>`;
-  }).join('');
-  document.getElementById('assignModal').classList.add('open');
-}
-function closeAssignModal(e){if(e.target===document.getElementById('assignModal'))document.getElementById('assignModal').classList.remove('open');}
-function assignToPlaylist(plId){
-  const pl=pls.find(p=>p.id===plId);if(!pl||!assignSongId)return;
-  const song=songs.find(s=>s.id===assignSongId);if(!song)return;
-  song.playlist=pl.name;
-  sv(SK,songs);
-  document.getElementById('assignModal').classList.remove('open');
-  renderPL();renderRep();renderSongs(filterPl?songs.filter(s=>(s.playlist||'')===filterPl):songs);
-  toast(`«${song.title}» → ${pl.name}`);
-}
-
-// ── DETAIL ──
-function openSong(id){
-  curSong=songs.find(s=>s.id===id);if(!curSong)return;
-  prevPrevScr=prevScr; prevScr=curScr; curScr="detail";
-  closeMetaEdit();
-  document.getElementById('chordsVal').textContent=curSong.key||'—';
-  const _origId=curSong.id.startsWith('__fav__')?curSong.id.slice(7):curSong.id;
-  const isInFav=curSong.id.startsWith('__fav__')||filterPl==='Избранное';
-  const fb=document.getElementById('favBtn');
-  fb.style.display=isInFav?'none':'block';
-  fb.dataset.favHidden=isInFav?'1':'';
-  fb.dataset.hiddenByZoom='';
-  fb.textContent=favs.has(_origId)?'♥':'♡';
-  closeChordsEdit();
-  cancelLyricsEdit();
-  showChordsBar();
-  renderLyrics(); stopScroll();
-  applyZoom(lzScale, false);
-  show('detail');
-  requestAnimationFrame(()=>{
-    document.getElementById('lscroll').scrollTop=0;
-    updateChordsOverlays();
-    // Устанавливаем marginTop сразу при открытии
-    const chordsWrap=document.getElementById('chordsBarWrap');
-    if(chordsWrap){
-      const extra=chordsWrap.scrollHeight*(lzScale-1);
-      document.getElementById('lscroll').style.marginTop=extra+'px';
-    }
-  });
-}
-
-
-function renderLyrics(){
-  const el=document.getElementById('lb');if(!curSong)return;
-  let firstDone=false;
-  function fixPunct(line){
-    return x(line)
-      .replace(/([,\.!?;:])(\s)/g,'$1&nbsp;')
-      .replace(/\s([,\.!?;:])/g,'&nbsp;$1');
-  }
-  el.innerHTML=(curSong.lyrics||'').split('\n').map(line=>{
-    if(/^\[.+\]$/.test(line.trim()))
-      return`<span class="vl">${x(line.trim().replace(/^\[|\]$/g,''))}</span>`;
-    if(!line.trim())
-      return`<span class="ll-gap"></span>`;
-    if(!firstDone){
-      firstDone=true;
-      return`<span class="ll">${fixPunct(line)}<button class="inline-pencil" onclick="toggleMetaEdit()">✎</button></span>`;
-    }
-    return`<span class="ll">${fixPunct(line)}</span>`;
-  }).join('');
-}
-function toggleLyricsEdit(){ closeMetaEdit(); }
-function cancelLyricsEdit(){
-  const w=document.getElementById("lyricsEditWrap");if(w)w.style.display="none";
-  document.getElementById("lscroll").style.display="";
-
-
-}
-function saveLyricsEdit(){
-  if(!curSong)return;
-  // preserve raw text exactly as typed — newlines kept as \n
-  const val=autoFormatLyrics(document.getElementById("lyricsTextarea").value);
-  curSong.lyrics=val;
-  const idx=songs.findIndex(s=>s.id===curSong.id);
-  if(idx>=0){songs[idx].lyrics=val;sv(SK,songs);}
-  cancelLyricsEdit();
-  renderLyrics();
-  toast("Текст сохранён");
-}
-
-async function autoFormatLyrics(){
-  const ta=document.getElementById("lyricsTextarea");
-  const raw=ta.value.trim();
-  if(!raw){toast("Сначала вставьте текст");return;}
-  const btn=document.getElementById("fmtBtn");
-  btn.disabled=true;btn.textContent="⏳ Форматирую...";
-  try{
-    const resp=await fetch("https://api.anthropic.com/v1/messages",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({
-        model:"claude-sonnet-4-20250514",
-        max_tokens:1000,
-        system:"Ты форматируешь тексты песен. Получаешь сырой текст и возвращаешь ТОЛЬКО отформатированный текст — без объяснений, без markdown, без кавычек.\n\nПравила:\n- Определи структуру: куплеты, припевы, бриджи, вступление, финал\n- Перед каждой частью добавь метку в квадратных скобках: [Куплет 1], [Куплет 2], [Припев], [Бридж], [Вступление], [Финал]\n- Сохраняй переносы строк внутри куплетов\n- Между частями — одна пустая строка\n- Не меняй сам текст, только добавляй метки и структуру",
-        messages:[{role:"user",content:"Отформатируй этот текст песни:\n\n"+raw}]
-      })
-    });
-    const data=await resp.json();
-    const formatted=data.content&&data.content[0]&&data.content[0].text;
-    if(formatted){
-      ta.value=formatted.trim();
-      toast("Готово! Проверьте и нажмите Сохранить");
-    } else {
-      toast("Ошибка форматирования");
-    }
-  }catch(e){
-    // fallback: simple local formatting
-    const lines=raw.split("\n");
-    let result=[],verseNum=0,chorusFound=false,prevEmpty=true;
-    for(let i=0;i<lines.length;i++){
-      const line=lines[i].trim();
-      if(!line){result.push("");prevEmpty=true;continue;}
-      if(prevEmpty){
-        // heuristic: repeated blocks = chorus
-        const blockLines=[];let j=i;
-        while(j<lines.length&&lines[j].trim()){blockLines.push(lines[j].trim());j++;}
-        const blockText=blockLines.join("|");
-        const prevBlocks=result.join("\n");
-        if(prevBlocks.includes(blockText)&&!chorusFound){
-          result.push("[Припев]");chorusFound=true;
-        } else if(prevBlocks.includes(blockText)){
-          result.push("[Припев]");
-        } else {
-          verseNum++;result.push("[Куплет "+verseNum+"]");
-        }
-      }
-      result.push(line);prevEmpty=false;
-    }
-    ta.value=result.join("\n").replace(/\n{3,}/g,"\n\n").trim();
-    toast("Отформатировано (без AI)");
-  }
-  btn.disabled=false;btn.textContent="✨ Авто-формат";
-}
-function isChord(l){if(!l||l.length>80)return false;const w=l.trim().split(/\s+/);if(!w.length)return false;const cp=/^[A-G][#b]?(m|maj|min|dim|aug|sus|add)?[0-9]*(\/[A-G][#b]?)?$/;return w.filter(v=>cp.test(v)).length>=w.length*0.6;}
-function toggleFav(){
-  if(!curSong)return;
-  const FAV_PL='Избранное';
-  const FAV_COPY_PREFIX='__fav__';
-  // get original id (in case we're viewing a fav copy)
-  const origId=curSong.id.startsWith(FAV_COPY_PREFIX)?curSong.id.slice(FAV_COPY_PREFIX.length):curSong.id;
-  const favCopyId=FAV_COPY_PREFIX+origId;
-
-  if(favs.has(origId)){
-    // un-favourite
-    favs.delete(origId);
-    document.getElementById('favBtn').textContent='♡';
-    songs=songs.filter(s=>s.id!==favCopyId);
-    sv(SK,songs);
-    toast('Убрано из избранного');
-  } else {
-    // favourite
-    favs.add(origId);
-    document.getElementById('favBtn').textContent='♥';
-    if(!pls.find(p=>p.name===FAV_PL)){
-      pls.unshift({id:'pfav',name:FAV_PL,desc:'Любимые песни',emoji:'❤️',color:'#e8375a',img:''});
-      sv(PK,pls);
-    }
-    songs=songs.filter(s=>s.id!==favCopyId);
-    const orig=songs.find(s=>s.id===origId);
-    if(orig){
-      const copy={...orig,id:favCopyId,playlist:FAV_PL};
-      songs.unshift(copy);
-    }
-    sv(SK,songs);
-    toast('Добавлено в избранное ♥');
-  }
-  sv(FK,favs);
-  renderPL(); renderRep();
-  renderSongs(filterPl?songs.filter(s=>(s.playlist||'')===filterPl):songs);
-}
-
-// ── CHORDS EDIT ──
-function openChordsEdit(){ closeMetaEdit();
-  const wrap=document.getElementById('chordsEditWrap');
-  const inp=document.getElementById('chordsInput');
-  inp.value=curSong?curSong.key||'':'';
-  wrap.classList.add('open');
-  setTimeout(()=>inp.focus(),100);
-}
-function closeChordsEdit(){document.getElementById('chordsEditWrap').classList.remove('open');}
-function saveChords(){
-  if(!curSong)return;
-  const val=document.getElementById('chordsInput').value.trim();
-  curSong.key=val;
-  const idx=songs.findIndex(s=>s.id===curSong.id);
-  if(idx>=0){songs[idx].key=val;sv(SK,songs);}
-  document.getElementById('chordsVal').textContent=val||'—';
-  closeChordsEdit();
-  cancelLyricsEdit();
-  toast('Аккорды сохранены');
-}
-
-// ── SCROLL ──
-function toggleScroll(){isScroll?stopScroll():startScroll();}
-function startScroll(){
-  isScroll=true;
-  const btn=document.getElementById('scbtn');document.getElementById('scPlayIcon').innerHTML='<rect x="3" y="3" width="18" height="18" rx="2"/>';document.getElementById('scbtn').classList.add('playing');document.getElementById('scPlayLbl').textContent='Стоп';btn.classList.add('playing');
-  const area=document.getElementById('lscroll');
-  const spd=curSpd;
-  clearInterval(scTimer);
-  let acc=0;
-  scTimer=setInterval(()=>{
-    // После 6 скорость растёт быстрее
-    const boost=spd>6?spd*0.10:spd*0.08;
-    acc+=boost;
-    if(acc>=1){
-      area.scrollTop+=Math.floor(acc);
-      acc-=Math.floor(acc);
-    }
-    if(area.scrollTop>=area.scrollHeight-area.clientHeight-1)stopScroll();
-  },30);
-}
-function stopScroll(){isScroll=false;clearInterval(scTimer);const btn=document.getElementById('scbtn');if(btn){document.getElementById('scPlayIcon').innerHTML='<polygon points="5,3 19,12 5,21"/>';document.getElementById('scbtn').classList.remove('playing');document.getElementById('scPlayLbl').textContent='Суфлёр';btn.classList.remove('playing');}}
-let curSpd=3;
-function updSpd(){document.getElementById('scn').textContent=curSpd;if(isScroll){stopScroll();startScroll();}}
-function changeSpd(delta){
-  curSpd=Math.max(1,Math.min(10,curSpd+delta));
-  document.getElementById('scn').textContent=curSpd;
-  if(isScroll){stopScroll();startScroll();}
-}
-
-// ── IMAGE UPLOAD ──
-function handleImg(e){
-  const file=e.target.files[0];if(!file)return;
-  const reader=new FileReader();
-  reader.onload=ev=>{pendingImg=ev.target.result;const p=document.getElementById('imgPreview');p.src=pendingImg;p.classList.add('show');};
-  reader.readAsDataURL(file);
-}
-
-// ── MODAL ──
-function openModal(mode, forcedPl){
-  mMode=mode; pendingImg=''; forcedPlaylist=forcedPl||'';
-  document.getElementById('songForm').style.display=mode==='song'?'block':'none';
-  document.getElementById('plForm').style.display=mode==='pl'?'block':'none';
-  document.getElementById('mtitle').textContent=mode==='song'?'Добавить песню':'Новый плейлист';
-  if(mode==='song'){
-    ['fTitle','fArtist','fKey','fLyrics'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';}); window._pendingSongCover='';window._pendingSongCoverLocal='';const _cpw=document.getElementById('coverPreviewWrap');if(_cpw)_cpw.style.display='none';
-    
-    // If opened from inside a playlist, hide playlist field and prefill it
-    const plWrap=document.getElementById('fPlaylistWrap');
-    if(forcedPlaylist){
-      plWrap.style.display='none';
-    } else {
-      plWrap.style.display='block';
-      // Заполняем select плейлистами
-      const sel=document.getElementById('fPlaylist');
-      sel.innerHTML='<option value="">— Без плейлиста —</option>'+
-        pls.map(p=>`<option value="${x(p.name)}">${x(p.name)}</option>`).join('');
-      sel.value='';
-    }
-  } else {
-    document.getElementById('fPlName').value='';
-    document.getElementById('fPlDesc').value='';
-    document.getElementById('imgFile').value='';
-    const p=document.getElementById('imgPreview');p.src='';p.classList.remove('show');
-  }
-  document.getElementById('modal').classList.add('open');
-  setTimeout(()=>{
-    const firstInput=mMode==='pl'
-      ?document.getElementById('fPlName')
-      :document.getElementById('fTitle');
-    if(firstInput) firstInput.focus();
-  }, 150);
-}
-function closeModal(){
-  document.getElementById('modal').classList.remove('open');
-  const mv=document.querySelector('meta[name="viewport"]');
-  if(mv) mv.setAttribute('content','width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content');
-}
-function closeMBg(e){if(e.target===document.getElementById('modal'))closeModal();}
-function saveItem(){
-  if(mMode==='song'){
-    const title=document.getElementById('fTitle').value.trim();
-    if(!title){toast('Введите название!');return;}
-    const pl=forcedPlaylist||document.getElementById('fPlaylist').value.trim()||'';
-    const s={id:'s'+Date.now(),title,
-      artist:document.getElementById('fArtist').value.trim()||'Неизвестен',
-      key:document.getElementById('fKey').value.trim(),
-      instr:'Guitar',
-      playlist:pl,
-      lyrics:autoFormatLyrics(document.getElementById('fLyrics').value),
-      cover:''}  // обложка берётся автоматически из плейлиста;
-    songs.unshift(s);sv(SK,songs);
-    if(pl&&!pls.find(p=>p.name===pl)){pls.push({id:'p'+Date.now(),name:pl,desc:'',emoji:'🎵',color:'#636366',img:''});sv(PK,pls);}
-    closeModal();renderRep();renderPL();
-    renderSongs(filterPl?songs.filter(s2=>(s2.playlist||'')===filterPl):songs);
-    toast('Добавлено: '+title);
-  } else {
-    const name=document.getElementById('fPlName').value.trim();
-    if(!name){toast('Введите название!');return;}
-    pls.push({id:'p'+Date.now(),name,desc:document.getElementById('fPlDesc').value.trim(),emoji:'🎵',color:'#636366',img:pendingImg});
-    sv(PK,pls);closeModal();renderPL();toast('Плейлист создан: '+name);
-  }
-}
-
-// ── INTERNET ──
-let inetFoundSong=null;
-
-
-
-
-// ── AUTO FORMAT LYRICS ──
-function autoFormatLyrics(raw){
-  if(!raw||!raw.trim()) return raw;
-  const normalized=raw.replace(/\r\n/g,'\n').replace(/\r/g,'\n');
-
-  // Если уже есть правильная разметка [Куплет] — не трогаем
-  if(/\[.+\]/.test(normalized)) return normalized;
-
-  // Распознаём текстовые метки без скобок (Куплет 1, Припев, Chorus и т.д.)
-  const labelRe=/^(куплет\s*\d*|verse\s*\d*|припев|chorus|бридж|bridge|intro|outro|pre-?chorus|интро|аутро)\s*$/i;
-  const lines=normalized.split('\n');
-  const converted=lines.map(line=>{
-    const t=line.trim();
-    if(labelRe.test(t)) return `[${t}]`;
-    return line;
-  }).join('\n');
-
-  // Если после конвертации появились метки — возвращаем
-  if(/\[.+\]/.test(converted)) return converted.replace(/\n{3,}/g,'\n\n').trim();
-
-  // Иначе автоматически разбиваем по пустым строкам
-  const linesArr=converted.split('\n');
-  const blocks=[];
-  let current=[];
-  for(const line of linesArr){
-    if(line.trim()===''){
-      if(current.length>0){blocks.push(current);current=[];}
-    } else {
-      current.push(line);
-    }
-  }
-  if(current.length>0) blocks.push(current);
-  if(blocks.length===0) return raw;
-
-  const blockTexts=blocks.map(b=>b.join('\n').toLowerCase().trim());
-  const freq={};
-  blockTexts.forEach(t=>{freq[t]=(freq[t]||0)+1;});
-  
-  let verseNum=0, chorusLabel='', bridgeLabel='';
-  const result=[];
-
-  for(let i=0;i<blocks.length;i++){
-    const btext=blockTexts[i];
-    const isRepeat=freq[btext]>1;
-    if(isRepeat){
-      if(!chorusLabel) chorusLabel=btext;
-      if(btext===chorusLabel){result.push('[Припев]');}
-      else{if(!bridgeLabel) bridgeLabel=btext; result.push('[Бридж]');}
-    } else {
-      verseNum++;
-      result.push(`[Куплет ${verseNum}]`);
-    }
-    result.push(...blocks[i]);
-    result.push('');
-  }
-
-  return result.join('\n').replace(/\n{3,}/g,'\n\n').trim();
-}
-
-// ── INET SEARCH HISTORY ──
-const HIST_KEY='sb_inet_history';
-function getHistory(){try{return JSON.parse(localStorage.getItem(HIST_KEY)||'[]');}catch{return[];}}
-function saveHistory(h){try{localStorage.setItem(HIST_KEY,JSON.stringify(h));}catch{}}
-
-function showSearchHistory(){
-  const el=document.getElementById('inetHistory');
-  const q=document.getElementById('inetQ').value.trim();
-  if(q){el.innerHTML='';return;}
-  const h=getHistory();
-  if(!h.length){el.innerHTML='';return;}
-  el.innerHTML=`<div class="ihistory">
-    <div class="ihistory-title" style="display:flex;justify-content:space-between;align-items:center;">
-      <span>История поиска</span>
-      ${h.length>3?`<button onclick="clearAllHistory()" style="background:none;border:none;color:var(--text3);font-size:13px;cursor:pointer;padding:0;">🗑 Очистить всё</button>`:''}
-    </div>
-    ${h.map(item=>`
-      <div class="ihistory-item" onclick="selectHistory('${x(item).replace(/'/g,"\\'")}')">
-        <span class="ihistory-icon"></span>
-        <span class="ihistory-text">${x(item)}</span>
-        <button class="ihistory-del" onclick="event.stopPropagation();deleteFromHistory('${x(item).replace(/'/g,"\\'")}')">✕</button>
-      </div>`).join('')}
-  </div>`;
-}
-
-function selectHistory(q){
-  document.getElementById('inetQ').value=q;
-  document.getElementById('inetHistory').innerHTML='';
-  updateInetClear();
-  inetSearch();
-}
-
-function deleteFromHistory(q){
-  const h=getHistory().filter(i=>i!==q);
-  saveHistory(h);
-  showSearchHistory();
-}
-
-function clearAllHistory(){
-  saveHistory([]);
-  document.getElementById('inetHistory').innerHTML='';
-}
-
-function updateInetClear(){
-  const q=document.getElementById('inetQ').value;
-  const btn=document.getElementById('inetClearBtn');
-  if(btn) btn.style.visibility=q?'visible':'hidden';
-}
-
-function clearInetSearch(){
-  document.getElementById('inetQ').value='';
-  document.getElementById('inetRes').innerHTML='';
-  document.getElementById('inetHistory').innerHTML='';
-  inetFoundSong=null;
-  updateInetClear();
-  showSearchHistory();
-  document.getElementById('inetQ').focus();
-}
-
-async function inetSearch(){
-  const q=document.getElementById('inetQ').value.trim();
-  if(!q)return;
-  // Сохраняем в историю
-  const h=getHistory().filter(i=>i!==q);
-  h.unshift(q);
-  saveHistory(h.slice(0,10));
-  const el=document.getElementById('inetRes');
-  el.innerHTML=`<div class="ildr">🔍 Ищем «${x(q)}»...</div>`;
-  try{
-    const r=await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(q)}`);
-    if(!r.ok) throw new Error('Сервис недоступен');
-    const results=await r.json();
-    const hit=results&&(results.find(r=>r.plainLyrics)||results[0]);
-    if(!hit||!hit.plainLyrics){
-      el.innerHTML=`<div class="ildr">😔 Текст не найден.<br><span style="font-size:13px">Попробуйте уточнить запрос</span></div>`;
-      return;
-    }
-    inetFoundSong={
-      title:hit.trackName||q,
-      artist:hit.artistName||'',
-      key:'',
-      cover:'',
-      lyrics:autoFormatLyrics(hit.plainLyrics.replace(/\r\n/g,'\n').replace(/\r/g,'\n').replace(/\n{3,}/g,'\n\n').trim())
-    };
-    // Подгружаем обложку через iTunes
-    try{
-      const iq=encodeURIComponent(`${hit.artistName||''} ${hit.trackName||q}`);
-      const ir=await fetch(`https://itunes.apple.com/search?term=${iq}&limit=1&entity=song`);
-      const id=await ir.json();
-      if(id.results&&id.results[0]&&id.results[0].artworkUrl100){
-        inetFoundSong.cover=id.results[0].artworkUrl100.replace('100x100','600x600');
-      }
-    }catch(e){}
-    renderFoundSong(el);
-  }catch(e){
-    el.innerHTML=`<div class="ildr">⚠️ ${x(e.message||'Ошибка поиска')}</div>`;
-  }
-}
-
-
-function renderFoundSong(el){
-  const s=inetFoundSong;
-  const plBtns=pls.map(pl=>{
-    const cover=pl.img
-      ?`<img src="${pl.img}" style="width:28px;height:28px;border-radius:6px;object-fit:cover;"/>`
-      :`<span style="font-size:18px;">${pl.emoji||'🎵'}</span>`;
-    return `<button class="ifound-pl-btn" onclick="inetAddSong('${pl.name.replace(/'/g,"\\'")}')">
-      ${cover}<span>${x(pl.name)}</span>
-    </button>`;
-  }).join('');
-
-  el.innerHTML=`
-  <div class="ifound">
-    <div class="ifound-header" style="display:flex;align-items:center;gap:12px;padding:12px 16px;">
-      ${s.cover?`<img src="${s.cover}" style="width:56px;height:56px;border-radius:8px;object-fit:cover;flex-shrink:0;"/>`:'' }
-      <div>
-        <div class="ifound-title">${x(s.title)}</div>
-        <div class="ifound-artist">${x(s.artist)}</div>
-      </div>
-    </div>
-    <div class="ifound-lyrics" onclick="inetPreviewSong()" style="cursor:pointer;">${x(s.lyrics).replace(/\n/g,'<br>')}</div>
-    <div class="ifound-actions">
-
-      <button class="ifound-nopl" onclick="inetCreateAndAdd()" style="color:var(--accent);text-decoration:none;font-weight:600;padding:8px 0;display:flex;align-items:center;gap:6px;">＋ Создать плейлист</button>
-      <div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);margin-bottom:4px;">Добавить в плейлист</div>
-      <div class="ifound-pl-list">
-        ${plBtns}
-      </div>
-      <button class="ifound-nopl" onclick="inetAddSong(null)">Добавить без плейлиста</button>
-    </div>
-  </div>`;
-}
-
-let batchImportActive=false;
-let batchAddedIds=[];
-
-function openBatchImport(){
-  const sel=document.getElementById('batchPlaylist');
-  sel.innerHTML='<option value="">— Без плейлиста —</option>'+
-    pls.map(p=>`<option value="${x(p.name)}">${x(p.name)}</option>`).join('');
-  document.getElementById('batchInput').value='';
-  document.getElementById('batchProgress').style.display='none';
-  document.getElementById('batchResult').style.display='none';
-  document.getElementById('batchStartBtn').disabled=false;
-  document.getElementById('batchStartBtn').textContent='Найти и добавить';
-  document.getElementById('batchCancelBtn').textContent='Отмена';
-  batchAddedIds=[];
-  batchImportActive=false;
-  document.getElementById('batchModal').style.display='flex';
-}
-
-function closeBatchImport(){
-  batchImportActive=false;
-  document.getElementById('batchModal').style.display='none';
-}
-
-function cancelBatchImport(){
-  if(batchImportActive){
-    // Откатываем добавленные песни
-    batchImportActive=false;
-    songs=songs.filter(s=>!batchAddedIds.includes(s.id));
-    sv(SK,songs); renderRep(); renderPL();
-    batchAddedIds=[];
-    toast('Загрузка отменена, песни удалены');
-  }
-  document.getElementById('batchModal').style.display='none';
-}
-
-async function startBatchImport(){
-  const raw=document.getElementById('batchInput').value.trim();
-  if(!raw) return;
-  const lines=raw.split('\n').map(l=>l.trim()).filter(Boolean);
-  if(!lines.length) return;
-  const plName=document.getElementById('batchPlaylist').value;
-  const btn=document.getElementById('batchStartBtn');
-  const cancelBtn=document.getElementById('batchCancelBtn');
-  btn.disabled=true;
-  btn.style.display='none';
-  batchImportActive=true;
-  batchAddedIds=[];
-  document.getElementById('batchProgress').style.display='block';
-  document.getElementById('batchResult').style.display='none';
-  let added=0, notFound=[];
-  for(let i=0;i<lines.length;i++){
-    if(!batchImportActive) break;
-    const line=lines[i];
-    document.getElementById('batchProgressText').textContent=`Ищу ${i+1}/${lines.length}: ${line}`;
-    document.getElementById('batchProgressBar').style.width=((i+1)/lines.length*100)+'%';
-    let artist='', title=line;
-    const dash=line.indexOf(' - ');
-    if(dash>0){artist=line.slice(0,dash).trim();title=line.slice(dash+3).trim();}
-    try{
-      const q=encodeURIComponent(artist?`${artist} ${title}`:title);
-      const r=await fetch(`https://lrclib.net/api/search?q=${q}`);
-      const data=await r.json();
-      if(data&&data.length>0){
-        const s=data[0];
-        const newId='s'+Date.now()+'_'+Math.random().toString(36).slice(2);
-        songs.push({
-          id:newId,title:s.trackName||title,artist:s.artistName||artist,
-          key:'',lyrics:autoFormatLyrics((s.plainLyrics||s.syncedLyrics||'').replace(/<[^>]*>/g,'')),
-          playlist:plName||'',cover:'',instr:'Guitar'
-        });
-        batchAddedIds.push(newId);
-        added++;
-      } else { notFound.push(line); }
-    } catch(e){ notFound.push(line); }
-    await new Promise(r=>setTimeout(r,300));
-  }
-  if(!batchImportActive) return;
-  sv(SK,songs); renderRep(); renderPL();
-  // Если открыт плейлист куда добавляли — обновляем список
-  if(plName&&filterPl===plName){
-    renderSongs(songs.filter(s=>(s.playlist||'')===plName));
-  }
-  document.getElementById('batchProgressText').textContent='Готово!';
-  document.getElementById('batchProgressBar').style.width='100%';
-  const res=document.getElementById('batchResult');
-  res.style.display='block';
-  res.innerHTML=`✅ Добавлено: <b>${added}</b> из <b>${lines.length}</b>`+
-    (notFound.length?`<br>❌ Не найдено: ${notFound.map(l=>x(l)).join(', ')}`:'');
-  btn.style.display='';
-  btn.disabled=false;
-  btn.textContent='Закрыть';
-  btn.onclick=closeBatchImport;
-  cancelBtn.style.display='none';
-  batchImportActive=false;
-  if(added) toast(`Добавлено ${added} песен`+(plName?` в "${plName}"`:''));
-  // Сбрасываем iOS zoom
-  const mv=document.querySelector('meta[name="viewport"]');
-  if(mv) mv.setAttribute('content','width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content');
-}
-
-function inetPreviewSong(){
-  if(!inetFoundSong) return;
-  const temp={id:'__preview__',title:inetFoundSong.title,artist:inetFoundSong.artist,key:inetFoundSong.key||'',lyrics:inetFoundSong.lyrics,cover:'',instr:'Guitar'};
-  const existing=songs.findIndex(s=>s.id==='__preview__');
-  if(existing>=0) songs.splice(existing,1);
-  songs.unshift(temp);
-  prevPrevScr=prevScr; prevScr=curScr; curScr='detail';
-  curSong=temp;
-  closeMetaEdit();
-  document.getElementById('chordsVal').textContent=temp.key||'—';
-  document.getElementById('favBtn').style.display='none';
-  showChordsBar();
-  renderLyrics(); stopScroll();
-  applyZoom(lzScale,false);
-  show('detail');
-  requestAnimationFrame(()=>{
-    document.getElementById('lscroll').scrollTop=0;
-    updateChordsOverlays();
-    const cw=document.getElementById('chordsBarWrap');
-    if(cw){const h=cw.querySelector('.chords-bar')?.offsetHeight||44;document.getElementById('lscroll').style.marginTop=(chordsBarHidden?0:h*(lzScale-1))+'px';}
-  });
-}
-
-function inetCreateAndAdd(){
-  window._inetPendingAdd=true;
-  openModal('pl');
-}
-function inetAddSong(plName){
-  if(!inetFoundSong)return;
-  // Обложка не сохраняется — берётся автоматически из плейлиста
-  const cover='';
-  
-  const s={
-    id:'s'+Date.now(),
-    title:inetFoundSong.title,
-    artist:inetFoundSong.artist,
-    key:inetFoundSong.key,
-    instr:'Guitar',
-    playlist:plName||'',
-    lyrics:inetFoundSong.lyrics,
-    cover:cover
-  };
-  songs.unshift(s);
-  sv(SK,songs);
-  if(plName&&!pls.find(p=>p.name===plName)){
-    pls.push({id:'p'+Date.now(),name:plName,desc:'',emoji:'🎵',color:'#636366',img:''});
-    sv(PK,pls);
-  }
-  renderRep();renderPL();
-  renderSongs(filterPl?songs.filter(s2=>(s2.playlist||'')===filterPl):songs);
-  inetFoundSong=null;
-  const successEl=document.getElementById('inetRes');
-  successEl.innerHTML=`<div class="ildr" style="color:var(--accent2);transition:opacity .5s;">✓ «${x(s.title)}» добавлена!</div>`;
-  setTimeout(()=>{
-    const d=successEl.querySelector('div');
-    if(d){d.style.opacity='0';setTimeout(()=>{successEl.innerHTML='';},500);}
-  },1000);
-  document.getElementById('inetQ').value='';
-  toast('Добавлено: '+s.title);
-}
-
-function quickImp(t){document.getElementById('fTitle').value=t;openModal('song','');}
-
-// ── UTILS ──
-function x(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-let tT;function toast(m){const e=document.getElementById('toast');e.textContent=m;e.classList.add('show');clearTimeout(tT);tT=setTimeout(()=>e.classList.remove('show'),2400);}
-
-
-// ── PLAYLIST LONG PRESS ──
-let plLpTimer=null, plLpId=null;
-function plLpStart(e,id){
-  plLpEnd();
-  plLpTimer=setTimeout(()=>{plLpEnd();openEditPL(id);},1000);
-}
-function plLpEnd(){clearTimeout(plLpTimer);plLpTimer=null;}
-function openEditPL(id){
-  const pl=pls.find(p=>p.id===id);if(!pl)return;
-  mMode='pl-edit'; plLpId=id; pendingImg=pl.img||'';
-  document.getElementById('songForm').style.display='none';
-  document.getElementById('plForm').style.display='block';
-  document.getElementById('mtitle').textContent='Редактировать плейлист';
-  document.getElementById('fPlName').value=pl.name;
-  document.getElementById('fPlDesc').value=pl.desc||'';
-  document.getElementById('imgFile').value='';
-  const p=document.getElementById('imgPreview');
-  if(pl.img){p.src=pl.img;p.classList.add('show');}
-  else{p.src='';p.classList.remove('show');}
-  document.getElementById('modal').classList.add('open');
-}
-
-// Override saveItem to handle pl-edit
-const _origSaveItem=saveItem;
-saveItem=function(){
-  if(mMode==='pl-edit'){
-    const name=document.getElementById('fPlName').value.trim();
-    if(!name){toast('Введите название!');return;}
-    const pl=pls.find(p=>p.id===plLpId);if(!pl)return;
-    const oldName=pl.name;
-    pl.name=name;
-    pl.desc=document.getElementById('fPlDesc').value.trim();
-    if(pendingImg) pl.img=pendingImg;
-    // update all songs that belonged to old playlist
-    songs.forEach(s=>{if((s.playlist||'')===oldName)s.playlist=name;});
-    sv(SK,songs); sv(PK,pls);
-    closeModal();renderPL();renderRep();
-    if(filterPl===oldName){filterPl=name;document.getElementById('songsTitle').textContent=name;}
-    renderSongs(filterPl?songs.filter(s=>(s.playlist||'')===filterPl):songs);
-    toast('Плейлист обновлён');
-  } else {
-    _origSaveItem();
-  }
+let days = {};       // key: 'YYYY-MM-DD' → {color, label, timeStart, timeEnd, earned, expenses:[{amount,comment}]}
+let settings = {
+  currency: '₽',
+  theme: 'default',
+  themeClass: '',
+  accent: '#D0391B',
+  overlay: 45,
+  bgImg: ''
 };
 
-// ── COVER ART (iTunes Search API) ──
-let coverFetchTimer=null;
-function fetchCoverArt(){
-  const title=document.getElementById('fTitle').value.trim();
-  const artist=document.getElementById('fArtist').value.trim();
-  if(!title&&!artist) return;
-  clearTimeout(coverFetchTimer);
-  coverFetchTimer=setTimeout(async()=>{
-    const q=encodeURIComponent((artist+' '+title).trim());
-    try{
-      const r=await fetch('https://itunes.apple.com/search?term='+q+'&media=music&limit=1');
-      const d=await r.json();
-      if(d.results&&d.results.length){
-        const item=d.results[0];
-        const img=item.artworkUrl100.replace('100x100','300x300');
-        // store for saving (cover auto from playlist)
-        window._pendingSongCover='';
-        window._pendingSongCoverLocal='';
-        // preload as base64 for offline storage
-        fetch(img).then(r=>r.blob()).then(b=>{
-          const reader=new FileReader();
-          reader.onload=ev=>window._pendingSongCoverLocal=ev.target.result;
-          reader.readAsDataURL(b);
-        }).catch(()=>{});
-      }
-    }catch(e){}
-  },800);
+let viewYear, viewMonth;
+let editingDate = null;
+let selectedDayColor = '#324E44';
+let longPressTimer = null;
+
+const MONTHS_RU = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+const MONTHS_RU_GEN = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+const MONTHS_RU_UP = ['ЯНВАРЬ','ФЕВРАЛЬ','МАРТ','АПРЕЛЬ','МАЙ','ИЮНЬ','ИЮЛЬ','АВГУСТ','СЕНТЯБРЬ','ОКТЯБРЬ','НОЯБРЬ','ДЕКАБРЬ'];
+const DAYS_RU = ['Воскресенье','Понедельник','Вторник','Среда','Четверг','Пятница','Суббота'];
+
+function load(){
+  try{ days=JSON.parse(localStorage.getItem(SK)||'{}'); }catch{ days={}; }
+  try{ Object.assign(settings, JSON.parse(localStorage.getItem(SK2)||'{}')); }catch{}
+}
+function save(){ localStorage.setItem(SK,JSON.stringify(days)); }
+function saveSettings(){ localStorage.setItem(SK2,JSON.stringify(settings)); }
+
+function key(y,m,d){ return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; }
+
+// ── INIT ──
+load();
+applySettings();
+
+const now = new Date();
+viewYear = now.getFullYear();
+viewMonth = now.getMonth();
+
+updateBigDate();
+renderCal();
+renderEntries();
+
+// ── BIG DATE ──
+function updateBigDate(){
+  const t = new Date();
+  document.getElementById('bigDay').textContent = t.getDate();
+  document.getElementById('bigMonth').textContent = MONTHS_RU_UP[t.getMonth()];
+  document.getElementById('bigYear').textContent = t.getFullYear();
+  document.getElementById('bigDow').textContent = DAYS_RU[t.getDay()];
 }
 
-
-// ── COPY REPERTOIRE ──
-function copyRepertoire(){
-  const list=songs.filter(s=>!s.id.startsWith('__fav__'));
-  if(!list.length){toast('Нет песен');return;}
-  const text='Весь репертуар\n'+list.map((s,i)=>`${i+1}. ${s.title}`).join('\n');
-  doCopy(text);
-}
-function copyPlaylist(plName){
-  const FAV='Избранное';
-  const list=songs.filter(s=>(s.playlist||'')===plName&&(plName===FAV||!s.id.startsWith('__fav__')));
-  if(!list.length){toast('Нет песен');return;}
-  const text=plName+'\n'+list.map((s,i)=>`${i+1}. ${s.title}`).join('\n');
-  doCopy(text);
-}
-function doCopy(text){
-  if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(text).then(()=>toast('Скопировано ✓')).catch(()=>fallbackCopy(text));
-  } else { fallbackCopy(text); }
-}
-function fallbackCopy(text){
-  const ta=document.createElement('textarea');
-  ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
-  document.body.appendChild(ta);ta.select();
-  document.execCommand('copy');document.body.removeChild(ta);
-  toast('Список скопирован! ✓');
+// ── CALENDAR ──
+function changeMonth(d){
+  viewMonth += d;
+  if(viewMonth < 0){ viewMonth=11; viewYear--; }
+  if(viewMonth > 11){ viewMonth=0; viewYear++; }
+  renderCal();
+  renderEntries();
 }
 
+function renderCal(){
+  const grid = document.getElementById('calGrid');
+  const label = document.getElementById('calMonthLabel');
+  label.textContent = MONTHS_RU[viewMonth] + ' ' + viewYear;
 
-let mepPendingCover=null; // null=не менять, ''=убрать, 'data...'=новая
+  const today = new Date();
+  const todayKey = key(today.getFullYear(), today.getMonth(), today.getDate());
 
-function mepUpdateCoverPreview(src){
-  const img=document.getElementById('mepCoverPreview');
-  if(src){img.src=src;img.style.display='block';}
-  else{img.src='';img.style.display='none';}
-}
-function mepUsePlCover(){
-  // Берём обложку плейлиста
-  const pl=pls.find(p=>p.name===(curSong&&curSong.playlist||filterPl||''));
-  const cover=pl&&pl.img?pl.img:'';
-  mepPendingCover=cover||'';
-  mepUpdateCoverPreview(cover);
-}
-function mepLoadCover(e){
-  const file=e.target.files[0];if(!file)return;
-  const reader=new FileReader();
-  reader.onload=ev=>{mepPendingCover=ev.target.result;mepUpdateCoverPreview(ev.target.result);};
-  reader.readAsDataURL(file);
-}
-function mepClearCover(){mepPendingCover='';mepUpdateCoverPreview('');}
+  const firstDay = new Date(viewYear, viewMonth, 1);
+  let startDow = firstDay.getDay(); // 0=sun
+  startDow = startDow === 0 ? 6 : startDow - 1; // Mon=0
 
-async function mepRestoreOrigCover(){
-  if(!curSong) return;
-  toast('Ищем обложку...');
-  try{
-    const q=encodeURIComponent(`${curSong.artist||''} ${curSong.title||''}`);
-    const r=await fetch(`https://itunes.apple.com/search?term=${q}&limit=1&entity=song`);
-    const d=await r.json();
-    if(d.results&&d.results[0]&&d.results[0].artworkUrl100){
-      const cover=d.results[0].artworkUrl100.replace('100x100','600x600');
-      mepPendingCover=cover;
-      mepUpdateCoverPreview(cover);
-      toast('Обложка найдена!');
-    } else {
-      toast('Обложка не найдена');
+  const daysInMonth = new Date(viewYear, viewMonth+1, 0).getDate();
+  let html = '';
+
+  for(let i=0;i<startDow;i++) html += '<div class="day-dot empty"></div>';
+
+  for(let d=1;d<=daysInMonth;d++){
+    const dk = key(viewYear, viewMonth, d);
+    const dayData = days[dk];
+    const dayDate = new Date(viewYear, viewMonth, d);
+    const isPast = dayDate < new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const isToday = dk === todayKey;
+    const isFuture = dayDate > today;
+
+    let cls = 'day-dot';
+    let style = '';
+    if(isToday) cls += ' today';
+    else if(isFuture) cls += ' future';
+    else cls += ' past';
+
+    if(dayData && dayData.color){
+      style = `background:${dayData.color};`;
+      cls = cls.replace(' past',' work').replace(' today','').replace(' future','');
+      if(isToday) cls += ' today'; // keep today marker
     }
-  }catch(e){toast('Ошибка поиска обложки');}
-}
+    if(dayData) cls += ' has-data';
 
-function toggleMetaEdit(){
-  const panel=document.getElementById('metaEditPanel');
-  const isOpen=panel.classList.contains('open');
-  if(isOpen){closeMetaEdit();return;}
-  panel.classList.add('open');
-  if(!chordsBarHidden) hideChordsBar();
-  document.getElementById('titleInput').value=curSong?curSong.title:'';
-  document.getElementById('artistInput').value=curSong?curSong.artist:'';
-  document.getElementById('lyricsTextarea').value=curSong?curSong.lyrics||'':'';
-  mepPendingCover=null;
-  mepUpdateCoverPreview(curSong&&curSong.cover?curSong.cover:'');
-  setTimeout(()=>document.getElementById('titleInput').focus(),80);
-}
-function closeMetaEdit(){
-  document.getElementById('metaEditPanel').classList.remove('open');
-  if(chordsBarHidden) showChordsBar();
-}
-function saveMetaEdit(){
-  if(!curSong)return;
-  const title=document.getElementById('titleInput').value.trim();
-  const artist=document.getElementById('artistInput').value.trim();
-  const lyrics=document.getElementById('lyricsTextarea').value;
-  if(!title){toast('Введите название');return;}
-  curSong.title=title; curSong.artist=artist; curSong.lyrics=autoFormatLyrics(lyrics);
-  if(mepPendingCover!==null) curSong.cover=mepPendingCover;
-  const idx=songs.findIndex(s=>s.id===curSong.id);
-  if(idx>=0){
-    songs[idx].title=title;songs[idx].artist=artist;songs[idx].lyrics=autoFormatLyrics(lyrics);
-    if(mepPendingCover!==null) songs[idx].cover=mepPendingCover;
-    sv(SK,songs);
+    html += `<div class="${cls}" style="${style}" 
+      data-date="${dk}" data-day="${d}"
+      ontouchstart="dayTouchStart(event,'${dk}')"
+      ontouchend="dayTouchEnd(event,'${dk}')"
+      ontouchmove="dayTouchMove()"
+      onmousedown="dayMouseDown(event,'${dk}')"
+      onmouseup="dayMouseUp(event,'${dk}')"
+      ondblclick="clearDay('${dk}')">
+      <div class="work-ind"></div>
+    </div>`;
   }
-  closeMetaEdit();
-  renderLyrics();
-  renderRep();renderPL();
-  renderSongs(filterPl?songs.filter(s=>(s.playlist||'')===filterPl):songs);
-  toast('Сохранено');
+
+  grid.innerHTML = html;
 }
-function openTitleEdit(){}
-function closeTitleEdit(){}
-function saveTitle(){}
-function openArtistEdit(){}
-function closeArtistEdit(){}
-function saveArtist(){}
 
-if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+// ── DAY INTERACTION ──
+let touchStartTime = 0;
+let touchMoved = false;
 
-// ── CHORDS BAR HIDE/SHOW ──
-let chordsBarHidden=false;
+function dayTouchStart(e, dk){
+  touchMoved = false;
+  touchStartTime = Date.now();
+  const el = e.currentTarget;
+  el.classList.add('pressing');
+  longPressTimer = setTimeout(()=>{
+    el.classList.remove('pressing');
+    openEditModal(dk);
+  }, 600);
+}
+function dayTouchMove(){
+  touchMoved = true;
+  clearTimeout(longPressTimer);
+}
+function dayTouchEnd(e, dk){
+  clearTimeout(longPressTimer);
+  const el = e.currentTarget;
+  el.classList.remove('pressing');
+  if(touchMoved) return;
+  const dt = Date.now() - touchStartTime;
+  if(dt < 600) toggleDay(dk);
+}
+function dayMouseDown(e, dk){
+  longPressTimer = setTimeout(()=> openEditModal(dk), 600);
+}
+function dayMouseUp(e, dk){
+  clearTimeout(longPressTimer);
+}
 
-function updateChordsOverlays(){
-  const screen=document.getElementById('scr-detail');
-  const wrap=document.getElementById('chordsBarWrap');
-  const hideOv=document.getElementById('chordsHideOverlay');
-  const showOv=document.getElementById('chordsShowOverlay');
-  const pencilOv=document.getElementById('chordsPencilOverlay');
-  const favOv=document.getElementById('chordsFavOverlay');
-  if(!screen||!wrap||!hideOv||!showOv)return;
-  const sr=screen.getBoundingClientRect();
-  const wr=wrap.getBoundingClientRect();
-  if(!chordsBarHidden){
-    const top=wr.top-sr.top;
-    const h=Math.max(wr.height,44);
-    hideOv.style.top=top+'px';
-    hideOv.style.height=h+'px';
-    hideOv.style.display='block';
-    showOv.style.display='none';
-    // позиционируем оверлеи карандашика и сердечка
-    const pencil=document.querySelector('.cb-edit');
-    const fav=document.getElementById('favBtn');
-    if(pencilOv&&pencil){
-      const pr=pencil.getBoundingClientRect();
-      pencilOv.style.top=(pr.top-sr.top)+'px';
-      pencilOv.style.left=(pr.left-sr.left)+'px';
-      pencilOv.style.width=pr.width+'px';
-      pencilOv.style.height=pr.height+'px';
-      pencilOv.style.display='block';
-    }
-    if(favOv&&fav){
-      const fr=fav.getBoundingClientRect();
-      favOv.style.top=(fr.top-sr.top)+'px';
-      favOv.style.left=(fr.left-sr.left)+'px';
-      favOv.style.width=fr.width+'px';
-      favOv.style.height=fr.height+'px';
-      favOv.style.display=fav.style.display==='none'?'none':'block';
-    }
-  } else {
-    hideOv.style.display='none';
-    if(pencilOv) pencilOv.style.display='none';
-    if(favOv) favOv.style.display='none';
-    showOv.style.top='0px';
-    showOv.style.height='44px';
-    showOv.style.display='block';
+function toggleDay(dk){
+  if(days[dk]){
+    // already has data - just select/deselect visually
   }
+  // Mark as work day with default color if no data
+  if(!days[dk]){
+    days[dk] = { color: settings.accent || '#324E44', label:'', timeStart:'', timeEnd:'', earned:0, expenses:[] };
+    save();
+  }
+  renderCal();
+  renderEntries();
 }
 
-function hideChordsBar(){
-  if(chordsBarHidden)return;
-  chordsBarHidden=true;
-  const wrap=document.getElementById('chordsBarWrap');
-  const bar=document.getElementById('chordsBar');
-  wrap.style.height=bar.offsetHeight+'px';
-  requestAnimationFrame(()=>{
-    wrap.classList.add('hidden-up');
-    wrap.style.height='0';
+function clearDay(dk){
+  delete days[dk];
+  save();
+  renderCal();
+  renderEntries();
+}
+
+// ── EDIT MODAL ──
+function openEditModal(dk){
+  editingDate = dk;
+  const [y,m,d] = dk.split('-').map(Number);
+  document.getElementById('editModalTitle').textContent = `${d} ${MONTHS_RU_GEN[m-1]}`;
+  
+  const data = days[dk] || {};
+  selectedDayColor = data.color || settings.accent || '#324E44';
+  
+  // Reset color dots
+  document.querySelectorAll('#dayColorPicker .color-dot').forEach(dot=>{
+    dot.classList.toggle('selected', dot.dataset.color === selectedDayColor);
   });
-  document.getElementById('lscroll').style.marginTop='0';
-  setTimeout(updateChordsOverlays,350);
-  updateChordsOverlays();
-}
-function showChordsBar(){
-  if(!chordsBarHidden)return;
-  chordsBarHidden=false;
-  const wrap=document.getElementById('chordsBarWrap');
-  const bar=document.getElementById('chordsBar');
-  wrap.classList.remove('hidden-up');
-  const h=bar.offsetHeight||44;
-  wrap.style.height=h+'px';
-  // Восстанавливаем marginTop
-  const extra=h*(lzScale-1);
-  document.getElementById('lscroll').style.marginTop=extra+'px';
-  setTimeout(()=>{
-    if(!chordsBarHidden){
-      wrap.style.height='';
-      updateChordsOverlays();
-    }
-  },340);
-  updateChordsOverlays();
+
+  document.getElementById('dayLabel').value = data.label || '';
+  document.getElementById('dayTimeStart').value = data.timeStart || '';
+  document.getElementById('dayTimeEnd').value = data.timeEnd || '';
+  document.getElementById('dayEarned').value = data.earned || '';
+  
+  // Expenses
+  const expList = document.getElementById('expensesList');
+  expList.innerHTML = '';
+  (data.expenses||[]).forEach(exp => addExpenseField(exp.amount, exp.comment));
+
+  document.getElementById('editModal').classList.add('open');
 }
 
-function initChordsBarGestures(){
-  const hideOv=document.getElementById('chordsHideOverlay');
-  if(!hideOv)return;
-  let p0y=0, p0t=0, pdy=0, active=false;
-
-  hideOv.addEventListener('pointerdown',function(e){
-    // пропускаем клики на карандашик и сердечко (они выше по z-index)
-    hideOv.setPointerCapture(e.pointerId);
-    p0y=e.clientY; p0t=Date.now(); pdy=0; active=true;
-  });
-  hideOv.addEventListener('pointermove',function(e){
-    if(!active)return;
-    pdy=p0y-e.clientY;
-  });
-  hideOv.addEventListener('pointerup',function(e){
-    if(!active)return;
-    active=false;
-    const dt=Date.now()-p0t;
-    const isTap=(Math.abs(pdy)<15&&dt<400);
-    const isSwipeUp=(pdy>8);
-    if(isTap||isSwipeUp) hideChordsBar();
-  });
-  hideOv.addEventListener('pointercancel',function(){active=false;});
+function closeEditModal(){
+  document.getElementById('editModal').classList.remove('open');
+  editingDate = null;
 }
 
-// ── PINCH-TO-ZOOM ──
-const ZOOM_MIN=1.0, ZOOM_MAX=3.0, CHORDS_FREEZE=2.0;
-let lzScale=1.0;
-let pinchActive=false, pinchDist0=0, pinchScale0=1, pinchMidY=0;
-let zoomBadgeTimer=null;
+function addExpenseField(amount='', comment=''){
+  const div = document.createElement('div');
+  div.className = 'expense-entry';
+  div.innerHTML = `
+    <input class="field-input" type="number" placeholder="Сумма" value="${amount}" style="width:100px;flex:none;" inputmode="decimal"/>
+    <input class="field-input" placeholder="Комментарий (такси, еда...)" value="${comment}"/>
+    <button style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--text3);" onclick="this.parentElement.remove()">✕</button>
+  `;
+  document.getElementById('expensesList').appendChild(div);
+}
 
-function ptDist(t1,t2){const dx=t1.clientX-t2.clientX,dy=t1.clientY-t2.clientY;return Math.sqrt(dx*dx+dy*dy);}
+function selectDayColor(dot){
+  selectedDayColor = dot.dataset.color;
+  document.querySelectorAll('#dayColorPicker .color-dot').forEach(d=> d.classList.remove('selected'));
+  dot.classList.add('selected');
+}
+function selectDayColorHex(hex){
+  selectedDayColor = hex;
+  document.querySelectorAll('#dayColorPicker .color-dot').forEach(d=> d.classList.remove('selected'));
+}
 
-function applyZoom(scale, animate){
-  scale=Math.max(ZOOM_MIN,Math.min(ZOOM_MAX,scale));
-  lzScale=scale;
+function saveDay(){
+  if(!editingDate) return;
+  
+  const expenses = [];
+  document.querySelectorAll('#expensesList .expense-entry').forEach(row=>{
+    const inputs = row.querySelectorAll('input');
+    const amount = parseFloat(inputs[0].value)||0;
+    const comment = inputs[1].value.trim();
+    if(amount>0 || comment) expenses.push({amount, comment});
+  });
 
-  const lyricWrap=document.getElementById('lyricsScaleWrap');
-  const btn=document.getElementById('zoomResetBtn');
-  if(!lyricWrap)return;
+  days[editingDate] = {
+    color: selectedDayColor,
+    label: document.getElementById('dayLabel').value.trim(),
+    timeStart: document.getElementById('dayTimeStart').value,
+    timeEnd: document.getElementById('dayTimeEnd').value,
+    earned: parseFloat(document.getElementById('dayEarned').value)||0,
+    expenses
+  };
+  save();
+  closeEditModal();
+  renderCal();
+  renderEntries();
+}
 
-  lyricWrap.classList.toggle('snapping',!!animate);
+// ── ENTRIES ──
+function renderEntries(){
+  const sec = document.getElementById('entriesSection');
+  const totSec = document.getElementById('totalsSection');
 
-  // Масштабируем только текст — lscroll остаётся нетронутым, скролл работает
-  lyricWrap.style.transform=`scale(${scale})`;
-  lyricWrap.style.width=(100/scale)+'%';
-  lyricWrap.style.paddingBottom=(10*scale)+'px';
-  lyricWrap.style.paddingBottom=(10*scale)+'px';
-
-  // font-weight
-  const t=(scale-1)/(ZOOM_MAX-1);
-  const lw=Math.round(400+t*400);
-  const cw=Math.round(700+t*200);
-  document.querySelectorAll('#lb .ll').forEach(el=>el.style.fontWeight=lw);
-  document.querySelectorAll('#lb .cl').forEach(el=>el.style.fontWeight=cw);
-
-  // Аккорды масштабируем вместе с текстом
-  const chordsWrap=document.getElementById('chordsBarWrap');
-  if(chordsWrap){
-    chordsWrap.style.transform=`scale(${scale})`;
-    chordsWrap.style.transformOrigin='top left';
-    chordsWrap.style.width=(100/scale)+'%';
-    // Сдвигаем lscroll вниз на добавленную высоту панели
-    const naturalH=chordsWrap.querySelector('.chords-bar')?.offsetHeight||44;
-    const extra=chordsBarHidden?0:naturalH*(scale-1);
-    document.getElementById('lscroll').style.marginTop=extra+'px';
+  // Get days of current view month that have data
+  const entries = [];
+  for(let d=1; d<=31; d++){
+    const dk = key(viewYear, viewMonth, d);
+    if(!days[dk]) continue;
+    const date = new Date(viewYear, viewMonth, d);
+    if(date.getMonth() !== viewMonth) break;
+    entries.push({dk, d, data: days[dk]});
   }
 
-  // Значок zoom
-  if(Math.abs(scale-1)>0.05) btn.textContent='Zoom ×'+scale.toFixed(1);
-
-  // Сердечко
-  const fb=document.getElementById('favBtn');
-  if(fb){
-    if(scale>=1.5){fb.dataset.hiddenByZoom='1';fb.style.display='none';}
-    else if(fb.dataset.hiddenByZoom==='1'){fb.dataset.hiddenByZoom='';fb.style.display=fb.dataset.favHidden==='1'?'none':'block';}
-  }
-  // Карандашик и панели — исчезают при любом увеличении
-  const pencil=document.querySelector('.cb-edit');
-  if(pencil) pencil.style.display=scale>1.01?'none':'inline';
-
-  if(scale>1.01){
-    const chordsEdit=document.getElementById('chordsEditWrap');
-    if(chordsEdit&&chordsEdit.classList.contains('open')){saveChords();chordsEdit.classList.remove('open');}
-    const metaPanel=document.getElementById('metaEditPanel');
-    if(metaPanel&&metaPanel.classList.contains('open')){saveMetaEdit();metaPanel.classList.remove('open');showChordsBar();}
+  if(entries.length === 0){
+    sec.innerHTML = '';
+    totSec.style.display = 'none';
+    return;
   }
 
-  if(!pinchActive) updateChordsOverlays();
-}
+  const cur = settings.currency;
+  let html = `<div class="entries-title">${MONTHS_RU[viewMonth]} ${viewYear}</div>`;
 
+  let totalEarned = 0;
+  let allExpenses = [];
 
-function showZoomBadge(){
-  const btn=document.getElementById('zoomResetBtn');
-  if(!btn||Math.abs(lzScale-1)<0.05)return;
-  clearTimeout(zoomBadgeTimer);
-  btn.classList.add('visible');
-}
+  entries.forEach((e,i)=>{
+    const d = e.data;
+    totalEarned += d.earned||0;
+    (d.expenses||[]).forEach(exp => allExpenses.push({...exp, dayLabel: d.label, day: e.d}));
 
-function scheduleHideBadge(){
-  clearTimeout(zoomBadgeTimer);
-  zoomBadgeTimer=setTimeout(()=>{
-    document.getElementById('zoomResetBtn')?.classList.remove('visible');
-  },150);
-}
+    const timeStr = d.timeStart&&d.timeEnd ? `${d.timeStart}–${d.timeEnd}` : d.timeStart||d.timeEnd||'';
+    const earnedStr = d.earned ? `${cur}${d.earned.toLocaleString()}` : '';
+    const expTotal = (d.expenses||[]).reduce((s,ex)=>s+(ex.amount||0),0);
+    const expStr = expTotal ? `−${cur}${expTotal.toLocaleString()}` : '';
 
-function resetZoom(){
-  applyZoom(1.0,true);
-  document.getElementById('lscroll').scrollTop=0;
-  clearTimeout(zoomBadgeTimer);
-  document.getElementById('zoomResetBtn').classList.remove('visible');
-  try{localStorage.setItem('sb_zoom','1');}catch{}
-}
-
-function initPinchZoom(){
-  const el=document.getElementById('scr-detail');
-  if(!el)return;
-  el.addEventListener('touchstart',function(e){
-    if(e.touches.length===2){
-      pinchActive=true;
-      clearTimeout(zoomBadgeTimer);
-      pinchDist0=ptDist(e.touches[0],e.touches[1]);
-      pinchScale0=lzScale;
-      const scroll=document.getElementById('lscroll');
-      const r=scroll.getBoundingClientRect();
-      const midVP0=((e.touches[0].clientY+e.touches[1].clientY)/2)-r.top;
-      pinchMidY=(scroll.scrollTop+midVP0)/lzScale;
-      e.preventDefault();
-    }
-  },{passive:false});
-  el.addEventListener('touchmove',function(e){
-    if(pinchActive&&e.touches.length===2){
-      e.preventDefault();
-      const d=ptDist(e.touches[0],e.touches[1]);
-      const newScale=Math.max(ZOOM_MIN,Math.min(ZOOM_MAX,pinchScale0*(d/pinchDist0)));
-      applyZoom(newScale,false);
-      showZoomBadge();
-      const scroll=document.getElementById('lscroll');
-      const r=scroll.getBoundingClientRect();
-      const midVP=((e.touches[0].clientY+e.touches[1].clientY)/2)-r.top;
-      scroll.scrollTop=pinchMidY*newScale-midVP;
-    }
-  },{passive:false});
-  el.addEventListener('touchend',function(e){
-    if(pinchActive&&e.touches.length<2){
-      pinchActive=false;
-      if(lzScale<1.08){applyZoom(1.0,true);clearTimeout(zoomBadgeTimer);document.getElementById('zoomResetBtn').classList.remove('visible');try{localStorage.setItem('sb_zoom','1');}catch{}}
-      else{scheduleHideBadge();try{localStorage.setItem('sb_zoom',lzScale);}catch{};}
-      // обновить оверлей после окончания pinch
-      setTimeout(updateChordsOverlays, 50);
-    }
+    html += `<div class="entry-row" onclick="openEditModal('${e.dk}')">
+      <div class="entry-row-top">
+        <div class="entry-num">${i+1}</div>
+        <div>
+          <div class="entry-date">${e.d} ${MONTHS_RU_GEN[viewMonth]}</div>
+          ${d.label?`<div class="entry-label">${d.label}</div>`:''}
+        </div>
+        <div style="width:14px;height:14px;border-radius:50%;background:${d.color||'#324E44'};flex-shrink:0;margin-left:auto;"></div>
+      </div>
+      <div class="entry-details">
+        ${timeStr?`<span class="entry-detail">🕐 ${timeStr}</span>`:''}
+        ${earnedStr?`<span class="entry-detail" style="color:var(--accent2,#324E44);font-weight:600;">+${earnedStr}</span>`:''}
+        ${expStr?`<span class="entry-detail" style="color:var(--accent);">${expStr}</span>`:''}
+      </div>
+    </div>`;
   });
-  el.addEventListener('touchcancel',function(){pinchActive=false;scheduleHideBadge();});
-  el.addEventListener('wheel',function(e){
-    if(e.ctrlKey||e.metaKey){e.preventDefault();applyZoom(lzScale*(e.deltaY>0?0.9:1.1),false);showZoomBadge();scheduleHideBadge();}
-  },{passive:false});
-}
 
-// ── BACKGROUND SETTINGS ──
-function setBg(type, value){
-  const root=document.documentElement;
-  const app=document.getElementById('app');
-  if(type==='none'){
-    root.style.setProperty('--bg','#121212');
-    root.style.setProperty('--bg2','#1c1c1e');
-    root.style.setProperty('--bg3','#2c2c2e');
-    root.style.setProperty('--bg4','#3a3a3c');
-    app.style.backgroundImage='';
-    app.style.backgroundSize='';
-    document.body.classList.remove('has-bg-image');
-    
-    try{localStorage.removeItem('sb_bg');}catch{}
-  } else if(type==='color'){
-    app.style.backgroundImage='';
-    app.style.backgroundSize='';
-    document.body.classList.remove('has-bg-image');
-    document.body.classList.add('has-bg-color');
-    root.style.setProperty('--bg',value);
-    root.style.setProperty('--bg2',lighten(value,8));
-    root.style.setProperty('--bg3',lighten(value,16));
-    root.style.setProperty('--bg4',lighten(value,24));
-    const overlay=parseInt(document.getElementById('bgOverlay').value)||50;
-    applyOverlay(overlay);
-    try{localStorage.setItem('sb_bg',JSON.stringify({type,value,overlay}));}catch{}
-  } else if(type==='image'){
-    // Восстанавливаем дефолтные bg переменные — они не нужны при картинке
-    root.style.setProperty('--bg','#121212');
-    root.style.setProperty('--bg2','#1c1c1e');
-    root.style.setProperty('--bg3','#2c2c2e');
-    root.style.setProperty('--bg4','#3a3a3c');
-    app.style.backgroundImage=`url(${value})`;
-    app.style.backgroundSize='cover';
-    app.style.backgroundPosition='center';
-    app.style.backgroundAttachment='fixed';
-    document.body.classList.add('has-bg-image');
-    const overlay=parseInt(document.getElementById('bgOverlay').value)||70;
-    document.getElementById('bgOverlay').value=overlay;
-    document.getElementById('bgOverlayVal').textContent=Math.round((overlay-50)/40*100);
-    applyOverlay(overlay);
-    
-    try{localStorage.setItem('sb_bg',JSON.stringify({type,value,overlay}));}catch{}
+  sec.innerHTML = html;
+
+  // Totals
+  const totalExp = allExpenses.reduce((s,e)=>s+(e.amount||0),0);
+  const net = totalEarned - totalExp;
+
+  let totHtml = '';
+  if(allExpenses.length){
+    allExpenses.forEach(exp=>{
+      totHtml += `<div class="expense-row">
+        <span>${exp.comment||'Затрата'} · ${exp.dayLabel||exp.day+' '+MONTHS_RU_GEN[viewMonth]}</span>
+        <span style="color:var(--accent);">−${cur}${(exp.amount||0).toLocaleString()}</span>
+      </div>`;
+    });
   }
-  updateBgPresetActive(value);
+  totHtml += `<div class="total-row">
+    <div class="total-label">Итого</div>
+    <div class="total-amount" style="color:${net>=0?'var(--accent2,#324E44)':'var(--accent)'};">
+      ${net>=0?'+':''}${cur}${Math.abs(net).toLocaleString()}
+    </div>
+  </div>`;
+
+  totSec.innerHTML = totHtml;
+  totSec.style.display = 'block';
 }
 
-function lighten(hex,amount){
-  let r=parseInt(hex.slice(1,3),16);
-  let g=parseInt(hex.slice(3,5),16);
-  let b=parseInt(hex.slice(5,7),16);
-  r=Math.min(255,r+amount);g=Math.min(255,g+amount);b=Math.min(255,b+amount);
-  return '#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');
+// ── TABS ──
+function showTab(tab){
+  document.getElementById('main').style.display = tab==='main' ? 'block' : 'none';
+  document.getElementById('settings-screen').style.display = tab==='settings' ? 'block' : 'none';
+  document.getElementById('tab-main').classList.toggle('active', tab==='main');
+  document.getElementById('tab-settings').classList.toggle('active', tab==='settings');
 }
 
-function applyOverlay(pct){
-  // pct: 50-90, display: 0-100
-  // При 0 (pct=50) затемнение = 0.53, при 100 (pct=90) = 0.85
-  const alpha=(0.53+(pct-50)/40*0.32).toFixed(2);
-  document.documentElement.style.setProperty('--overlay-alpha', alpha);
+// ── SETTINGS ──
+function setCurrency(sym, code){
+  settings.currency = sym;
+  saveSettings();
+  document.querySelectorAll('.currency-btn').forEach(b=> b.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+  renderEntries();
 }
 
-
-function updateOverlay(val){
-  const display=Math.round((parseInt(val)-50)/40*100); // 50→0, 90→100
-  document.getElementById('bgOverlayVal').textContent=display;
-  applyOverlay(parseInt(val));
-  try{
-    const saved=JSON.parse(localStorage.getItem('sb_bg')||'{}');
-    saved.overlay=parseInt(val);
-    localStorage.setItem('sb_bg',JSON.stringify(saved));
-  }catch{}
+function setTheme(id, cls){
+  settings.theme = id;
+  settings.themeClass = cls;
+  saveSettings();
+  document.body.className = cls;
+  if(settings.bgImg) document.body.classList.add('has-bg');
+  document.querySelectorAll('.theme-card').forEach(c=> c.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
 }
 
-function handleBgImg(e){
-  const file=e.target.files[0];
+function setAccent(color){
+  settings.accent = color;
+  document.documentElement.style.setProperty('--accent', color);
+  saveSettings();
+}
+
+function setOverlay(val){
+  settings.overlay = val;
+  document.documentElement.style.setProperty('--overlay-alpha', val/100);
+  saveSettings();
+}
+
+function loadBgImg(e){
+  const file = e.target.files[0];
   if(!file) return;
-  const reader=new FileReader();
-  reader.onload=ev=>{
-    setBg('image',ev.target.result);
-    e.target.value='';
+  const reader = new FileReader();
+  reader.onload = ev => {
+    settings.bgImg = ev.target.result;
+    saveSettings();
+    applyBg();
   };
   reader.readAsDataURL(file);
 }
 
-function updateBgPresetActive(val){
-  document.querySelectorAll('.bg-preset').forEach(b=>{
-    b.classList.toggle('active',b.style.background===val||b.style.backgroundColor===val);
-  });
+function clearBg(){
+  settings.bgImg = '';
+  saveSettings();
+  applyBg();
 }
 
-function loadBgSettings(){
-  try{
-    const saved=JSON.parse(localStorage.getItem('sb_bg')||'null');
-    if(!saved)return;
-    if(saved.type==='color'){
-      setBg('color',saved.value);
-      document.getElementById('bgColorPicker').value=saved.value;
-    } else if(saved.type==='image'){
-      setBg('image',saved.value);
-    }
-    // Восстанавливаем затемнение для любого типа
-    if(saved.overlay){
-      document.getElementById('bgOverlay').value=saved.overlay;
-      const display=Math.round((saved.overlay-50)/40*100);
-      document.getElementById('bgOverlayVal').textContent=display;
-      applyOverlay(saved.overlay);
-    }
-  }catch{}
+function applyBg(){
+  const bg = document.getElementById('bg-layer');
+  if(settings.bgImg){
+    bg.style.backgroundImage = `url(${settings.bgImg})`;
+    bg.style.opacity = '1';
+  } else {
+    bg.style.backgroundImage = 'none';
+  }
+  document.getElementById('bg-overlay').style.display = settings.bgImg ? 'block' : 'none';
 }
 
-// ── INIT ──
-document.getElementById("tabbar").classList.remove("in-detail");
-initPinchZoom();
-initChordsBarGestures();
-loadBgSettings();
-// восстановить сохранённый zoom
-try{const z=parseFloat(localStorage.getItem('sb_zoom'));if(z&&z>1.05){lzScale=z;}}catch{}
-renderPL();renderRep();renderSongs(songs);
-
-// ── SWIPE NAVIGATION ──
-(function(){
-  let sx=0, sy=0, dragging=false, axis=null;
-  const tabs=['pl','rep','inet','settings'];
-  function getScr(id){ return document.getElementById('scr-'+id); }
-  function canSwipeBack(){ return curScr==='detail'||(curScr==='songs'&&filterPl); }
-  function isEditing(){
-    const mp=document.getElementById('metaEditPanel');
-    return mp&&mp.classList.contains('open');
+function applySettings(){
+  if(settings.themeClass) document.body.className = settings.themeClass;
+  if(settings.accent) document.documentElement.style.setProperty('--accent', settings.accent);
+  if(settings.overlay !== undefined){
+    document.documentElement.style.setProperty('--overlay-alpha', settings.overlay/100);
+    const sl = document.getElementById('overlaySlider');
+    if(sl) sl.value = settings.overlay;
   }
+  applyBg();
 
-  document.addEventListener('touchstart',e=>{
-    if(e.target.closest('input[type=range]')||e.touches.length>1||pinchActive){dragging=false;axis=null;return;}
-    sx=e.touches[0].clientX;
-    sy=e.touches[0].clientY;
-    dragging=false; axis=null;
-  },{passive:true});
+  // Currency buttons
+  setTimeout(()=>{
+    document.querySelectorAll('.currency-btn').forEach(b=>{
+      b.classList.toggle('selected', b.textContent.startsWith(settings.currency));
+    });
+    // Theme cards
+    document.querySelectorAll('.theme-card').forEach((c,i)=>{
+      const themes = ['default','dark','warm','ocean','retro','night'];
+      c.classList.toggle('selected', themes[i] === settings.theme);
+    });
+  }, 0);
+}
 
-  document.addEventListener('touchmove',e=>{
-    if(e.target.closest('input[type=range]')||pinchActive||e.touches.length>1){dragging=false;return;}
-    const dx=e.touches[0].clientX-sx;
-    const dy=e.touches[0].clientY-sy;
-    if(!axis){
-      if(Math.abs(dx)>8||Math.abs(dy)>8)
-        axis=Math.abs(dx)>Math.abs(dy)?'x':'y';
-    }
-    if(axis!=='x') return;
-    if((curScr==='detail'||curScr==='songs')&&dx<0) return;
-    if(!dragging){
-      const idx=tabs.indexOf(curScr);
-      if(dx>0&&(canSwipeBack()||idx>0)) dragging=true;
-      if(dx<0&&idx<tabs.length-1&&!canSwipeBack()) dragging=true;
-    }
-  },{passive:true});
-
-  document.addEventListener('touchend',e=>{
-    if(e.target.closest('input[type=range]')) return;
-    if(!dragging){axis=null;return;}
-    if(isEditing()){axis=null;dragging=false;return;}
-    dragging=false; axis=null;
-    const dx=e.changedTouches[0].clientX-sx;
-    const dy=e.changedTouches[0].clientY-sy;
-    if(Math.abs(dx)<50||Math.abs(dy)>Math.abs(dx)) return;
-    const idx=tabs.indexOf(curScr);
-    const cur=getScr(curScr);
-    const fade=()=>{if(cur){cur.style.transition='opacity .2s ease';cur.style.opacity='0';}};
-    const reset=()=>{if(cur){cur.style.opacity='';cur.style.transition='';}};
-    if(dx>50){
-      if(canSwipeBack()){
-        fade();setTimeout(()=>{reset();goBack();},200);
-      } else if(idx>0){
-        fade();setTimeout(()=>{reset();swTab(tabs[idx-1]);},200);
-      }
-    } else if(dx<-50&&idx<tabs.length-1&&!canSwipeBack()){
-      fade();setTimeout(()=>{reset();swTab(tabs[idx+1]);},200);
-    }
-  },{passive:true});
-})();
-
-// ── DRAG & DROP SORT ──
-(function(){
-  let dragEl=null, ghost=null, scrollEl=null;
-  let ghostOffY=0, rafId=null, touchY=0, touchX=0;
-  let listType=null, listFilter=null;
-  let isDragging=false;
-
-  function makeGhost(el, clientY){
-    const r=el.getBoundingClientRect();
-    ghost=el.cloneNode(true);
-    ghost.style.cssText=[
-      'position:fixed','z-index:9999','pointer-events:none',
-      'left:'+r.left+'px','width:'+r.width+'px','height:'+r.height+'px',
-      'opacity:0.92','box-shadow:0 8px 24px rgba(0,0,0,0.5)',
-      'border-radius:12px','background:var(--bg2)','will-change:transform'
-    ].join(';');
-    ghostOffY=clientY-r.top;
-    ghost.style.top=(clientY-ghostOffY)+'px';
-    document.body.appendChild(ghost);
-    el.style.opacity='0.2';
-  }
-
-  function findScrollParent(el){
-    let p=el.parentElement;
-    while(p&&p!==document.body){
-      if(p.scrollHeight>p.clientHeight+4) return p;
-      p=p.parentElement;
-    }
-    return null;
-  }
-
-  function reorder(y){
-    if(!dragEl||!dragEl.parentElement) return;
-    const siblings=[...dragEl.parentElement.children].filter(
-      el=>el!==dragEl&&el.dataset&&el.dataset.di
-    );
-    for(const sib of siblings){
-      const r=sib.getBoundingClientRect();
-      if(y<r.top+r.height/2){
-        dragEl.parentElement.insertBefore(dragEl,sib);
-        return;
-      }
-    }
-    dragEl.parentElement.appendChild(dragEl);
-  }
-
-  function tick(){
-    if(!isDragging||!scrollEl) return;
-    const r=scrollEl.getBoundingClientRect();
-    const ZONE=90, MAX_SPEED=20;
-
-    const distTop=touchY-r.top;
-    const distBot=r.bottom-touchY;
-
-    if(distTop<ZONE&&distTop>0){
-      const speed=MAX_SPEED*(1-distTop/ZONE);
-      scrollEl.scrollTop-=speed;
-      // Сдвигаем ghost вместе со скроллом
-      if(ghost) ghost.style.top=(touchY-ghostOffY)+'px';
-    } else if(distBot<ZONE&&distBot>0){
-      const speed=MAX_SPEED*(1-distBot/ZONE);
-      scrollEl.scrollTop+=speed;
-      if(ghost) ghost.style.top=(touchY-ghostOffY)+'px';
-    }
-
-    reorder(touchY);
-    rafId=requestAnimationFrame(tick);
-  }
-
-  function commit(){
-    if(!dragEl||!dragEl.parentElement) return;
-    const ids=[...dragEl.parentElement.querySelectorAll('[data-di]')].map(el=>el.dataset.di);
-    if(listType==='pl'){
-      const newPls=ids.map(id=>pls.find(p=>p.id===id)).filter(Boolean);
-      pls.length=0;pls.push(...newPls);sv(PK,pls);
-    } else {
-      const base=listFilter
-        ?songs.filter(s=>(s.playlist||'')===listFilter)
-        :songs.filter(s=>!s.id.startsWith('__fav__'));
-      const newBase=ids.map(id=>base.find(s=>s.id===id)).filter(Boolean);
-      const others=songs.filter(s=>!newBase.find(b=>b.id===s.id));
-      songs.length=0;songs.push(...others,...newBase);sv(SK,songs);
-    }
-  }
-
-  function cleanup(){
-    isDragging=false;
-    if(ghost){ghost.remove();ghost=null;}
-    if(rafId){cancelAnimationFrame(rafId);rafId=null;}
-    if(dragEl){dragEl.style.opacity='';dragEl=null;}
-    // Восстанавливаем скролл
-    if(scrollEl){scrollEl.style.touchAction='';scrollEl=null;}
-  }
-
-  document.addEventListener('touchstart',e=>{
-    const item=e.target.closest('[data-di]');
-    if(!item) return;
-    const list=item.closest('[data-dl]');
-    if(!list) return;
-    const t0=e.touches[0];
-    let startY=t0.clientY, startX=t0.clientX, moved=false, timer=null;
-
-    timer=setTimeout(()=>{
-      if(moved) return;
-      isDragging=true;
-      navigator.vibrate&&navigator.vibrate(40);
-      dragEl=item;
-      listType=list.dataset.dl;
-      listFilter=list.dataset.dlf||'';
-      scrollEl=findScrollParent(item);
-      // Блокируем нативный скролл контейнера
-      if(scrollEl) scrollEl.style.touchAction='none';
-      makeGhost(item, t0.clientY);
-      touchY=t0.clientY;
-      touchX=t0.clientX;
-      if(window.lpTimer){clearTimeout(window.lpTimer);window.lpTimer=null;}
-      document.querySelectorAll('.s-item.pressing').forEach(el=>el.classList.remove('pressing'));
-      rafId=requestAnimationFrame(tick);
-    }, 500);
-
-    function onMove(ev){
-      const t=ev.touches[0];
-      if(!isDragging){
-        if(Math.abs(t.clientY-startY)>8||Math.abs(t.clientX-startX)>8) moved=true;
-        return;
-      }
-      // Во время drag блокируем скролл страницы
-      ev.preventDefault();
-      touchY=t.clientY;
-      touchX=t.clientX;
-      // Ghost следует за пальцем
-      if(ghost) ghost.style.top=(t.clientY-ghostOffY)+'px';
-    }
-
-    function onEnd(){
-      clearTimeout(timer);
-      document.removeEventListener('touchmove',onMove);
-      document.removeEventListener('touchend',onEnd);
-      if(isDragging) commit();
-      cleanup();
-    }
-
-    document.addEventListener('touchmove',onMove,{passive:false});
-    document.addEventListener('touchend',onEnd);
-  },{passive:true});
-})();
-
+// Live clock
+setInterval(updateBigDate, 60000);
 </script>
 </body>
 </html>
