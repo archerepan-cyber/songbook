@@ -1,4 +1,4 @@
-const CACHE = 'songbook-v182';
+const CACHE = 'freelcal-v1';
 const ASSETS = ['/', '/index.html', '/manifest.json'];
 
 self.addEventListener('install', e => {
@@ -14,7 +14,6 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  // Always fetch from network first, fall back to cache
   e.respondWith(
     fetch(e.request).then(r => {
       const clone = r.clone();

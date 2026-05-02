@@ -1,11 +1,11 @@
 {
-  "name": "Мой сборник",
-  "short_name": "Сборник",
-  "description": "Личный музыкальный сборник с текстами и аккордами",
+  "name": "Freelancer Calendar",
+  "short_name": "FreelCal",
+  "description": "Календарь и учёт доходов фрилансера",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#1a0a2e",
-  "theme_color": "#1a0a2e",
+  "background_color": "#f5f0e8",
+  "theme_color": "#f5f0e8",
   "orientation": "portrait",
   "lang": "ru",
   "icons": [
