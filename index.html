@@ -7,975 +7,452 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <title>Freelancer Calendar</title>
 <link rel="manifest" href="manifest.json"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet"/>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
-
-:root {
-  --bg: #f5f0e8;
-  --bg2: rgba(255,255,255,0.7);
-  --text: #1a1a1a;
-  --text2: #555;
-  --text3: #999;
-  --accent: #D0391B;
-  --accent2: #324E44;
-  --dot-past: #1a1a1a;
-  --dot-future: rgba(0,0,0,0.12);
-  --dot-today: #D0391B;
-  --dot-work: #324E44;
-  --sep: rgba(0,0,0,0.08);
-  --safe-top: env(safe-area-inset-top);
-  --safe-bot: env(safe-area-inset-bottom);
-  --overlay-alpha: 0.45;
+:root{
+  --bg:#f5f0e8;--bg2:rgba(255,255,255,0.75);--bg3:rgba(0,0,0,0.06);
+  --text:#1a1a1a;--text2:#666;--text3:#aaa;
+  --accent:#D0391B;
+  --dot-past:rgba(0,0,0,0.14);--dot-future:rgba(0,0,0,0.07);--dot-today:#D0391B;
+  --sep:rgba(0,0,0,0.08);
+  --safe-top:env(safe-area-inset-top);--safe-bot:env(safe-area-inset-bottom);
 }
-
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;user-select:none;-webkit-user-select:none;}
 input,textarea,select{user-select:text;-webkit-user-select:text;}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;}
 
-html,body{height:100%;overflow:hidden;}
+.th-dark{--bg:#1a1a1a;--bg2:rgba(40,40,40,0.85);--bg3:rgba(255,255,255,0.08);--text:#f0f0f0;--text2:#aaa;--text3:#555;--dot-past:rgba(255,255,255,0.15);--dot-future:rgba(255,255,255,0.07);--sep:rgba(255,255,255,0.08);}
+.th-warm{--bg:#EFE8CB;--bg2:rgba(255,252,240,0.85);--bg3:rgba(42,31,10,0.07);--text:#2a1f0a;--text2:#6b5035;--text3:#b09070;--dot-past:rgba(42,31,10,0.16);--dot-future:rgba(42,31,10,0.07);}
+.th-ocean{--bg:#E2E4D2;--bg2:rgba(226,228,210,0.9);--bg3:rgba(26,42,40,0.07);--text:#1a2a28;--text2:#455957;--text3:#7BA7AF;--dot-past:rgba(26,42,40,0.16);--dot-future:rgba(26,42,40,0.07);}
+.th-retro{--bg:#DCC9A9;--bg2:rgba(220,201,169,0.9);--bg3:rgba(42,21,16,0.07);--text:#2a1510;--text2:#8D5631;--text3:#B83A2D;--dot-past:rgba(42,21,16,0.16);--dot-future:rgba(42,21,16,0.07);}
+.th-night2{--bg:#0d0d0d;--bg2:rgba(20,20,20,0.92);--bg3:rgba(255,255,255,0.06);--text:#e0e0e0;--text2:#888;--text3:#444;--dot-past:rgba(255,255,255,0.14);--dot-future:rgba(255,255,255,0.05);--sep:rgba(255,255,255,0.06);}
 
-body{
-  font-family:'DM Sans',sans-serif;
-  background:var(--bg);
-  color:var(--text);
-}
+#bgLayer{position:fixed;inset:0;z-index:0;background-size:cover;background-position:center;}
+#bgOverlay{position:fixed;inset:0;z-index:1;background:rgba(0,0,0,0);pointer-events:none;}
+#app{position:fixed;inset:0;z-index:2;display:flex;flex-direction:column;overflow:hidden;}
 
-/* Background image */
-#bg-layer{
-  position:fixed;inset:0;z-index:0;
-  background-size:cover;background-position:center;
-  transition:opacity .4s;
-}
-#bg-overlay{
-  position:fixed;inset:0;z-index:1;
-  background:rgba(0,0,0,var(--overlay-alpha));
-  pointer-events:none;
-}
+#screensWrap{flex:1;display:flex;overflow:hidden;position:relative;min-height:0;}
+.screen{flex:0 0 100%;width:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:calc(var(--safe-top)+16px) 24px calc(var(--safe-bot)+70px);will-change:transform;}
+#screenMain{transform:translateX(0);}
+#screenSett{transform:translateX(100%);}
 
-#app{
-  position:fixed;inset:0;z-index:2;
-  display:flex;flex-direction:column;
-  overflow:hidden;
-}
-
-/* ── MAIN SCREEN ── */
-#main{
-  flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
-  overscroll-behavior:contain;
-  padding:calc(var(--safe-top) + 16px) 24px calc(var(--safe-bot) + 80px);
-}
-
-/* Big date */
-.big-date{
-  margin-bottom:4px;
-}
-.big-day{
-  font-family:'DM Serif Display',serif;
-  font-size:clamp(96px,26vw,140px);
-  line-height:.9;
-  color:var(--text);
-  letter-spacing:-4px;
-}
-.big-meta{
-  display:flex;justify-content:space-between;align-items:baseline;
-  margin-top:8px;margin-bottom:28px;
-}
-.big-month{
-  font-size:18px;font-weight:600;letter-spacing:2px;text-transform:uppercase;
-  color:var(--text);
-}
-.big-year{
-  font-size:14px;color:var(--text3);font-weight:400;margin-left:8px;
-}
-.big-dow{
-  font-size:18px;font-weight:300;color:var(--text2);font-style:italic;
-  font-family:'DM Serif Display',serif;
-}
-
-/* Calendar */
-.cal-wrap{margin-bottom:32px;}
-.cal-header{
-  display:grid;grid-template-columns:repeat(7,1fr);
-  margin-bottom:10px;
-}
-.cal-header span{
-  text-align:center;font-size:11px;font-weight:600;
-  letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);
-}
-.cal-grid{
-  display:grid;grid-template-columns:repeat(7,1fr);
-  gap:6px;
-}
-.day-dot{
-  aspect-ratio:1;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  font-size:12px;font-weight:500;
-  cursor:pointer;
-  transition:transform .15s,box-shadow .15s;
-  position:relative;
-  background:var(--dot-future);
-  color:transparent;
-}
-.day-dot.past{background:var(--dot-past);color:transparent;}
-.day-dot.today{background:var(--dot-today);}
-.day-dot.future{background:var(--dot-future);}
-.day-dot.work{background:var(--dot-work);}
-.day-dot.pressing{transform:scale(0.88);}
-.day-dot.selected-day{box-shadow:0 0 0 2.5px var(--accent),0 0 0 4px transparent;}
-.day-dot.empty{background:transparent;cursor:default;}
-
-/* Work dot indicator */
-.day-dot .work-ind{
-  position:absolute;bottom:3px;left:50%;transform:translateX(-50%);
-  width:4px;height:4px;border-radius:50%;
-  background:var(--dot-today);
-  display:none;
-}
-.day-dot.has-data .work-ind{display:block;}
-
-/* ── ENTRIES LIST ── */
-.entries-section{margin-bottom:24px;}
-.entries-title{
-  font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;
-  color:var(--text3);margin-bottom:12px;
-}
-.entry-row{
-  background:var(--bg2);backdrop-filter:blur(12px);
-  border-radius:16px;padding:14px 16px;
-  margin-bottom:8px;
-  border:.5px solid var(--sep);
-}
-.entry-row-top{
-  display:flex;align-items:center;gap:10px;
-  margin-bottom:6px;
-}
-.entry-num{
-  font-family:'DM Serif Display',serif;
-  font-size:22px;color:var(--accent);
-  min-width:28px;
-}
-.entry-date{font-size:13px;color:var(--text3);}
-.entry-label{font-size:15px;font-weight:500;color:var(--text);flex:1;}
-.entry-details{
-  display:flex;gap:16px;flex-wrap:wrap;
-  font-size:13px;color:var(--text2);
-}
-.entry-detail{display:flex;align-items:center;gap:4px;}
-
-/* ── TOTALS ── */
-.totals-section{
-  background:var(--bg2);backdrop-filter:blur(12px);
-  border-radius:20px;padding:20px;
-  border:.5px solid var(--sep);
-  margin-bottom:24px;
-}
-.expense-row{
-  display:flex;justify-content:space-between;align-items:center;
-  padding:6px 0;
-  border-bottom:.5px solid var(--sep);
-  font-size:14px;color:var(--text2);
-}
-.expense-row:last-child{border-bottom:none;}
-.total-row{
-  display:flex;justify-content:space-between;align-items:center;
-  padding-top:14px;margin-top:4px;
-}
-.total-label{
-  font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
-  color:var(--text3);
-}
-.total-amount{
-  font-family:'DM Serif Display',serif;
-  font-size:36px;color:var(--text);letter-spacing:-1px;
-}
-
-/* ── BOTTOM BAR ── */
-#tabbar{
-  position:fixed;bottom:0;left:0;right:0;z-index:10;
-  height:calc(50px + var(--safe-bot));
-  padding-bottom:var(--safe-bot);
-  display:flex;align-items:center;justify-content:center;gap:32px;
-  background:var(--bg2);backdrop-filter:blur(20px);
-  border-top:.5px solid var(--sep);
-}
-.tab-btn{
-  background:none;border:none;
-  font-size:22px;cursor:pointer;
-  padding:8px;border-radius:12px;
-  transition:opacity .2s;
-  opacity:.5;
-}
+#tabbar{height:calc(50px + var(--safe-bot));padding-bottom:var(--safe-bot);display:flex;align-items:center;justify-content:center;gap:48px;background:var(--bg2);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:.5px solid var(--sep);flex-shrink:0;}
+.tab-btn{background:none;border:none;font-size:22px;cursor:pointer;padding:8px;opacity:.4;transition:opacity .2s;touch-action:manipulation;}
 .tab-btn.active{opacity:1;}
 
-/* ── MODAL ── */
-.modal-bg{
-  position:fixed;inset:0;z-index:100;
-  background:rgba(0,0,0,.5);
-  display:none;align-items:flex-end;
-}
-.modal-bg.open{display:flex;}
-.modal-sheet{
-  width:100%;background:var(--bg);
-  border-radius:24px 24px 0 0;
-  padding:20px 24px calc(var(--safe-bot) + 24px);
-  max-height:90vh;overflow-y:auto;
-}
-.modal-drag{
-  width:40px;height:4px;border-radius:2px;
-  background:rgba(0,0,0,.15);
-  margin:0 auto 20px;
-}
-.modal-title{
-  font-family:'DM Serif Display',serif;
-  font-size:24px;margin-bottom:20px;
-  color:var(--text);
-}
-.field-group{margin-bottom:16px;}
-.field-label{
-  font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;
-  color:var(--text3);margin-bottom:6px;
-}
-.field-input{
-  width:100%;background:rgba(0,0,0,.06);border:none;
-  border-radius:12px;padding:12px 14px;
-  font-size:16px;color:var(--text);
-  font-family:'DM Sans',sans-serif;outline:none;
-}
-.field-row{display:flex;gap:10px;}
-.field-row .field-group{flex:1;}
-.expense-entry{
-  display:flex;gap:8px;align-items:center;margin-bottom:8px;
-}
-.expense-entry input{flex:1;}
-.btn-add-exp{
-  background:none;border:1.5px dashed var(--text3);
-  border-radius:10px;padding:10px;
-  font-size:13px;color:var(--text3);cursor:pointer;
-  width:100%;margin-bottom:16px;
-}
-.color-picker-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
-.color-dot{
-  width:32px;height:32px;border-radius:50%;cursor:pointer;
-  border:2.5px solid transparent;
-  transition:transform .15s;
-}
-.color-dot.selected{border-color:var(--text);transform:scale(1.15);}
-.modal-actions{display:flex;gap:10px;margin-top:20px;}
-.btn-cancel{
-  flex:1;padding:14px;border-radius:14px;
-  background:rgba(0,0,0,.06);border:none;
-  font-size:15px;font-weight:600;color:var(--text2);cursor:pointer;
-  font-family:'DM Sans',sans-serif;
-}
-.btn-save{
-  flex:2;padding:14px;border-radius:14px;
-  background:var(--accent);border:none;
-  font-size:15px;font-weight:600;color:#fff;cursor:pointer;
-  font-family:'DM Sans',sans-serif;
-}
+/* BIG DATE */
+.big-num{font-family:'DM Serif Display',serif;font-size:clamp(100px,28vw,148px);line-height:.88;letter-spacing:-4px;color:var(--text);}
+.big-row{display:flex;justify-content:space-between;align-items:baseline;margin-top:6px;margin-bottom:28px;}
+.big-mon{font-size:17px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:var(--text);}
+.big-yr{font-size:13px;color:var(--text3);margin-left:6px;}
+.big-dow{font-family:'DM Serif Display',serif;font-size:17px;font-style:italic;color:var(--text2);}
 
-/* ── SETTINGS ── */
-#settings-screen{
-  flex:1;overflow-y:auto;padding:calc(var(--safe-top) + 16px) 24px calc(var(--safe-bot) + 80px);
-  display:none;
-}
-.settings-title{
-  font-family:'DM Serif Display',serif;
-  font-size:32px;margin-bottom:24px;
-}
-.settings-section{margin-bottom:28px;}
-.settings-label{
-  font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;
-  color:var(--text3);margin-bottom:12px;
-}
-.theme-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
-.theme-card{
-  border-radius:16px;padding:16px 12px;cursor:pointer;
-  border:2px solid transparent;
-  transition:transform .15s,border-color .15s;
-  min-height:80px;display:flex;flex-direction:column;justify-content:flex-end;
-}
-.theme-card.selected{border-color:var(--text);}
-.theme-card:active{transform:scale(0.95);}
-.theme-card-name{font-size:12px;font-weight:600;color:var(--text);}
-.theme-card-sub{font-size:10px;color:var(--text2);}
+/* MONTH NAV */
+.mnav{display:flex;align-items:center;margin-bottom:8px;}
+.mnav-btn{background:none;border:none;font-size:22px;color:var(--text);opacity:.4;cursor:pointer;padding:4px 10px;touch-action:manipulation;}
+.mnav-btn:active{opacity:1;}
+.mnav-lbl{flex:1;text-align:center;font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--text3);}
 
-.preset-colors{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
-.preset-color{
-  width:40px;height:40px;border-radius:50%;cursor:pointer;
-  border:2.5px solid transparent;
-  transition:transform .15s;
-}
-.preset-color.selected{border-color:var(--text);transform:scale(1.1);}
+/* CALENDAR */
+.cal-hdr{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:8px;}
+.cal-hdr span{text-align:center;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);}
+.cal-hdr span.we{color:var(--accent);}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;}
+.dd{aspect-ratio:1;border-radius:50%;cursor:pointer;position:relative;touch-action:manipulation;transition:transform .12s ease;background:var(--dot-future);}
+.dd.past{background:var(--dot-past);}
+.dd.today{background:var(--dot-today);}
+.dd.work{} /* color set inline */
+.dd.empty{background:transparent;pointer-events:none;}
+.dd.pressing{transform:scale(0.82);}
+.dd .ind{position:absolute;bottom:3px;left:50%;transform:translateX(-50%);width:3px;height:3px;border-radius:50%;background:#fff;opacity:.75;display:none;}
+.dd.has-data .ind{display:block;}
 
-.slider-row{display:flex;align-items:center;gap:12px;}
-.slider-row input[type=range]{
-  flex:1;accent-color:var(--accent);height:4px;cursor:pointer;
-}
+/* ENTRIES */
+.sec-lbl{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:10px;margin-top:28px;}
+.ecard{background:var(--bg2);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:16px;padding:14px 16px;margin-bottom:8px;border:.5px solid var(--sep);touch-action:manipulation;cursor:pointer;}
+.etop{display:flex;align-items:flex-start;gap:10px;}
+.enum{font-family:'DM Serif Display',serif;font-size:24px;color:var(--accent);min-width:30px;line-height:1;}
+.einfo{flex:1;}
+.edate{font-size:12px;color:var(--text3);}
+.ename{font-size:15px;font-weight:500;color:var(--text);margin-top:2px;}
+.edot{width:12px;height:12px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+.enums{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;font-size:13px;}
 
-.currency-row{display:flex;gap:8px;flex-wrap:wrap;}
-.currency-btn{
-  padding:8px 16px;border-radius:10px;border:.5px solid var(--sep);
-  background:var(--bg2);font-size:14px;cursor:pointer;
-  transition:all .15s;color:var(--text);
-}
-.currency-btn.selected{background:var(--accent);color:#fff;border-color:var(--accent);}
+/* TOTALS */
+.tcard{background:var(--bg2);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:20px;padding:20px;border:.5px solid var(--sep);margin-bottom:24px;}
+.xrow{display:flex;justify-content:space-between;padding:6px 0;border-bottom:.5px solid var(--sep);font-size:14px;color:var(--text2);}
+.trow{display:flex;justify-content:space-between;align-items:baseline;padding-top:14px;margin-top:2px;}
+.tlbl{font-size:10px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--text3);}
+.tamt{font-family:'DM Serif Display',serif;font-size:40px;letter-spacing:-1.5px;}
 
-.upload-bg-btn{
-  width:100%;padding:14px;border-radius:14px;
-  background:rgba(0,0,0,.06);border:1.5px dashed rgba(0,0,0,.2);
-  font-size:15px;color:var(--text2);cursor:pointer;
-  font-family:'DM Sans',sans-serif;
-}
+/* SETTINGS */
+.s-title{font-family:'DM Serif Display',serif;font-size:34px;margin-bottom:28px;}
+.s-sec{margin-bottom:28px;}
+.s-lbl{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:12px;}
+.theme-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.tc{border-radius:14px;padding:14px 10px 10px;cursor:pointer;border:2.5px solid transparent;touch-action:manipulation;transition:transform .15s,border-color .15s;min-height:72px;display:flex;flex-direction:column;justify-content:flex-end;}
+.tc.sel{border-color:var(--text);}
+.tc:active{transform:scale(.94);}
+.tc-n{font-size:11px;font-weight:600;}
+.prow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.pc{width:38px;height:38px;border-radius:50%;cursor:pointer;border:2.5px solid transparent;touch-action:manipulation;transition:transform .15s,border-color .15s;flex-shrink:0;}
+.pc.sel{border-color:var(--text);transform:scale(1.12);}
+.cw-btn{width:38px;height:38px;border-radius:50%;cursor:pointer;flex-shrink:0;background:conic-gradient(from 0deg,red,yellow,lime,cyan,blue,magenta,red);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;touch-action:manipulation;border:2.5px solid rgba(255,255,255,.4);}
+.cw-btn span{pointer-events:none;font-size:16px;}
+.cw-btn input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.cur-row{display:flex;gap:8px;flex-wrap:wrap;}
+.cur-btn{padding:9px 14px;border-radius:10px;border:.5px solid var(--sep);background:var(--bg3);font-size:14px;cursor:pointer;touch-action:manipulation;color:var(--text);transition:background .15s,color .15s;}
+.cur-btn.sel{background:var(--accent);color:#fff;border-color:var(--accent);}
+.bg-btn{width:100%;padding:14px;border-radius:14px;background:var(--bg3);border:1.5px dashed rgba(0,0,0,.18);font-size:15px;color:var(--text2);cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:8px;touch-action:manipulation;display:block;text-align:center;}
+.sl-wrap{display:flex;align-items:center;gap:12px;}
+.sl-wrap input[type=range]{flex:1;accent-color:var(--accent);cursor:pointer;}
 
-/* Nav month */
-.month-nav{
-  display:flex;align-items:center;gap:12px;margin-bottom:8px;
-}
-.month-nav-btn{
-  background:none;border:none;font-size:20px;cursor:pointer;
-  padding:4px 8px;border-radius:8px;color:var(--text);opacity:.5;
-  transition:opacity .15s;
-}
-.month-nav-btn:active{opacity:1;}
-
-/* ── THEMES ── */
-body.theme-dark{
-  --bg:#1a1a1a;--bg2:rgba(40,40,40,0.8);--text:#f0f0f0;--text2:#aaa;--text3:#666;
-  --dot-past:#f0f0f0;--dot-future:rgba(255,255,255,0.1);--sep:rgba(255,255,255,0.08);
-}
-body.theme-warm{
-  --bg:#EFE8CB;--bg2:rgba(255,252,240,0.8);--text:#2a1f0a;--text2:#6b5035;--text3:#a08060;
-  --dot-past:#2a1f0a;--dot-future:rgba(42,31,10,0.12);--accent:#D0391B;--accent2:#324E44;
-}
-body.theme-ocean{
-  --bg:#E2E4D2;--bg2:rgba(226,228,210,0.85);--text:#1a2a28;--text2:#455957;--text3:#7BA7AF;
-  --dot-past:#1a2a28;--dot-future:rgba(26,42,40,0.12);--accent:#455957;--accent2:#7BA7AF;
-}
-body.theme-retro{
-  --bg:#DCC9A9;--bg2:rgba(220,201,169,0.85);--text:#2a1510;--text2:#8D5631;--text3:#B83A2D;
-  --dot-past:#2a1510;--dot-future:rgba(42,21,16,0.12);--accent:#B83A2D;--accent2:#4E6851;
-}
-body.theme-night{
-  --bg:#0d0d0d;--bg2:rgba(20,20,20,0.9);--text:#e0e0e0;--text2:#888;--text3:#444;
-  --dot-past:#e0e0e0;--dot-future:rgba(255,255,255,0.07);--accent:#FBC359;--accent2:#73A642;
-  --sep:rgba(255,255,255,0.06);
-}
-body.theme-sand{
-  --bg:#f7f2eb;--bg2:rgba(247,242,235,0.9);--text:#2c2417;--text2:#7a6540;--text3:#b8a88a;
-  --dot-past:#2c2417;--dot-future:rgba(44,36,23,0.1);--accent:#9F4125;--accent2:#382020;
-}
+/* MODAL */
+.mov{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.55);display:none;align-items:flex-end;justify-content:center;}
+.mov.open{display:flex;}
+.msh{width:100%;max-width:520px;background:var(--bg);border-radius:24px 24px 0 0;padding:16px 20px calc(var(--safe-bot)+20px);max-height:92vh;overflow-y:auto;}
+.mdrag{width:36px;height:4px;border-radius:2px;background:var(--sep);margin:0 auto 18px;}
+.mtitle{font-family:'DM Serif Display',serif;font-size:26px;margin-bottom:18px;color:var(--text);}
+.fg{margin-bottom:14px;}
+.fl{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);display:block;margin-bottom:6px;}
+.fi{width:100%;background:var(--bg3);border:none;border-radius:12px;padding:12px 14px;font-size:16px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;}
+.frow{display:flex;gap:8px;}
+.frow .fg{flex:1;}
+.dc-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.dc{width:30px;height:30px;border-radius:50%;cursor:pointer;border:2.5px solid transparent;touch-action:manipulation;transition:transform .12s,border-color .12s;flex-shrink:0;}
+.dc.sel{border-color:var(--text);transform:scale(1.15);}
+.dc:active{transform:scale(.88);}
+.dc-cw{width:30px;height:30px;border-radius:50%;cursor:pointer;flex-shrink:0;background:conic-gradient(from 0deg,red,yellow,lime,cyan,blue,magenta,red);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;touch-action:manipulation;border:2.5px solid rgba(255,255,255,.4);}
+.dc-cw span{pointer-events:none;font-size:12px;}
+.dc-cw input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.xentry{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
+.xentry input{flex:1;min-width:0;}
+.add-x-btn{width:100%;padding:10px;border-radius:10px;border:1.5px dashed var(--text3);background:none;font-size:13px;color:var(--text3);cursor:pointer;margin-bottom:14px;touch-action:manipulation;}
+.mact{display:flex;gap:10px;margin-top:16px;}
+.btn-c{flex:1;padding:14px;border-radius:14px;background:var(--bg3);border:none;font-size:15px;font-weight:600;color:var(--text2);cursor:pointer;font-family:'DM Sans',sans-serif;touch-action:manipulation;}
+.btn-ok{flex:2;padding:14px;border-radius:14px;background:var(--accent);border:none;font-size:15px;font-weight:600;color:#fff;cursor:pointer;font-family:'DM Sans',sans-serif;touch-action:manipulation;}
 </style>
 </head>
 <body>
-
-<div id="bg-layer"></div>
-<div id="bg-overlay"></div>
-
+<div id="bgLayer"></div>
+<div id="bgOverlay"></div>
 <div id="app">
-
-  <!-- MAIN SCREEN -->
-  <div id="main">
-    <!-- Big date -->
-    <div class="big-date">
-      <div class="big-day" id="bigDay">3</div>
-      <div class="big-meta">
-        <div>
-          <span class="big-month" id="bigMonth">МАЙ</span>
-          <span class="big-year" id="bigYear">2026</span>
-        </div>
-        <div class="big-dow" id="bigDow">Суббота</div>
+  <div id="screensWrap">
+    <!-- MAIN -->
+    <div class="screen" id="screenMain">
+      <div class="big-num" id="bigNum">3</div>
+      <div class="big-row">
+        <div><span class="big-mon" id="bigMon">МАЙ</span><span class="big-yr" id="bigYr">2026</span></div>
+        <div class="big-dow" id="bigDow">Воскресенье</div>
       </div>
-    </div>
-
-    <!-- Calendar -->
-    <div class="cal-wrap">
-      <div class="month-nav">
-        <button class="month-nav-btn" onclick="changeMonth(-1)">‹</button>
-        <span id="calMonthLabel" style="font-size:14px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--text3);flex:1;text-align:center;"></span>
-        <button class="month-nav-btn" onclick="changeMonth(1)">›</button>
+      <div class="mnav">
+        <button class="mnav-btn" onclick="chM(-1)">‹</button>
+        <div class="mnav-lbl" id="mLbl"></div>
+        <button class="mnav-btn" onclick="chM(1)">›</button>
       </div>
-      <div class="cal-header">
-        <span>П</span><span>В</span><span>С</span><span>Ч</span><span>П</span>
-        <span style="color:var(--accent)">С</span><span style="color:var(--accent)">В</span>
-      </div>
+      <div class="cal-hdr"><span>П</span><span>В</span><span>С</span><span>Ч</span><span>П</span><span class="we">С</span><span class="we">В</span></div>
       <div class="cal-grid" id="calGrid"></div>
+      <div id="entWrap"></div>
+      <div id="totWrap"></div>
     </div>
-
-    <!-- Entries -->
-    <div class="entries-section" id="entriesSection"></div>
-
-    <!-- Totals -->
-    <div class="totals-section" id="totalsSection" style="display:none;"></div>
-  </div>
-
-  <!-- SETTINGS SCREEN -->
-  <div id="settings-screen">
-    <div class="settings-title">Настройки</div>
-
-    <!-- Currency -->
-    <div class="settings-section">
-      <div class="settings-label">Валюта</div>
-      <div class="currency-row" id="currencyRow">
-        <button class="currency-btn selected" onclick="setCurrency('₽','RUB')">₽ Рубль</button>
-        <button class="currency-btn" onclick="setCurrency('$','USD')">$ Доллар</button>
-        <button class="currency-btn" onclick="setCurrency('€','EUR')">€ Евро</button>
-        <button class="currency-btn" onclick="setCurrency('₸','KZT')">₸ Тенге</button>
-        <button class="currency-btn" onclick="setCurrency('₴','UAH')">₴ Гривна</button>
-      </div>
-    </div>
-
-    <!-- Theme -->
-    <div class="settings-section">
-      <div class="settings-label">Тема</div>
-      <div class="theme-grid" id="themeGrid">
-        <div class="theme-card selected" style="background:#f5f0e8;" onclick="setTheme('default','default')">
-          <div class="theme-card-name">Пергамент</div>
-        </div>
-        <div class="theme-card" style="background:#1a1a1a;" onclick="setTheme('dark','theme-dark')">
-          <div class="theme-card-name" style="color:#f0f0f0;">Ночь</div>
-        </div>
-        <div class="theme-card" style="background:#EFE8CB;" onclick="setTheme('warm','theme-warm')">
-          <div class="theme-card-name">Тепло</div>
-        </div>
-        <div class="theme-card" style="background:#E2E4D2;" onclick="setTheme('ocean','theme-ocean')">
-          <div class="theme-card-name">Океан</div>
-        </div>
-        <div class="theme-card" style="background:#DCC9A9;" onclick="setTheme('retro','theme-retro')">
-          <div class="theme-card-name">Ретро</div>
-        </div>
-        <div class="theme-card" style="background:#0d0d0d;" onclick="setTheme('night','theme-night')">
-          <div class="theme-card-name" style="color:#e0e0e0;">Тёмная</div>
+    <!-- SETTINGS -->
+    <div class="screen" id="screenSett">
+      <div class="s-title">Настройки</div>
+      <div class="s-sec">
+        <div class="s-lbl">Валюта</div>
+        <div class="cur-row">
+          <button class="cur-btn" onclick="setCur('₽',this)">₽ Рубль</button>
+          <button class="cur-btn" onclick="setCur('$',this)">$ Доллар</button>
+          <button class="cur-btn" onclick="setCur('€',this)">€ Евро</button>
+          <button class="cur-btn" onclick="setCur('₸',this)">₸ Тенге</button>
+          <button class="cur-btn" onclick="setCur('₴',this)">₴ Гривна</button>
         </div>
       </div>
-    </div>
-
-    <!-- Custom color -->
-    <div class="settings-section">
-      <div class="settings-label">Свой цвет акцента</div>
-      <div class="preset-colors" id="presetColors">
-        <div class="preset-color" style="background:#D0391B;" onclick="setAccent('#D0391B')"></div>
-        <div class="preset-color" style="background:#324E44;" onclick="setAccent('#324E44')"></div>
-        <div class="preset-color" style="background:#FBC359;" onclick="setAccent('#FBC359')"></div>
-        <div class="preset-color" style="background:#7BA7AF;" onclick="setAccent('#7BA7AF')"></div>
-        <div class="preset-color" style="background:#B83A2D;" onclick="setAccent('#B83A2D')"></div>
-        <div class="preset-color" style="background:#73A642;" onclick="setAccent('#73A642')"></div>
-        <div class="preset-color" style="background:#9F4125;" onclick="setAccent('#9F4125')"></div>
-        <div class="preset-color" style="background:#4B848A;" onclick="setAccent('#4B848A')"></div>
+      <div class="s-sec">
+        <div class="s-lbl">Тема</div>
+        <div class="theme-grid">
+          <div class="tc" style="background:#f5f0e8;" data-t="default" data-c="" onclick="setTheme(this)"><div class="tc-n">Пергамент</div></div>
+          <div class="tc" style="background:#1a1a1a;" data-t="dark" data-c="th-dark" onclick="setTheme(this)"><div class="tc-n" style="color:#eee;">Ночь</div></div>
+          <div class="tc" style="background:#EFE8CB;" data-t="warm" data-c="th-warm" onclick="setTheme(this)"><div class="tc-n">Тепло</div></div>
+          <div class="tc" style="background:#E2E4D2;" data-t="ocean" data-c="th-ocean" onclick="setTheme(this)"><div class="tc-n">Океан</div></div>
+          <div class="tc" style="background:#DCC9A9;" data-t="retro" data-c="th-retro" onclick="setTheme(this)"><div class="tc-n">Ретро</div></div>
+          <div class="tc" style="background:#0d0d0d;" data-t="night2" data-c="th-night2" onclick="setTheme(this)"><div class="tc-n" style="color:#eee;">Тёмная</div></div>
+        </div>
       </div>
-      <input type="color" id="customAccentColor" value="#D0391B"
-        style="width:48px;height:48px;border:none;border-radius:50%;cursor:pointer;padding:0;background:none;"
-        oninput="setAccent(this.value)"/>
-    </div>
-
-    <!-- Background image -->
-    <div class="settings-section">
-      <div class="settings-label">Фон</div>
-      <label class="upload-bg-btn">
-        📷 Выбрать фото из галереи
-        <input type="file" accept="image/*" style="display:none" onchange="loadBgImg(event)"/>
-      </label>
-      <button class="upload-bg-btn" style="margin-top:8px;" onclick="clearBg()">✕ Убрать фото</button>
-    </div>
-
-    <!-- Overlay -->
-    <div class="settings-section">
-      <div class="settings-label">Затемнение фона</div>
-      <div class="slider-row">
-        <span style="font-size:13px;color:var(--text3);">0%</span>
-        <input type="range" id="overlaySlider" min="0" max="90" value="45" oninput="setOverlay(this.value)"/>
-        <span style="font-size:13px;color:var(--text3);">90%</span>
+      <div class="s-sec">
+        <div class="s-lbl">Цвет акцента</div>
+        <div class="prow" id="aPresets">
+          <div class="pc" style="background:#D0391B;" data-col="#D0391B" onclick="setAccent('#D0391B',this)"></div>
+          <div class="pc" style="background:#324E44;" data-col="#324E44" onclick="setAccent('#324E44',this)"></div>
+          <div class="pc" style="background:#FBC359;" data-col="#FBC359" onclick="setAccent('#FBC359',this)"></div>
+          <div class="pc" style="background:#7BA7AF;" data-col="#7BA7AF" onclick="setAccent('#7BA7AF',this)"></div>
+          <div class="pc" style="background:#9F4125;" data-col="#9F4125" onclick="setAccent('#9F4125',this)"></div>
+          <div class="pc" style="background:#73A642;" data-col="#73A642" onclick="setAccent('#73A642',this)"></div>
+          <div class="pc" style="background:#4B848A;" data-col="#4B848A" onclick="setAccent('#4B848A',this)"></div>
+          <div class="pc" style="background:#902223;" data-col="#902223" onclick="setAccent('#902223',this)"></div>
+          <div class="cw-btn" title="Свой цвет"><span>🎨</span><input type="color" value="#D0391B" oninput="setAccent(this.value,null)"/></div>
+        </div>
+      </div>
+      <div class="s-sec">
+        <div class="s-lbl">Фон</div>
+        <label class="bg-btn">📷 Выбрать фото<input type="file" accept="image/*" style="display:none" onchange="loadBg(event)"/></label>
+        <button class="bg-btn" onclick="clearBg()">✕ Убрать фото</button>
+      </div>
+      <div class="s-sec">
+        <div class="s-lbl">Затемнение фона</div>
+        <div class="sl-wrap">
+          <span style="font-size:12px;color:var(--text3);">Нет</span>
+          <input type="range" id="ovSl" min="0" max="85" value="45" oninput="setOv(this.value)"/>
+          <span style="font-size:12px;color:var(--text3);">Макс</span>
+        </div>
       </div>
     </div>
   </div>
-
-  <!-- TAB BAR -->
   <div id="tabbar">
-    <button class="tab-btn active" id="tab-main" onclick="showTab('main')">📅</button>
-    <button class="tab-btn" id="tab-settings" onclick="showTab('settings')">⚙️</button>
+    <button class="tab-btn active" id="tbMain" onclick="goTab('main')">📅</button>
+    <button class="tab-btn" id="tbSett" onclick="goTab('sett')">⚙️</button>
   </div>
 </div>
 
-<!-- DAY EDIT MODAL -->
-<div class="modal-bg" id="editModal">
-  <div class="modal-sheet">
-    <div class="modal-drag"></div>
-    <div class="modal-title" id="editModalTitle">3 мая</div>
-
-    <!-- Color -->
-    <div class="field-group">
-      <div class="field-label">Цвет дня</div>
-      <div class="color-picker-row" id="dayColorPicker">
-        <div class="color-dot selected" style="background:#324E44;" data-color="#324E44" onclick="selectDayColor(this)"></div>
-        <div class="color-dot" style="background:#D0391B;" data-color="#D0391B" onclick="selectDayColor(this)"></div>
-        <div class="color-dot" style="background:#FBC359;" data-color="#FBC359" onclick="selectDayColor(this)"></div>
-        <div class="color-dot" style="background:#7BA7AF;" data-color="#7BA7AF" onclick="selectDayColor(this)"></div>
-        <div class="color-dot" style="background:#9F4125;" data-color="#9F4125" onclick="selectDayColor(this)"></div>
-        <div class="color-dot" style="background:#73A642;" data-color="#73A642" onclick="selectDayColor(this)"></div>
-        <div class="color-dot" style="background:#4E6851;" data-color="#4E6851" onclick="selectDayColor(this)"></div>
-        <input type="color" style="width:32px;height:32px;border:none;border-radius:50%;cursor:pointer;padding:0;background:none;"
-          oninput="selectDayColorHex(this.value)"/>
+<!-- DAY MODAL -->
+<div class="mov" id="dayMov" onclick="if(event.target===this)closeDay()">
+  <div class="msh">
+    <div class="mdrag"></div>
+    <div class="mtitle" id="dayTitle">3 мая</div>
+    <div class="fg">
+      <label class="fl">Цвет дня</label>
+      <div class="dc-row" id="dcRow">
+        <div class="dc sel" style="background:#324E44;" data-c="#324E44" onclick="pickDc('#324E44',this)"></div>
+        <div class="dc" style="background:#D0391B;" data-c="#D0391B" onclick="pickDc('#D0391B',this)"></div>
+        <div class="dc" style="background:#FBC359;" data-c="#FBC359" onclick="pickDc('#FBC359',this)"></div>
+        <div class="dc" style="background:#7BA7AF;" data-c="#7BA7AF" onclick="pickDc('#7BA7AF',this)"></div>
+        <div class="dc" style="background:#9F4125;" data-c="#9F4125" onclick="pickDc('#9F4125',this)"></div>
+        <div class="dc" style="background:#73A642;" data-c="#73A642" onclick="pickDc('#73A642',this)"></div>
+        <div class="dc" style="background:#4E6851;" data-c="#4E6851" onclick="pickDc('#4E6851',this)"></div>
+        <div class="dc-cw" title="Свой цвет"><span>🎨</span><input type="color" value="#324E44" oninput="pickDcHex(this.value)"/></div>
       </div>
     </div>
-
-    <!-- Label -->
-    <div class="field-group">
-      <div class="field-label">Название / комментарий</div>
-      <input class="field-input" id="dayLabel" placeholder="Фриланс, Съёмка, Офис..."/>
+    <div class="fg"><label class="fl">Описание</label><input class="fi" id="fLbl" placeholder="Название / комментарий"/></div>
+    <div class="frow">
+      <div class="fg"><label class="fl">Начало</label><input class="fi" id="fS" type="time"/></div>
+      <div class="fg"><label class="fl">Конец</label><input class="fi" id="fE" type="time"/></div>
     </div>
-
-    <!-- Time -->
-    <div class="field-row">
-      <div class="field-group">
-        <div class="field-label">Начало</div>
-        <input class="field-input" id="dayTimeStart" type="time"/>
-      </div>
-      <div class="field-group">
-        <div class="field-label">Конец</div>
-        <input class="field-input" id="dayTimeEnd" type="time"/>
-      </div>
+    <div class="fg"><label class="fl">Заработано</label><input class="fi" id="fEarn" type="number" placeholder="Заработано" inputmode="decimal"/></div>
+    <div class="fg">
+      <label class="fl">Затраты</label>
+      <div id="xList"></div>
+      <button class="add-x-btn" onclick="addX()">+ Добавить затрату</button>
     </div>
-
-    <!-- Earned -->
-    <div class="field-group">
-      <div class="field-label">Заработано</div>
-      <input class="field-input" id="dayEarned" type="number" placeholder="0" inputmode="decimal"/>
-    </div>
-
-    <!-- Expenses -->
-    <div class="field-group">
-      <div class="field-label">Затраты</div>
-      <div id="expensesList"></div>
-      <button class="btn-add-exp" onclick="addExpenseField()">+ Добавить затрату</button>
-    </div>
-
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeEditModal()">Отмена</button>
-      <button class="btn-save" onclick="saveDay()">Сохранить</button>
+    <div class="mact">
+      <button class="btn-c" onclick="closeDay()">Отмена</button>
+      <button class="btn-ok" onclick="saveDay()">Сохранить</button>
     </div>
   </div>
 </div>
 
 <script>
-// ── DATA ──
-const SK = 'ftcal_days_v1';
-const SK2 = 'ftcal_settings_v1';
+const SK='ftcal_v3',SS='ftcal_s_v3';
+let days={},cfg={cur:'₽',theme:'default',thcls:'',accent:'#D0391B',ov:45,bg:''};
+function ld(){try{days=JSON.parse(localStorage.getItem(SK)||'{}');}catch{days={};}try{Object.assign(cfg,JSON.parse(localStorage.getItem(SS)||'{}'));}catch{}}
+function sv(){localStorage.setItem(SK,JSON.stringify(days));}
+function sc(){localStorage.setItem(SS,JSON.stringify(cfg));}
+function dk(y,m,d){return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;}
 
-let days = {};       // key: 'YYYY-MM-DD' → {color, label, timeStart, timeEnd, earned, expenses:[{amount,comment}]}
-let settings = {
-  currency: '₽',
-  theme: 'default',
-  themeClass: '',
-  accent: '#D0391B',
-  overlay: 45,
-  bgImg: ''
-};
+const now=new Date();
+let vy=now.getFullYear(),vm=now.getMonth(),eDk=null,dCol='#324E44';
+const MON=['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+const MONG=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+const MONU=['ЯНВАРЬ','ФЕВРАЛЬ','МАРТ','АПРЕЛЬ','МАЙ','ИЮНЬ','ИЮЛЬ','АВГУСТ','СЕНТЯБРЬ','ОКТЯБРЬ','НОЯБРЬ','ДЕКАБРЬ'];
+const DOW=['Воскресенье','Понедельник','Вторник','Среда','Четверг','Пятница','Суббота'];
 
-let viewYear, viewMonth;
-let editingDate = null;
-let selectedDayColor = '#324E44';
-let longPressTimer = null;
+ld();applyCfg();
+renderBig();renderCal();renderEnt();
 
-const MONTHS_RU = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
-const MONTHS_RU_GEN = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
-const MONTHS_RU_UP = ['ЯНВАРЬ','ФЕВРАЛЬ','МАРТ','АПРЕЛЬ','МАЙ','ИЮНЬ','ИЮЛЬ','АВГУСТ','СЕНТЯБРЬ','ОКТЯБРЬ','НОЯБРЬ','ДЕКАБРЬ'];
-const DAYS_RU = ['Воскресенье','Понедельник','Вторник','Среда','Четверг','Пятница','Суббота'];
-
-function load(){
-  try{ days=JSON.parse(localStorage.getItem(SK)||'{}'); }catch{ days={}; }
-  try{ Object.assign(settings, JSON.parse(localStorage.getItem(SK2)||'{}')); }catch{}
+function renderBig(){
+  const t=new Date();
+  document.getElementById('bigNum').textContent=t.getDate();
+  document.getElementById('bigMon').textContent=MONU[t.getMonth()];
+  document.getElementById('bigYr').textContent=' '+t.getFullYear();
+  document.getElementById('bigDow').textContent=DOW[t.getDay()];
 }
-function save(){ localStorage.setItem(SK,JSON.stringify(days)); }
-function saveSettings(){ localStorage.setItem(SK2,JSON.stringify(settings)); }
+setInterval(renderBig,60000);
 
-function key(y,m,d){ return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; }
-
-// ── INIT ──
-load();
-applySettings();
-
-const now = new Date();
-viewYear = now.getFullYear();
-viewMonth = now.getMonth();
-
-updateBigDate();
-renderCal();
-renderEntries();
-
-// ── BIG DATE ──
-function updateBigDate(){
-  const t = new Date();
-  document.getElementById('bigDay').textContent = t.getDate();
-  document.getElementById('bigMonth').textContent = MONTHS_RU_UP[t.getMonth()];
-  document.getElementById('bigYear').textContent = t.getFullYear();
-  document.getElementById('bigDow').textContent = DAYS_RU[t.getDay()];
-}
-
-// ── CALENDAR ──
-function changeMonth(d){
-  viewMonth += d;
-  if(viewMonth < 0){ viewMonth=11; viewYear--; }
-  if(viewMonth > 11){ viewMonth=0; viewYear++; }
-  renderCal();
-  renderEntries();
-}
+function chM(d){vm+=d;if(vm<0){vm=11;vy--;}if(vm>11){vm=0;vy++;}renderCal();renderEnt();}
 
 function renderCal(){
-  const grid = document.getElementById('calGrid');
-  const label = document.getElementById('calMonthLabel');
-  label.textContent = MONTHS_RU[viewMonth] + ' ' + viewYear;
-
-  const today = new Date();
-  const todayKey = key(today.getFullYear(), today.getMonth(), today.getDate());
-
-  const firstDay = new Date(viewYear, viewMonth, 1);
-  let startDow = firstDay.getDay(); // 0=sun
-  startDow = startDow === 0 ? 6 : startDow - 1; // Mon=0
-
-  const daysInMonth = new Date(viewYear, viewMonth+1, 0).getDate();
-  let html = '';
-
-  for(let i=0;i<startDow;i++) html += '<div class="day-dot empty"></div>';
-
-  for(let d=1;d<=daysInMonth;d++){
-    const dk = key(viewYear, viewMonth, d);
-    const dayData = days[dk];
-    const dayDate = new Date(viewYear, viewMonth, d);
-    const isPast = dayDate < new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const isToday = dk === todayKey;
-    const isFuture = dayDate > today;
-
-    let cls = 'day-dot';
-    let style = '';
-    if(isToday) cls += ' today';
-    else if(isFuture) cls += ' future';
-    else cls += ' past';
-
-    if(dayData && dayData.color){
-      style = `background:${dayData.color};`;
-      cls = cls.replace(' past',' work').replace(' today','').replace(' future','');
-      if(isToday) cls += ' today'; // keep today marker
-    }
-    if(dayData) cls += ' has-data';
-
-    html += `<div class="${cls}" style="${style}" 
-      data-date="${dk}" data-day="${d}"
-      ontouchstart="dayTouchStart(event,'${dk}')"
-      ontouchend="dayTouchEnd(event,'${dk}')"
-      ontouchmove="dayTouchMove()"
-      onmousedown="dayMouseDown(event,'${dk}')"
-      onmouseup="dayMouseUp(event,'${dk}')"
-      ondblclick="clearDay('${dk}')">
-      <div class="work-ind"></div>
-    </div>`;
+  document.getElementById('mLbl').textContent=MON[vm]+' '+vy;
+  const t=new Date(),tdk=dk(t.getFullYear(),t.getMonth(),t.getDate());
+  const fd=(new Date(vy,vm,1).getDay()+6)%7;
+  const dim=new Date(vy,vm+1,0).getDate();
+  let h='';
+  for(let i=0;i<fd;i++) h+='<div class="dd empty"></div>';
+  for(let d=1;d<=dim;d++){
+    const dkk=dk(vy,vm,d);
+    const dd=days[dkk];
+    const dt=new Date(vy,vm,d);
+    const isToday=dkk===tdk;
+    const isPast=dt<new Date(t.getFullYear(),t.getMonth(),t.getDate());
+    let cls='dd';let sty='';
+    if(dd&&dd.color){sty=`background:${dd.color};`;cls+=' work';}
+    else if(isToday){cls+=' today';}
+    else if(isPast){cls+=' past';}
+    if(dd) cls+=' has-data';
+    h+=`<div class="${cls}" style="${sty}" ontouchstart="ds(event,'${dkk}')" ontouchmove="dm()" ontouchend="de(event,'${dkk}')" ondblclick="clr('${dkk}')"><div class="ind"></div></div>`;
   }
-
-  grid.innerHTML = html;
+  document.getElementById('calGrid').innerHTML=h;
 }
 
-// ── DAY INTERACTION ──
-let touchStartTime = 0;
-let touchMoved = false;
+let _t0=0,_mv=false,_lpt=null;
+function ds(e,dkk){
+  _mv=false;_t0=Date.now();
+  const el=e.currentTarget;el.classList.add('pressing');
+  _lpt=setTimeout(()=>{el.classList.remove('pressing');navigator.vibrate&&navigator.vibrate(30);openDay(dkk);},550);
+}
+function dm(){_mv=true;clearTimeout(_lpt);document.querySelectorAll('.dd.pressing').forEach(e=>e.classList.remove('pressing'));}
+function de(e,dkk){
+  clearTimeout(_lpt);e.currentTarget.classList.remove('pressing');
+  if(_mv) return;
+  if(Date.now()-_t0<550) tapD(dkk);
+}
+function tapD(dkk){
+  if(!days[dkk]) days[dkk]={color:cfg.accent,label:'',timeStart:'',timeEnd:'',earned:0,expenses:[]};
+  sv();renderCal();renderEnt();
+}
+function clr(dkk){delete days[dkk];sv();renderCal();renderEnt();}
 
-function dayTouchStart(e, dk){
-  touchMoved = false;
-  touchStartTime = Date.now();
-  const el = e.currentTarget;
-  el.classList.add('pressing');
-  longPressTimer = setTimeout(()=>{
-    el.classList.remove('pressing');
-    openEditModal(dk);
-  }, 600);
+function openDay(dkk){
+  eDk=dkk;
+  const[y,m,d]=dkk.split('-').map(Number);
+  document.getElementById('dayTitle').textContent=`${d} ${MONG[m-1]}`;
+  const dd=days[dkk]||{};
+  dCol=dd.color||cfg.accent;
+  document.querySelectorAll('#dcRow .dc').forEach(dt=>dt.classList.toggle('sel',dt.dataset.c===dCol));
+  document.getElementById('fLbl').value=dd.label||'';
+  document.getElementById('fS').value=dd.timeStart||'';
+  document.getElementById('fE').value=dd.timeEnd||'';
+  document.getElementById('fEarn').value=dd.earned||'';
+  document.getElementById('xList').innerHTML='';
+  (dd.expenses||[]).forEach(x=>addX(x.amount,x.comment));
+  document.getElementById('dayMov').classList.add('open');
 }
-function dayTouchMove(){
-  touchMoved = true;
-  clearTimeout(longPressTimer);
+function closeDay(){document.getElementById('dayMov').classList.remove('open');eDk=null;}
+function pickDc(c,dot){
+  dCol=c;
+  document.querySelectorAll('#dcRow .dc').forEach(d=>d.classList.remove('sel'));
+  if(dot) dot.classList.add('sel');
 }
-function dayTouchEnd(e, dk){
-  clearTimeout(longPressTimer);
-  const el = e.currentTarget;
-  el.classList.remove('pressing');
-  if(touchMoved) return;
-  const dt = Date.now() - touchStartTime;
-  if(dt < 600) toggleDay(dk);
+function pickDcHex(c){dCol=c;document.querySelectorAll('#dcRow .dc').forEach(d=>d.classList.remove('sel'));}
+function addX(amount='',comment=''){
+  const div=document.createElement('div');div.className='xentry';
+  div.innerHTML=`<input class="fi" type="number" placeholder="Сумма затраты" value="${amount}" style="max-width:120px;" inputmode="decimal"/><input class="fi" placeholder="На такси, еду..." value="${comment}"/><button style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3);flex-shrink:0;touch-action:manipulation;" onclick="this.parentElement.remove()">✕</button>`;
+  document.getElementById('xList').appendChild(div);
 }
-function dayMouseDown(e, dk){
-  longPressTimer = setTimeout(()=> openEditModal(dk), 600);
-}
-function dayMouseUp(e, dk){
-  clearTimeout(longPressTimer);
-}
-
-function toggleDay(dk){
-  if(days[dk]){
-    // already has data - just select/deselect visually
-  }
-  // Mark as work day with default color if no data
-  if(!days[dk]){
-    days[dk] = { color: settings.accent || '#324E44', label:'', timeStart:'', timeEnd:'', earned:0, expenses:[] };
-    save();
-  }
-  renderCal();
-  renderEntries();
-}
-
-function clearDay(dk){
-  delete days[dk];
-  save();
-  renderCal();
-  renderEntries();
-}
-
-// ── EDIT MODAL ──
-function openEditModal(dk){
-  editingDate = dk;
-  const [y,m,d] = dk.split('-').map(Number);
-  document.getElementById('editModalTitle').textContent = `${d} ${MONTHS_RU_GEN[m-1]}`;
-  
-  const data = days[dk] || {};
-  selectedDayColor = data.color || settings.accent || '#324E44';
-  
-  // Reset color dots
-  document.querySelectorAll('#dayColorPicker .color-dot').forEach(dot=>{
-    dot.classList.toggle('selected', dot.dataset.color === selectedDayColor);
-  });
-
-  document.getElementById('dayLabel').value = data.label || '';
-  document.getElementById('dayTimeStart').value = data.timeStart || '';
-  document.getElementById('dayTimeEnd').value = data.timeEnd || '';
-  document.getElementById('dayEarned').value = data.earned || '';
-  
-  // Expenses
-  const expList = document.getElementById('expensesList');
-  expList.innerHTML = '';
-  (data.expenses||[]).forEach(exp => addExpenseField(exp.amount, exp.comment));
-
-  document.getElementById('editModal').classList.add('open');
-}
-
-function closeEditModal(){
-  document.getElementById('editModal').classList.remove('open');
-  editingDate = null;
-}
-
-function addExpenseField(amount='', comment=''){
-  const div = document.createElement('div');
-  div.className = 'expense-entry';
-  div.innerHTML = `
-    <input class="field-input" type="number" placeholder="Сумма" value="${amount}" style="width:100px;flex:none;" inputmode="decimal"/>
-    <input class="field-input" placeholder="Комментарий (такси, еда...)" value="${comment}"/>
-    <button style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--text3);" onclick="this.parentElement.remove()">✕</button>
-  `;
-  document.getElementById('expensesList').appendChild(div);
-}
-
-function selectDayColor(dot){
-  selectedDayColor = dot.dataset.color;
-  document.querySelectorAll('#dayColorPicker .color-dot').forEach(d=> d.classList.remove('selected'));
-  dot.classList.add('selected');
-}
-function selectDayColorHex(hex){
-  selectedDayColor = hex;
-  document.querySelectorAll('#dayColorPicker .color-dot').forEach(d=> d.classList.remove('selected'));
-}
-
 function saveDay(){
-  if(!editingDate) return;
-  
-  const expenses = [];
-  document.querySelectorAll('#expensesList .expense-entry').forEach(row=>{
-    const inputs = row.querySelectorAll('input');
-    const amount = parseFloat(inputs[0].value)||0;
-    const comment = inputs[1].value.trim();
-    if(amount>0 || comment) expenses.push({amount, comment});
+  if(!eDk) return;
+  const xs=[];
+  document.querySelectorAll('#xList .xentry').forEach(r=>{
+    const ins=r.querySelectorAll('input');
+    const a=parseFloat(ins[0].value)||0,c=ins[1].value.trim();
+    if(a>0||c) xs.push({amount:a,comment:c});
   });
-
-  days[editingDate] = {
-    color: selectedDayColor,
-    label: document.getElementById('dayLabel').value.trim(),
-    timeStart: document.getElementById('dayTimeStart').value,
-    timeEnd: document.getElementById('dayTimeEnd').value,
-    earned: parseFloat(document.getElementById('dayEarned').value)||0,
-    expenses
-  };
-  save();
-  closeEditModal();
-  renderCal();
-  renderEntries();
+  days[eDk]={color:dCol,label:document.getElementById('fLbl').value.trim(),timeStart:document.getElementById('fS').value,timeEnd:document.getElementById('fE').value,earned:parseFloat(document.getElementById('fEarn').value)||0,expenses:xs};
+  sv();closeDay();renderCal();renderEnt();
 }
 
-// ── ENTRIES ──
-function renderEntries(){
-  const sec = document.getElementById('entriesSection');
-  const totSec = document.getElementById('totalsSection');
-
-  // Get days of current view month that have data
-  const entries = [];
-  for(let d=1; d<=31; d++){
-    const dk = key(viewYear, viewMonth, d);
-    if(!days[dk]) continue;
-    const date = new Date(viewYear, viewMonth, d);
-    if(date.getMonth() !== viewMonth) break;
-    entries.push({dk, d, data: days[dk]});
+function renderEnt(){
+  const items=[];
+  for(let d=1;d<=31;d++){
+    const dkk=dk(vy,vm,d);const dt=new Date(vy,vm,d);
+    if(dt.getMonth()!==vm) break;
+    if(days[dkk]) items.push({dkk,d,dd:days[dkk]});
   }
-
-  if(entries.length === 0){
-    sec.innerHTML = '';
-    totSec.style.display = 'none';
-    return;
-  }
-
-  const cur = settings.currency;
-  let html = `<div class="entries-title">${MONTHS_RU[viewMonth]} ${viewYear}</div>`;
-
-  let totalEarned = 0;
-  let allExpenses = [];
-
-  entries.forEach((e,i)=>{
-    const d = e.data;
-    totalEarned += d.earned||0;
-    (d.expenses||[]).forEach(exp => allExpenses.push({...exp, dayLabel: d.label, day: e.d}));
-
-    const timeStr = d.timeStart&&d.timeEnd ? `${d.timeStart}–${d.timeEnd}` : d.timeStart||d.timeEnd||'';
-    const earnedStr = d.earned ? `${cur}${d.earned.toLocaleString()}` : '';
-    const expTotal = (d.expenses||[]).reduce((s,ex)=>s+(ex.amount||0),0);
-    const expStr = expTotal ? `−${cur}${expTotal.toLocaleString()}` : '';
-
-    html += `<div class="entry-row" onclick="openEditModal('${e.dk}')">
-      <div class="entry-row-top">
-        <div class="entry-num">${i+1}</div>
-        <div>
-          <div class="entry-date">${e.d} ${MONTHS_RU_GEN[viewMonth]}</div>
-          ${d.label?`<div class="entry-label">${d.label}</div>`:''}
-        </div>
-        <div style="width:14px;height:14px;border-radius:50%;background:${d.color||'#324E44'};flex-shrink:0;margin-left:auto;"></div>
-      </div>
-      <div class="entry-details">
-        ${timeStr?`<span class="entry-detail">🕐 ${timeStr}</span>`:''}
-        ${earnedStr?`<span class="entry-detail" style="color:var(--accent2,#324E44);font-weight:600;">+${earnedStr}</span>`:''}
-        ${expStr?`<span class="entry-detail" style="color:var(--accent);">${expStr}</span>`:''}
-      </div>
-    </div>`;
+  const ew=document.getElementById('entWrap'),tw=document.getElementById('totWrap');
+  if(!items.length){ew.innerHTML='';tw.innerHTML='';return;}
+  const cur=cfg.cur;let html=`<div class="sec-lbl">${MON[vm]} ${vy}</div>`;
+  let te=0;const ax=[];
+  items.forEach((it,i)=>{
+    const dd=it.dd;te+=dd.earned||0;
+    (dd.expenses||[]).forEach(x=>ax.push({...x,day:it.d,lbl:dd.label}));
+    const ts=dd.timeStart&&dd.timeEnd?`${dd.timeStart}–${dd.timeEnd}`:'';
+    const es=dd.earned?`+${cur}${dd.earned.toLocaleString()}`:'';
+    const xt=(dd.expenses||[]).reduce((s,x)=>s+(x.amount||0),0);
+    const xs=xt?`−${cur}${xt.toLocaleString()}`:'';
+    html+=`<div class="ecard" onclick="openDay('${it.dkk}')"><div class="etop"><div class="enum">${i+1}</div><div class="einfo"><div class="edate">${it.d} ${MONG[vm]}</div>${dd.label?`<div class="ename">${dd.label}</div>`:''}</div><div class="edot" style="background:${dd.color||cfg.accent};"></div></div><div class="enums">${ts?`<span style="color:var(--text3);">🕐 ${ts}</span>`:''}${es?`<span style="color:var(--accent);font-weight:600;">${es}</span>`:''}${xs?`<span style="color:var(--text2);">${xs}</span>`:''}</div></div>`;
   });
-
-  sec.innerHTML = html;
-
-  // Totals
-  const totalExp = allExpenses.reduce((s,e)=>s+(e.amount||0),0);
-  const net = totalEarned - totalExp;
-
-  let totHtml = '';
-  if(allExpenses.length){
-    allExpenses.forEach(exp=>{
-      totHtml += `<div class="expense-row">
-        <span>${exp.comment||'Затрата'} · ${exp.dayLabel||exp.day+' '+MONTHS_RU_GEN[viewMonth]}</span>
-        <span style="color:var(--accent);">−${cur}${(exp.amount||0).toLocaleString()}</span>
-      </div>`;
-    });
-  }
-  totHtml += `<div class="total-row">
-    <div class="total-label">Итого</div>
-    <div class="total-amount" style="color:${net>=0?'var(--accent2,#324E44)':'var(--accent)'};">
-      ${net>=0?'+':''}${cur}${Math.abs(net).toLocaleString()}
-    </div>
-  </div>`;
-
-  totSec.innerHTML = totHtml;
-  totSec.style.display = 'block';
+  ew.innerHTML=html;
+  const tx=ax.reduce((s,x)=>s+(x.amount||0),0),net=te-tx;
+  let th='';
+  ax.forEach(x=>{th+=`<div class="xrow"><span>${x.comment||'Затрата'} · ${x.lbl||x.day+' '+MONG[vm]}</span><span style="color:var(--accent);">−${cur}${(x.amount||0).toLocaleString()}</span></div>`;});
+  th+=`<div class="trow"><div class="tlbl">Итого</div><div class="tamt" style="color:${net>=0?'var(--accent)':'#e53'};">${net>=0?'+':''}${cur}${Math.abs(net).toLocaleString()}</div></div>`;
+  tw.innerHTML=`<div class="tcard">${th}</div>`;
 }
 
-// ── TABS ──
-function showTab(tab){
-  document.getElementById('main').style.display = tab==='main' ? 'block' : 'none';
-  document.getElementById('settings-screen').style.display = tab==='settings' ? 'block' : 'none';
-  document.getElementById('tab-main').classList.toggle('active', tab==='main');
-  document.getElementById('tab-settings').classList.toggle('active', tab==='settings');
+// TABS + SWIPE
+let curTab='main';
+function goTab(tab,anim=true){
+  if(tab===curTab) return;
+  const m=document.getElementById('screenMain'),s=document.getElementById('screenSett');
+  const toR=tab==='sett';
+  const tr=anim?'transform .35s cubic-bezier(.4,0,.2,1)':'none';
+  m.style.transition=tr;s.style.transition=tr;
+  m.style.transform=toR?'translateX(-100%)':'translateX(0)';
+  s.style.transform=toR?'translateX(0)':'translateX(100%)';
+  curTab=tab;
+  document.getElementById('tbMain').classList.toggle('active',tab==='main');
+  document.getElementById('tbSett').classList.toggle('active',tab==='sett');
 }
+(function(){
+  let sx=0,sy=0,dragging=false,axis=null;
+  const wrap=document.getElementById('screensWrap');
+  const main=document.getElementById('screenMain'),sett=document.getElementById('screenSett');
+  wrap.addEventListener('touchstart',e=>{
+    if(document.getElementById('dayMov').classList.contains('open')) return;
+    sx=e.touches[0].clientX;sy=e.touches[0].clientY;dragging=false;axis=null;
+    main.style.transition='none';sett.style.transition='none';
+  },{passive:true});
+  wrap.addEventListener('touchmove',e=>{
+    if(document.getElementById('dayMov').classList.contains('open')) return;
+    const dx=e.touches[0].clientX-sx,dy=e.touches[0].clientY-sy;
+    if(!axis&&(Math.abs(dx)>8||Math.abs(dy)>8)) axis=Math.abs(dx)>Math.abs(dy)?'x':'y';
+    if(axis!=='x') return;
+    dragging=true;
+    const W=window.innerWidth;
+    if(curTab==='main'){const x=Math.min(0,dx);main.style.transform=`translateX(${x}px)`;sett.style.transform=`translateX(${W+x}px)`;}
+    else{const x=Math.max(0,dx);sett.style.transform=`translateX(${x}px)`;main.style.transform=`translateX(${x-W}px)`;}
+  },{passive:true});
+  wrap.addEventListener('touchend',e=>{
+    if(!dragging) return;
+    const dx=e.changedTouches[0].clientX-sx;
+    main.style.transition='transform .35s cubic-bezier(.4,0,.2,1)';
+    sett.style.transition='transform .35s cubic-bezier(.4,0,.2,1)';
+    if(curTab==='main'&&dx<-60) goTab('sett',false);
+    else if(curTab==='sett'&&dx>60) goTab('main',false);
+    else{main.style.transform=curTab==='main'?'translateX(0)':'translateX(-100%)';sett.style.transform=curTab==='sett'?'translateX(0)':'translateX(100%)';}
+    dragging=false;
+  },{passive:true});
+})();
 
-// ── SETTINGS ──
-function setCurrency(sym, code){
-  settings.currency = sym;
-  saveSettings();
-  document.querySelectorAll('.currency-btn').forEach(b=> b.classList.remove('selected'));
-  event.currentTarget.classList.add('selected');
-  renderEntries();
-}
-
-function setTheme(id, cls){
-  settings.theme = id;
-  settings.themeClass = cls;
-  saveSettings();
-  document.body.className = cls;
-  if(settings.bgImg) document.body.classList.add('has-bg');
-  document.querySelectorAll('.theme-card').forEach(c=> c.classList.remove('selected'));
-  event.currentTarget.classList.add('selected');
-}
-
-function setAccent(color){
-  settings.accent = color;
-  document.documentElement.style.setProperty('--accent', color);
-  saveSettings();
-}
-
-function setOverlay(val){
-  settings.overlay = val;
-  document.documentElement.style.setProperty('--overlay-alpha', val/100);
-  saveSettings();
-}
-
-function loadBgImg(e){
-  const file = e.target.files[0];
-  if(!file) return;
-  const reader = new FileReader();
-  reader.onload = ev => {
-    settings.bgImg = ev.target.result;
-    saveSettings();
-    applyBg();
-  };
-  reader.readAsDataURL(file);
-}
-
-function clearBg(){
-  settings.bgImg = '';
-  saveSettings();
-  applyBg();
-}
-
+// SETTINGS
+function setCur(sym,btn){cfg.cur=sym;sc();document.querySelectorAll('.cur-btn').forEach(b=>b.classList.remove('sel'));btn.classList.add('sel');renderEnt();}
+function setTheme(card){cfg.theme=card.dataset.t;cfg.thcls=card.dataset.c;sc();document.body.className=cfg.thcls;document.querySelectorAll('.tc').forEach(c=>c.classList.remove('sel'));card.classList.add('sel');document.documentElement.style.setProperty('--accent',cfg.accent);}
+function setAccent(c,dot){cfg.accent=c;sc();document.documentElement.style.setProperty('--accent',c);document.querySelectorAll('#aPresets .pc').forEach(d=>d.classList.remove('sel'));if(dot) dot.classList.add('sel');renderEnt();}
+function setOv(v){cfg.ov=v;sc();document.getElementById('bgOverlay').style.background=`rgba(0,0,0,${v/100})`;}
+function loadBg(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{cfg.bg=ev.target.result;sc();applyBg();};r.readAsDataURL(f);}
+function clearBg(){cfg.bg='';sc();applyBg();}
 function applyBg(){
-  const bg = document.getElementById('bg-layer');
-  if(settings.bgImg){
-    bg.style.backgroundImage = `url(${settings.bgImg})`;
-    bg.style.opacity = '1';
-  } else {
-    bg.style.backgroundImage = 'none';
-  }
-  document.getElementById('bg-overlay').style.display = settings.bgImg ? 'block' : 'none';
+  document.getElementById('bgLayer').style.backgroundImage=cfg.bg?`url(${cfg.bg})`:'none';
+  document.getElementById('bgOverlay').style.background=cfg.bg?`rgba(0,0,0,${cfg.ov/100})`:'rgba(0,0,0,0)';
 }
-
-function applySettings(){
-  if(settings.themeClass) document.body.className = settings.themeClass;
-  if(settings.accent) document.documentElement.style.setProperty('--accent', settings.accent);
-  if(settings.overlay !== undefined){
-    document.documentElement.style.setProperty('--overlay-alpha', settings.overlay/100);
-    const sl = document.getElementById('overlaySlider');
-    if(sl) sl.value = settings.overlay;
-  }
+function applyCfg(){
+  if(cfg.thcls) document.body.className=cfg.thcls;
+  document.documentElement.style.setProperty('--accent',cfg.accent||'#D0391B');
+  document.getElementById('ovSl').value=cfg.ov;
   applyBg();
-
-  // Currency buttons
   setTimeout(()=>{
-    document.querySelectorAll('.currency-btn').forEach(b=>{
-      b.classList.toggle('selected', b.textContent.startsWith(settings.currency));
-    });
-    // Theme cards
-    document.querySelectorAll('.theme-card').forEach((c,i)=>{
-      const themes = ['default','dark','warm','ocean','retro','night'];
-      c.classList.toggle('selected', themes[i] === settings.theme);
-    });
-  }, 0);
+    document.querySelectorAll('.cur-btn').forEach(b=>b.classList.toggle('sel',b.textContent.startsWith(cfg.cur)));
+    document.querySelectorAll('.tc').forEach(c=>c.classList.toggle('sel',c.dataset.t===cfg.theme));
+  },0);
 }
-
-// Live clock
-setInterval(updateBigDate, 60000);
 </script>
 </body>
 </html>

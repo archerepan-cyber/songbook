@@ -1,4 +1,4 @@
-const CACHE = 'freelcal-v1';
+const CACHE = 'freelcal-v2';
 const ASSETS = ['/', '/index.html', '/manifest.json'];
 
 self.addEventListener('install', e => {
