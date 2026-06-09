@@ -2227,8 +2227,9 @@ renderPL();renderRep();renderSongs(songs);
         ?songs.filter(s=>(s.playlist||'')===listFilter)
         :songs.filter(s=>!s.id.startsWith('__fav__'));
       const newBase=ids.map(id=>base.find(s=>s.id===id)).filter(Boolean);
-      const others=songs.filter(s=>!newBase.find(b=>b.id===s.id));
-      songs.length=0;songs.push(...others,...newBase);sv(SK,songs);
+      const others=songs.filter(s=>!newBase.find(b=>b.id===s.id)&&!base.find(b=>b.id===s.id));
+      songs.length=0;songs.push(...newBase,...others);sv(SK,songs);
+      if(listType==='rep') renderRep();
     }
   }
 
