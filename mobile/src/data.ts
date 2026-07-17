@@ -127,10 +127,20 @@ Pianissimo — Morendo`,
   },
 ];
 
-/** Russian plural forms — index.html hand-rolls this; Intl does it properly. */
-const PR = new Intl.PluralRules('ru-RU');
+/**
+ * Russian plural forms: песня / песни / песен.
+ *
+ * Hand-rolled, exactly as index.html does it — NOT Intl.PluralRules.
+ * Hermes ships no Intl.PluralRules, so `new Intl.PluralRules(...)` is `new undefined()`,
+ * which throws "Cannot read property 'prototype' of undefined" at module load and takes
+ * the whole runtime down before render. The web app's approach was right.
+ */
 export function songCount(n: number): string {
-  const form = PR.select(n);
-  const word = form === 'one' ? 'песня' : form === 'few' ? 'песни' : 'песен';
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  let word: string;
+  if (mod10 === 1 && mod100 !== 11) word = 'песня';
+  else if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) word = 'песни';
+  else word = 'песен';
   return `${n} ${word}`;
 }
